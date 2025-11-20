@@ -4,6 +4,8 @@ declare(strict_types=1);
 use Cake\Cache\Cache;
 use Cake\Chronos\Chronos;
 use Cake\Core\Configure;
+use Cake\Database\Connection;
+use Cake\Database\Driver\Sqlite;
 use Cake\Datasource\ConnectionManager;
 use Cake\TestSuite\Fixture\SchemaLoader;
 
@@ -81,8 +83,8 @@ Cache::setConfig($cache);
 
 // Configure test database connections using SQLite
 ConnectionManager::setConfig('test', [
-    'className' => 'Cake\Database\Connection',
-    'driver' => 'Cake\Database\Driver\Sqlite',
+    'className' => Connection::class,
+    'driver' => Sqlite::class,
     'database' => ':memory:',
     'encoding' => 'utf8',
     'cacheMetadata' => true,
@@ -90,8 +92,8 @@ ConnectionManager::setConfig('test', [
 ]);
 
 ConnectionManager::setConfig('default', [
-    'className' => 'Cake\Database\Connection',
-    'driver' => 'Cake\Database\Driver\Sqlite',
+    'className' => Connection::class,
+    'driver' => Sqlite::class,
     'database' => ':memory:',
     'encoding' => 'utf8',
     'cacheMetadata' => true,

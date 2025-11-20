@@ -12,8 +12,6 @@ class CommentsFixture extends TestFixture
 {
     /**
      * Init method
-     *
-     * @return void
      */
     public function init(): void
     {
