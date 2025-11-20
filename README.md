@@ -59,13 +59,30 @@ The Model Context Protocol is an open protocol that enables seamless integration
 
 ### Installing the Plugin
 
-Install via Composer:
+Install via Composer as a development dependency:
 
 ```bash
-composer require adaptic/synapse
+composer require --dev josbeir/cakephp-synapse
 ```
 
-Load the plugin in your `Application.php`:
+> [!NOTE]
+> This plugin is typically used as a development tool to allow AI assistants to interact with your application during development. It should not be installed in production environments.
+
+Load the plugin using `config/plugins.php`:
+
+```php
+// In config/plugins.php
+return [
+    // ...
+    'Synapse' => [
+        'onlyCli' => true,
+        'optional' => true,    
+    ]
+    // ...
+]
+```
+
+Or load the plugin in your `Application.php`:
 
 ```php
 // In src/Application.php
@@ -73,7 +90,10 @@ public function bootstrap(): void
 {
     parent::bootstrap();
     
-    $this->addPlugin('Synapse');
+    $this->addPlugin('Synapse', [
+        'onlyCli' => true,
+        'optional' => true,  
+    ]);
 }
 ```
 
@@ -282,6 +302,9 @@ Or run inside your DDEV instance
 
 Discovery caching dramatically improves server startup performance by caching the discovered MCP elements (tools, resources, prompts). This can reduce startup time by up to 99%!
 
+> [!NOTE]
+> While caching improves performance, remember that this plugin is intended for development use. The caching feature is most useful when running the MCP server frequently during development sessions.
+
 ### Configuration
 
 Synapse uses CakePHP's built-in PSR-16 cache system. Configure caching in `config/synapse.php`:
@@ -329,7 +352,7 @@ bin/cake synapse server --clear-cache --verbose
 
 - **Without cache**: ~100-500ms startup time (depending on codebase size)
 - **With cache**: ~1-5ms startup time (99% improvement!)
-- **Recommendation**: Always enable caching in production
+- **Recommendation**: Enable caching for faster startup times during development
 
 ## Testing
 
@@ -365,7 +388,7 @@ Contributions are welcome! Please follow these guidelines:
 
 ```bash
 # Clone the repository
-git clone https://github.com/adaptic/synapse.git
+git clone https://github.com/josbeir/cakephp-synapse.git
 cd synapse
 
 # Install dependencies
