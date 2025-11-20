@@ -24,6 +24,7 @@ Expose your CakePHP application functionality via the Model Context Protocol (MC
   - [System Tools](#system-tools)
   - [Database Tools](#database-tools)
   - [Route Tools](#route-tools)
+  - [Documentation Search](#documentation-search)
 - [Running the Server](#running-the-server)
 - [Discovery Caching](#discovery-caching)
 - [Testing](#testing)
@@ -48,6 +49,7 @@ The Model Context Protocol is an open protocol that enables seamless integration
 - 🚀 **Easy Integration**: Add MCP capabilities to your CakePHP app in minutes
 - 🔍 **Auto-Discovery**: Automatically discovers MCP elements using PHP 8 attributes
 - 🛠️ **Built-in Tools**: Pre-built tools for system info, database inspection, and route management
+- 📚 **Documentation Search**: Full-text search powered by SQLite FTS5 with BM25 ranking (indexes CakePHP's official markdown documentation)
 - 📦 **Extensible**: Create custom tools using simple PHP attributes
 
 ## Installation
@@ -220,6 +222,30 @@ Inspect and analyze your application routes:
 - `match_url` - Find which route matches a given URL
 - `reverse_route` - Generate URLs from route names or parameters
 - `detect_route_collisions` - Find potential route conflicts
+
+### Documentation Search
+
+Search CakePHP documentation with full-text search powered by SQLite FTS5:
+
+- `search_docs` - Search documentation with relevance ranking, fuzzy matching, and filtering
+- `docs_stats` - View index statistics and available sources
+- `docs://search/{query}` - Resource for accessing formatted search results
+
+> [!NOTE]
+> Documentation is indexed from the official [CakePHP markdown documentation](https://github.com/cakephp/docs-md). The index is built locally using SQLite FTS5 for fast, dependency-free full-text search.
+
+Use the CLI to manage the index:
+
+```bash
+# Index all sources
+bin/cake index_docs
+
+# Index specific source
+bin/cake index_docs --source cakephp-5x
+
+# Force re-index and optimize
+bin/cake index_docs --force --optimize
+```
 
 ## Running the Server
 
