@@ -228,8 +228,10 @@ Inspect and analyze your application routes:
 Search CakePHP documentation with full-text search powered by SQLite FTS5:
 
 - `search_docs` - Search documentation with relevance ranking, fuzzy matching, and filtering
+- `get_doc` - Retrieve full document content by document ID (format: `source::path`)
 - `docs_stats` - View index statistics and available sources
 - `docs://search/{query}` - Resource for accessing formatted search results
+- `docs://{documentId}` - Resource for accessing a specific document by ID
 
 > [!NOTE]
 > Documentation is indexed from the official [CakePHP markdown documentation](https://github.com/cakephp/docs-md). The index is built locally using SQLite FTS5 for fast, dependency-free full-text search.
@@ -246,11 +248,20 @@ bin/cake synapse index --source cakephp-5x
 # Force re-index and optimize
 bin/cake synapse index --force --optimize
 
-# Search documentation from CLI
+# Search documentation from CLI (interactive mode by default)
 bin/cake synapse search "authentication"
 
 # Search with options
 bin/cake synapse search "database queries" --limit 5 --fuzzy --detailed
+
+# Non-interactive mode for scripts/CI
+bin/cake synapse search "authentication" --non-interactive
+
+# Interactive features:
+# - View result details and snippets
+# - Navigate between results
+# - View full document content
+# - All from within the CLI
 ```
 
 ## Running the Server
