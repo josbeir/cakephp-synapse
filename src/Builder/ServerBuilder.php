@@ -111,6 +111,9 @@ class ServerBuilder
     public function withPluginTools()
     {
         $pluginSrcPath = dirname(__DIR__);
+        $pluginSrcPath = str_replace(ROOT, '', $pluginSrcPath);
+        $pluginSrcPath = ltrim($pluginSrcPath, DIRECTORY_SEPARATOR);
+
         if (!in_array($pluginSrcPath, $this->scanDirs, true)) {
             $this->scanDirs[] = $pluginSrcPath;
         }

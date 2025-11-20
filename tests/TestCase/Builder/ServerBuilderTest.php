@@ -118,6 +118,8 @@ class ServerBuilderTest extends TestCase
 
         // Plugin src path should be in scan dirs
         $pluginPath = dirname(dirname(dirname(__DIR__))) . '/src';
+        $pluginPath = ltrim($pluginPath, DIRECTORY_SEPARATOR);
+
         $this->assertContains($pluginPath, $scanDirs);
     }
 
@@ -133,6 +135,7 @@ class ServerBuilderTest extends TestCase
 
         $scanDirs = $builder->getScanDirs();
         $pluginPath = dirname(dirname(dirname(__DIR__))) . '/src';
+        $pluginPath = ltrim($pluginPath, DIRECTORY_SEPARATOR);
 
         // Count occurrences of plugin path
         $count = count(array_filter($scanDirs, fn(string $dir): bool => $dir === $pluginPath));
@@ -260,6 +263,7 @@ class ServerBuilderTest extends TestCase
 
         // Verify plugin directory is in scan dirs
         $pluginPath = dirname(dirname(dirname(__DIR__))) . '/src';
+        $pluginPath = ltrim($pluginPath, DIRECTORY_SEPARATOR);
         $this->assertContains($pluginPath, $builder->getScanDirs());
     }
 
