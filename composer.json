@@ -5,7 +5,7 @@
     "license": "MIT",
     "require": {
         "php": ">=8.2",
-        "cakephp/cakephp": "^5.0",
+        "cakephp/cakephp": "^5.2",
         "mcp/sdk": "dev-main"
     },
     "require-dev": {
@@ -22,6 +22,7 @@
     },
     "autoload-dev": {
         "psr-4": {
+            "TestApp\\": "tests/test_app/src/",
             "Synapse\\Test\\": "tests/"
         }
     },

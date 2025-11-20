@@ -63,6 +63,6 @@ class SynapsePlugin extends BasePlugin
     {
         // Register ServerCommand with container for proper DI
         $container->add(ServerCommand::class)
-            ->addArgument(ContainerInterface::class);
+            ->addArgument($container);
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 use Cake\Cache\Cache;
 use Cake\Chronos\Chronos;
 use Cake\Core\Configure;
+use Cake\Datasource\ConnectionManager;
+use Cake\TestSuite\Fixture\SchemaLoader;
 
 if (!defined('DS')) {
     define('DS', DIRECTORY_SEPARATOR);
@@ -29,7 +31,7 @@ require_once CORE_PATH . 'src' . DS . 'Core' . DS . 'functions_global.php';
 
 Configure::write('App', [
     'encoding' => 'UTF-8',
-    'namespace' => 'Mercure\TestApp',
+    'namespace' => 'TestApp',
     'defaultLocale' => 'en_US',
     'fullBaseUrl' => 'http://localhost',
     'paths' => [
@@ -66,6 +68,35 @@ $cache = [
         'serialize' => true,
         'duration' => '+10 seconds',
     ],
+    '_cake_model_' => [
+        'className' => 'File',
+        'prefix' => '_cake_model_',
+        'path' => CACHE . 'models/',
+        'serialize' => true,
+        'duration' => '+10 seconds',
+    ],
 ];
 
 Cache::setConfig($cache);
+
+// Configure test database connections using SQLite
+ConnectionManager::setConfig('test', [
+    'className' => 'Cake\Database\Connection',
+    'driver' => 'Cake\Database\Driver\Sqlite',
+    'database' => ':memory:',
+    'encoding' => 'utf8',
+    'cacheMetadata' => true,
+    'quoteIdentifiers' => false,
+]);
+
+ConnectionManager::setConfig('default', [
+    'className' => 'Cake\Database\Connection',
+    'driver' => 'Cake\Database\Driver\Sqlite',
+    'database' => ':memory:',
+    'encoding' => 'utf8',
+    'cacheMetadata' => true,
+    'quoteIdentifiers' => false,
+]);
+
+// Load test database schema
+(new SchemaLoader())->loadSqlFiles(TESTS . 'schema.sql', 'test');

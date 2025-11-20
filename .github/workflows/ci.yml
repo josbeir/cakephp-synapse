@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [ 'main' ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  PHP_EXTENSIONS: intl
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: [8.2, 8.3, 8.4, 8.5]
+        prefer-lowest: ['']
+        include:
+          - php-version: '8.2'
+            prefer-lowest: 'prefer-lowest'
+
+    steps:
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          coverage: pcov
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          if ${{ matrix.prefer-lowest == 'prefer-lowest' }}; then
+            composer update --prefer-lowest --prefer-stable
+            composer require --dev dereuromark/composer-prefer-lowest:dev-master
+          else
+            composer install --prefer-dist --no-interaction --no-progress
+          fi
+
+      - name: Run PHPUnit
+        run: |
+          if [[ ${{ matrix.php-version }} == '8.4' ]]; then
+            vendor/bin/phpunit --coverage-clover=coverage.xml
+          else
+            vendor/bin/phpunit
+          fi
+
+      - name: Validate prefer-lowest
+        if: matrix.prefer-lowest == 'prefer-lowest'
+        run: vendor/bin/validate-prefer-lowest -m
+
+      - name: Upload coverage reports to Codecov
+        if: success() && matrix.php-version == '8.4'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  static-analysis:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+          extensions: ${{ env.PHP_EXTENSIONS }}
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --no-progress --error-format=github
+
+      - name: Run PHPCS
+        run: vendor/bin/phpcs
+
+      - name: Run Rector
+        run: vendor/bin/rector process --dry-run

@@ -7,3 +7,5 @@ parameters:
     paths:
         - src/
         - tests/
+    excludePaths:
+        - tests/test_app/

@@ -24,7 +24,12 @@ class DatabaseToolsTest extends TestCase
      *
      * @var array<string>
      */
-    protected array $fixtures = [];
+    protected array $fixtures = [
+        'plugin.Synapse.Articles',
+        'plugin.Synapse.Authors',
+        'plugin.Synapse.Tags',
+        'plugin.Synapse.Users',
+    ];
 
     /**
      * setUp method
