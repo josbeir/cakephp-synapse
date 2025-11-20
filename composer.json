@@ -1,5 +1,5 @@
 {
-    "name": "adaptic/synapse",
+    "name": "josbeir/cakephp-synapse",
     "description": "CakePHP MCP Server Plugin - Expose CakePHP functionality via Model Context Protocol",
     "type": "cakephp-plugin",
     "license": "MIT",
