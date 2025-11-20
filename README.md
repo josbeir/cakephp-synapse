@@ -1,5 +1,6 @@
 [![PHPStan Level 8](https://img.shields.io/badge/PHPStan-level%208-brightgreen)](https://github.com/josbeir/cakephp-synapse)
 [![Build Status](https://github.com/josbeir/cakephp-synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/josbeir/cakephp-synapse/actions)
+[![codecov](https://codecov.io/github/josbeir/cakephp-synapse/graph/badge.svg?token=4VGWJQTWH5)](https://codecov.io/github/josbeir/cakephp-synapse)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PHP Version](https://img.shields.io/badge/php-8.2%2B-blue.svg)](https://www.php.net/releases/8.2/en.php)
 [![CakePHP Version](https://img.shields.io/badge/CakePHP-5.2%2B-red.svg)](https://cakephp.org/)
@@ -152,7 +153,7 @@ class MyTools
     )]
     public function getUser(int $id): array
     {
-        $usersTable = TableRegistry::getTableLocator()->get('Users');
+        $usersTable = $this->fetchTable('Users');
         $user = $usersTable->get($id);
         
         return [
@@ -165,7 +166,7 @@ class MyTools
     #[McpTool(name: 'list_users')]
     public function listUsers(int $limit = 10): array
     {
-        $usersTable = TableRegistry::getTableLocator()->get('Users');
+        $usersTable = $this->fetchTable('Users');
         $users = $usersTable->find()
             ->limit($limit)
             ->toArray();
