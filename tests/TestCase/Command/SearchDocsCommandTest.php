@@ -3,8 +3,15 @@ declare(strict_types=1);
 
 namespace Synapse\Test\TestCase\Command;
 
+use Cake\Console\ConsoleIo;
+use Cake\Console\Helper;
 use Cake\Console\TestSuite\ConsoleIntegrationTestTrait;
 use Cake\TestSuite\TestCase;
+use Exception;
+use ReflectionClass;
+use Synapse\Command\SearchDocsCommand;
+use Synapse\Documentation\DocumentSearchService;
+use Synapse\Documentation\SearchEngine;
 
 /**
  * SearchDocsCommand Test Case
@@ -539,5 +546,413 @@ class SearchDocsCommandTest extends TestCase
 
         $this->assertExitSuccess();
         $this->assertOutputContains('interactive');
+    }
+
+    /**
+     * Test displayResults method with snippets
+     */
+    public function testDisplayResultsWithSnippets(): void
+    {
+        $command = new SearchDocsCommand();
+
+        $mockHelper = $this->getMockBuilder(Helper::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $mockHelper->expects($this->once())
+            ->method('output');
+
+        $io = $this->getMockBuilder(ConsoleIo::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $results = [
+            [
+                'id' => 'test::doc1.md',
+                'title' => 'Test Document',
+                'path' => 'docs/test.md',
+                'source' => 'test-source',
+                'score' => 8.5,
+                'snippet' => 'This is a test <mark>snippet</mark>',
+            ],
+        ];
+
+        $io->expects($this->once())
+            ->method('helper')
+            ->with('Table')
+            ->willReturn($mockHelper);
+
+        $io->expects($this->atLeastOnce())
+            ->method('out');
+
+        $io->expects($this->once())
+            ->method('hr');
+
+        $reflection = new ReflectionClass($command);
+        $method = $reflection->getMethod('displayResults');
+
+        $method->invoke($command, $results, false, $io);
+    }
+
+    /**
+     * Test displayResults method without snippets
+     */
+    public function testDisplayResultsWithoutSnippets(): void
+    {
+        $command = new SearchDocsCommand();
+
+        $mockHelper = $this->getMockBuilder(Helper::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $mockHelper->expects($this->once())
+            ->method('output');
+
+        $io = $this->getMockBuilder(ConsoleIo::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $results = [
+            [
+                'id' => 'test::doc1.md',
+                'title' => 'Test Document',
+                'path' => 'docs/test.md',
+                'source' => 'test-source',
+                'score' => 8.5,
+                'snippet' => 'This is a test snippet',
+            ],
+        ];
+
+        $io->expects($this->once())
+            ->method('helper')
+            ->with('Table')
+            ->willReturn($mockHelper);
+
+        $io->expects($this->never())
+            ->method('hr');
+
+        $reflection = new ReflectionClass($command);
+        $method = $reflection->getMethod('displayResults');
+
+        $method->invoke($command, $results, true, $io); // noSnippet = true
+    }
+
+    /**
+     * Test displayResults method in detailed mode
+     */
+    public function testDisplayResultsDetailed(): void
+    {
+        $command = new SearchDocsCommand();
+
+        $mockHelper = $this->getMockBuilder(Helper::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $mockHelper->expects($this->once())
+            ->method('output');
+
+        $io = $this->getMockBuilder(ConsoleIo::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $results = [
+            [
+                'id' => 'test::doc1.md',
+                'title' => 'Test Document',
+                'path' => 'docs/test.md',
+                'source' => 'test-source',
+                'score' => 8.5,
+                'snippet' => 'This is a test snippet',
+            ],
+        ];
+
+        $io->expects($this->once())
+            ->method('helper')
+            ->with('Table')
+            ->willReturn($mockHelper);
+
+        $reflection = new ReflectionClass($command);
+        $method = $reflection->getMethod('displayResults');
+
+        $method->invoke($command, $results, false, $io);
+    }
+
+    /**
+     * Test showAllSnippets method
+     */
+    public function testShowAllSnippets(): void
+    {
+        $command = new SearchDocsCommand();
+        $io = $this->getMockBuilder(ConsoleIo::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $results = [
+            [
+                'title' => 'Test Document 1',
+                'snippet' => 'First <mark>snippet</mark>',
+            ],
+            [
+                'title' => 'Test Document 2',
+                'snippet' => '',
+            ],
+        ];
+
+        $io->expects($this->atLeastOnce())
+            ->method('out');
+
+        $io->expects($this->exactly(4))
+            ->method('hr');
+
+        $reflection = new ReflectionClass($command);
+        $method = $reflection->getMethod('showAllSnippets');
+
+        $method->invoke($command, $results, $io);
+    }
+
+    /**
+     * Test viewFullDocument method with valid document
+     */
+    public function testViewFullDocument(): void
+    {
+        $command = new SearchDocsCommand();
+
+        // Create mock SearchEngine
+        $mockEngine = $this->getMockBuilder(SearchEngine::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $mockEngine->expects($this->once())
+            ->method('getDocumentById')
+            ->with('test::doc1.md')
+            ->willReturn([
+                'id' => 'test::doc1.md',
+                'title' => 'Test Document',
+                'source' => 'test-source',
+                'path' => 'docs/test.md',
+                'content' => "# Test\n\nThis is test content.",
+            ]);
+
+        // Create mock DocumentSearchService
+        $mockService = $this->getMockBuilder(DocumentSearchService::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $mockService->expects($this->once())
+            ->method('getSearchEngine')
+            ->willReturn($mockEngine);
+
+        // Inject mock service into command
+        $reflection = new ReflectionClass($command);
+        $property = $reflection->getProperty('service');
+        $property->setValue($command, $mockService);
+
+        // Create mock IO
+        $io = $this->getMockBuilder(ConsoleIo::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $io->expects($this->atLeastOnce())
+            ->method('out');
+
+        $mockHelper = $this->getMockBuilder(Helper::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $mockHelper->expects($this->once())
+            ->method('output');
+
+        $io->expects($this->once())
+            ->method('helper')
+            ->with('Table')
+            ->willReturn($mockHelper);
+
+        $io->expects($this->exactly(3))
+            ->method('hr');
+
+        $io->expects($this->once())
+            ->method('ask')
+            ->willReturn('');
+
+        $result = ['id' => 'test::doc1.md'];
+
+        $method = $reflection->getMethod('viewFullDocument');
+        $method->invoke($command, $result, $io);
+    }
+
+    /**
+     * Test viewFullDocument method with missing document ID
+     */
+    public function testViewFullDocumentMissingId(): void
+    {
+        $command = new SearchDocsCommand();
+
+        $io = $this->getMockBuilder(ConsoleIo::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $io->expects($this->once())
+            ->method('error')
+            ->with('Document ID not available');
+
+        $result = []; // Missing 'id' key
+
+        $reflection = new ReflectionClass($command);
+        $method = $reflection->getMethod('viewFullDocument');
+        $method->invoke($command, $result, $io);
+    }
+
+    /**
+     * Test viewFullDocument method with document not found
+     */
+    public function testViewFullDocumentNotFound(): void
+    {
+        $command = new SearchDocsCommand();
+
+        // Create mock SearchEngine
+        $mockEngine = $this->getMockBuilder(SearchEngine::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $mockEngine->expects($this->once())
+            ->method('getDocumentById')
+            ->with('test::missing.md')
+            ->willReturn(null);
+
+        // Create mock DocumentSearchService
+        $mockService = $this->getMockBuilder(DocumentSearchService::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $mockService->expects($this->once())
+            ->method('getSearchEngine')
+            ->willReturn($mockEngine);
+
+        // Inject mock service into command
+        $reflection = new ReflectionClass($command);
+        $property = $reflection->getProperty('service');
+        $property->setValue($command, $mockService);
+
+        // Create mock IO
+        $io = $this->getMockBuilder(ConsoleIo::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $io->expects($this->once())
+            ->method('error')
+            ->with('Document not found');
+
+        $result = ['id' => 'test::missing.md'];
+
+        $method = $reflection->getMethod('viewFullDocument');
+        $method->invoke($command, $result, $io);
+    }
+
+    /**
+     * Test viewFullDocument method with exception
+     */
+    public function testViewFullDocumentException(): void
+    {
+        $command = new SearchDocsCommand();
+
+        // Create mock SearchEngine that throws exception
+        $mockEngine = $this->getMockBuilder(SearchEngine::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $mockEngine->expects($this->once())
+            ->method('getDocumentById')
+            ->willThrowException(new Exception('Database error'));
+
+        // Create mock DocumentSearchService
+        $mockService = $this->getMockBuilder(DocumentSearchService::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $mockService->expects($this->once())
+            ->method('getSearchEngine')
+            ->willReturn($mockEngine);
+
+        // Inject mock service into command
+        $reflection = new ReflectionClass($command);
+        $property = $reflection->getProperty('service');
+        $property->setValue($command, $mockService);
+
+        // Create mock IO
+        $io = $this->getMockBuilder(ConsoleIo::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $io->expects($this->once())
+            ->method('error')
+            ->with('Failed to load document: Database error');
+
+        $result = ['id' => 'test::doc1.md'];
+
+        $method = $reflection->getMethod('viewFullDocument');
+        $method->invoke($command, $result, $io);
+    }
+
+    /**
+     * Test viewFullDocument with empty content
+     */
+    public function testViewFullDocumentEmptyContent(): void
+    {
+        $command = new SearchDocsCommand();
+
+        // Create mock SearchEngine
+        $mockEngine = $this->getMockBuilder(SearchEngine::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $mockEngine->expects($this->once())
+            ->method('getDocumentById')
+            ->willReturn([
+                'id' => 'test::doc1.md',
+                'title' => 'Empty Document',
+                'source' => 'test-source',
+                'path' => 'docs/empty.md',
+                'content' => '',
+            ]);
+
+        // Create mock DocumentSearchService
+        $mockService = $this->getMockBuilder(DocumentSearchService::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $mockService->expects($this->once())
+            ->method('getSearchEngine')
+            ->willReturn($mockEngine);
+
+        // Inject mock service into command
+        $reflection = new ReflectionClass($command);
+        $property = $reflection->getProperty('service');
+        $property->setValue($command, $mockService);
+
+        // Create mock IO
+        $io = $this->getMockBuilder(ConsoleIo::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $mockHelper = $this->getMockBuilder(Helper::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $mockHelper->expects($this->once())
+            ->method('output');
+
+        $io->expects($this->once())
+            ->method('helper')
+            ->with('Table')
+            ->willReturn($mockHelper);
+
+        $io->expects($this->once())
+            ->method('ask')
+            ->willReturn('');
+
+        $result = ['id' => 'test::doc1.md'];
+
+        $method = $reflection->getMethod('viewFullDocument');
+        $method->invoke($command, $result, $io);
     }
 }
