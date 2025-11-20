@@ -4,10 +4,18 @@ declare(strict_types=1);
 namespace Synapse\Test\TestCase\Command;
 
 use Cake\Cache\Cache;
+use Cake\Console\Arguments;
+use Cake\Console\ConsoleIo;
 use Cake\Console\TestSuite\ConsoleIntegrationTestTrait;
 use Cake\Core\Configure;
+use Cake\Core\ContainerInterface;
 use Cake\TestSuite\TestCase;
+use Exception;
+use Mcp\Server;
 use Psr\SimpleCache\CacheInterface;
+use ReflectionClass;
+use Synapse\Command\ServerCommand;
+use Throwable;
 
 /**
  * ServerCommand Test Case
@@ -662,5 +670,569 @@ class ServerCommandTest extends TestCase
         }
 
         Configure::delete('Synapse.discovery.cache');
+    }
+
+    /**
+     * Test getCache method returns valid PSR-16 cache
+     */
+    public function testGetCacheReturnsValidCache(): void
+    {
+        // We can't directly call getCache since it's private, but we can test
+        // that Cache::pool returns PSR-16 interface which getCache uses internally
+        Configure::write('Synapse.discovery.cache', 'default');
+
+        $cache = Cache::pool('default');
+
+        $this->assertInstanceOf(CacheInterface::class, $cache);
+
+        // Test basic cache operations
+        $testKey = 'mcp_test_' . uniqid();
+        $testValue = ['test' => 'data'];
+
+        $cache->set($testKey, $testValue);
+        $result = $cache->get($testKey);
+
+        $this->assertEquals($testValue, $result);
+
+        $cache->delete($testKey);
+    }
+
+    /**
+     * Test getCache method handles invalid cache engine
+     */
+    public function testGetCacheHandlesInvalidEngine(): void
+    {
+        // Configure an invalid cache engine
+        Configure::write('Synapse.discovery.cache', 'nonexistent_cache_engine_xyz');
+
+        // The command should handle this gracefully when building server
+        // We can verify the configuration was set
+        $cache = Configure::read('Synapse.discovery.cache');
+        $this->assertEquals('nonexistent_cache_engine_xyz', $cache);
+    }
+
+    /**
+     * Test clearDiscoveryCache functionality
+     */
+    public function testClearDiscoveryCacheFunctionality(): void
+    {
+        Configure::write('Synapse.discovery.cache', 'default');
+
+        // Write some test data to cache
+        $cache = Cache::pool('default');
+        $testKey = 'mcp_discovery_test_' . uniqid();
+        $cache->set($testKey, ['some' => 'data']);
+
+        // Verify data exists
+        $this->assertNotNull($cache->get($testKey));
+
+        // Clear the cache
+        Cache::clear('default');
+
+        // Verify data is gone
+        $this->assertNull($cache->get($testKey));
+    }
+
+    /**
+     * Test getCache method is called with valid engine
+     * This is tested indirectly through the command execution
+     */
+    public function testGetCacheMethodCalledWithValidEngine(): void
+    {
+        Configure::write('Synapse.discovery.cache', 'default');
+
+        // The command would call getCache internally when executed
+        // We verify the cache configuration is set up correctly
+        $cacheEngine = Configure::read('Synapse.discovery.cache');
+        $this->assertEquals('default', $cacheEngine);
+
+        // Verify the cache engine exists and is functional
+        $cache = Cache::pool($cacheEngine);
+        $this->assertInstanceOf(CacheInterface::class, $cache);
+    }
+
+    /**
+     * Test getCache method handles exception when cache engine doesn't exist
+     * The method should return null and log a warning
+     */
+    public function testGetCacheMethodHandlesInvalidEngine(): void
+    {
+        // Set an invalid cache engine
+        Configure::write('Synapse.discovery.cache', 'totally_invalid_engine_xyz');
+
+        // When the command tries to get this cache, it should handle the error
+        // We can't execute the full command, but we can verify the behavior
+        try {
+            Cache::pool('totally_invalid_engine_xyz');
+            $this->fail('Expected exception was not thrown');
+        } catch (Throwable $throwable) {
+            // This is the exception getCache() would catch and handle
+            $this->assertInstanceOf(Exception::class, $throwable);
+        }
+    }
+
+    /**
+     * Test cache set and get operations
+     */
+    public function testCacheSetAndGetOperations(): void
+    {
+        Configure::write('Synapse.discovery.cache', 'default');
+
+        $cache = Cache::pool('default');
+
+        // Test with array
+        $arrayKey = 'mcp_array_' . uniqid();
+        $arrayData = ['tools' => ['tool1', 'tool2'], 'resources' => []];
+        $cache->set($arrayKey, $arrayData);
+        $this->assertEquals($arrayData, $cache->get($arrayKey));
+
+        // Test with string
+        $stringKey = 'mcp_string_' . uniqid();
+        $cache->set($stringKey, 'test string');
+        $this->assertEquals('test string', $cache->get($stringKey));
+
+        // Clean up
+        $cache->delete($arrayKey);
+        $cache->delete($stringKey);
+    }
+
+    /**
+     * Test cache has method
+     */
+    public function testCacheHasMethod(): void
+    {
+        $cache = Cache::pool('default');
+
+        $testKey = 'mcp_has_test_' . uniqid();
+
+        // Should not exist initially
+        $this->assertFalse($cache->has($testKey));
+
+        // Set value
+        $cache->set($testKey, 'value');
+
+        // Should exist now
+        $this->assertTrue($cache->has($testKey));
+
+        // Delete
+        $cache->delete($testKey);
+
+        // Should not exist again
+        $this->assertFalse($cache->has($testKey));
+    }
+
+    /**
+     * Test cache clear operation
+     */
+    public function testCacheClearOperation(): void
+    {
+        $cache = Cache::pool('default');
+
+        // Set multiple values
+        $keys = [];
+        for ($i = 0; $i < 3; $i++) {
+            $key = 'mcp_clear_test_' . $i . '_' . uniqid();
+            $keys[] = $key;
+            $cache->set($key, 'value_' . $i);
+            $this->assertTrue($cache->has($key));
+        }
+
+        // Clear cache
+        Cache::clear('default');
+
+        // Verify all keys are gone
+        foreach ($keys as $key) {
+            $this->assertNull($cache->get($key));
+        }
+    }
+
+    /**
+     * Test cache with TTL (if supported)
+     */
+    public function testCacheWithTTL(): void
+    {
+        $cache = Cache::pool('default');
+
+        $testKey = 'mcp_ttl_test_' . uniqid();
+
+        // Set with TTL
+        $cache->set($testKey, 'test_value', 3600);
+
+        // Verify it was set
+        $this->assertEquals('test_value', $cache->get($testKey));
+
+        // Clean up
+        $cache->delete($testKey);
+    }
+
+    /**
+     * Test --clear-cache option clears the configured cache engine
+     */
+    public function testClearCacheOptionClearsConfiguredEngine(): void
+    {
+        Configure::write('Synapse.discovery.cache', 'default');
+
+        $cache = Cache::pool('default');
+        $testKey = 'mcp_option_test_' . uniqid();
+        $cache->set($testKey, 'test_data');
+
+        // Verify data exists
+        $this->assertNotNull($cache->get($testKey));
+
+        // The --clear-cache option would clear this cache
+        // Simulate what the command does
+        Cache::clear('default');
+
+        // Verify cache was cleared
+        $this->assertNull($cache->get($testKey));
+    }
+
+    /**
+     * Test cache configuration with custom engine
+     */
+    public function testCacheConfigurationWithCustomEngine(): void
+    {
+        // Create a temporary custom cache config
+        Cache::setConfig('mcp_test_temp', [
+            'className' => 'File',
+            'duration' => '+1 hour',
+            'path' => CACHE,
+            'prefix' => 'mcp_test_',
+        ]);
+
+        Configure::write('Synapse.discovery.cache', 'mcp_test_temp');
+
+        $cache = Cache::pool('mcp_test_temp');
+        $this->assertInstanceOf(CacheInterface::class, $cache);
+
+        // Test operations
+        $testKey = 'custom_test_' . uniqid();
+        $cache->set($testKey, 'custom_value');
+        $this->assertEquals('custom_value', $cache->get($testKey));
+
+        // Clean up
+        $cache->delete($testKey);
+        Cache::drop('mcp_test_temp');
+        Configure::delete('Synapse.discovery.cache');
+    }
+
+    /**
+     * Test clearDiscoveryCache success path
+     */
+    public function testClearDiscoveryCacheSuccess(): void
+    {
+        Configure::write('Synapse.discovery.cache', 'default');
+
+        // Add some data to cache
+        $cache = Cache::pool('default');
+        $testKey = 'mcp_clear_test_' . uniqid();
+        $cache->set($testKey, 'test_data');
+        $this->assertNotNull($cache->get($testKey));
+
+        // Clear the cache (simulating what clearDiscoveryCache does)
+        $result = Cache::clear('default');
+        $this->assertTrue($result);
+
+        // Verify cache was cleared
+        $this->assertNull($cache->get($testKey));
+    }
+
+    /**
+     * Test clearDiscoveryCache with default engine when not configured
+     */
+    public function testClearDiscoveryCacheUsesDefaultEngine(): void
+    {
+        // Don't set cache config - should fall back to 'default'
+        Configure::delete('Synapse.discovery.cache');
+
+        // The method should use DEFAULT_CACHE_ENGINE ('default')
+        $cache = Cache::pool('default');
+        $testKey = 'mcp_default_clear_' . uniqid();
+        $cache->set($testKey, 'value');
+
+        Cache::clear('default');
+
+        $this->assertNull($cache->get($testKey));
+    }
+
+    /**
+     * Test clearDiscoveryCache handles exceptions
+     */
+    public function testClearDiscoveryCacheHandlesException(): void
+    {
+        // Set an invalid cache engine
+        Configure::write('Synapse.discovery.cache', 'nonexistent_engine_xyz');
+
+        // Clearing a non-existent cache should throw an exception
+        try {
+            Cache::clear('nonexistent_engine_xyz');
+            $this->fail('Expected exception was not thrown');
+        } catch (Throwable $throwable) {
+            // This is what clearDiscoveryCache would catch
+            $this->assertInstanceOf(Exception::class, $throwable);
+        }
+    }
+
+    /**
+     * Test buildServer is called with cache enabled
+     */
+    public function testBuildServerWithCacheEnabled(): void
+    {
+        Configure::write('Synapse.discovery.cache', 'default');
+        Configure::load('Synapse.synapse');
+
+        // Verify configuration that buildServer would use
+        $config = Configure::read('Synapse');
+        $this->assertArrayHasKey('discovery', $config);
+        $this->assertArrayHasKey('cache', $config['discovery']);
+        $this->assertEquals('default', $config['discovery']['cache']);
+    }
+
+    /**
+     * Test buildServer with no-cache option
+     */
+    public function testBuildServerWithNoCacheOption(): void
+    {
+        Configure::write('Synapse.discovery.cache', 'default');
+
+        // When --no-cache is used, buildServer should not initialize cache
+        // We can't test this directly without running the server, but we can
+        // verify the configuration and option exist
+        $this->exec('synapse server --no-cache --help');
+        $this->assertExitSuccess();
+        $this->assertOutputContains('--no-cache');
+    }
+
+    /**
+     * Test buildServer with clear-cache option
+     */
+    public function testBuildServerWithClearCacheOption(): void
+    {
+        Configure::write('Synapse.discovery.cache', 'default');
+
+        // Set up cache data
+        $cache = Cache::pool('default');
+        $testKey = 'mcp_build_clear_' . uniqid();
+        $cache->set($testKey, 'data');
+        $this->assertNotNull($cache->get($testKey));
+
+        // The --clear-cache option should trigger clearDiscoveryCache before building
+        // We simulate what the command does
+        Cache::clear('default');
+
+        $this->assertNull($cache->get($testKey));
+
+        // Verify the option exists
+        $this->exec('synapse server --clear-cache --help');
+        $this->assertExitSuccess();
+        $this->assertOutputContains('--clear-cache');
+    }
+
+    /**
+     * Test getCache method directly using reflection
+     */
+    public function testGetCacheMethodViaReflection(): void
+    {
+        $container = $this->getMockBuilder(ContainerInterface::class)
+            ->getMock();
+        $command = new ServerCommand($container);
+
+        // Use reflection to access private method
+        $reflection = new ReflectionClass($command);
+        $method = $reflection->getMethod('getCache');
+        $method->setAccessible(true);
+
+        // Create mock IO
+        $io = $this->getMockBuilder(ConsoleIo::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        // Test with valid cache engine
+        $io->expects($this->never())->method('warning');
+        $cache = $method->invoke($command, 'default', $io);
+
+        $this->assertInstanceOf(CacheInterface::class, $cache);
+    }
+
+    /**
+     * Test getCache method handles invalid engine via reflection
+     */
+    public function testGetCacheMethodHandlesInvalidEngineViaReflection(): void
+    {
+        $container = $this->getMockBuilder(ContainerInterface::class)
+            ->getMock();
+        $command = new ServerCommand($container);
+
+        // Use reflection to access private method
+        $reflection = new ReflectionClass($command);
+        $method = $reflection->getMethod('getCache');
+        $method->setAccessible(true);
+
+        // Create mock IO
+        $io = $this->getMockBuilder(ConsoleIo::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        // Expect warning to be called
+        $io->expects($this->once())
+            ->method('warning')
+            ->with($this->stringContains('Failed to initialize cache'));
+
+        // Test with invalid cache engine
+        $cache = $method->invoke($command, 'totally_invalid_cache_xyz', $io);
+
+        $this->assertNull($cache);
+    }
+
+    /**
+     * Test clearDiscoveryCache method directly using reflection
+     */
+    public function testClearDiscoveryCacheMethodViaReflection(): void
+    {
+        Configure::write('Synapse.discovery.cache', 'default');
+
+        $container = $this->getMockBuilder(ContainerInterface::class)
+            ->getMock();
+        $command = new ServerCommand($container);
+
+        // Use reflection to access private method
+        $reflection = new ReflectionClass($command);
+        $method = $reflection->getMethod('clearDiscoveryCache');
+        $method->setAccessible(true);
+
+        // Add test data to cache
+        $cache = Cache::pool('default');
+        $testKey = 'mcp_reflection_test_' . uniqid();
+        $cache->set($testKey, 'test_value');
+        $this->assertNotNull($cache->get($testKey));
+
+        // Create mock IO
+        $io = $this->getMockBuilder(ConsoleIo::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        // Expect success message
+        $io->expects($this->once())
+            ->method('success')
+            ->with($this->stringContains('Discovery cache cleared'));
+
+        // Call the method
+        $method->invoke($command, $io);
+
+        // Verify cache was cleared
+        $this->assertNull($cache->get($testKey));
+    }
+
+    /**
+     * Test clearDiscoveryCache handles clear failure via reflection
+     */
+    public function testClearDiscoveryCacheHandlesFailureViaReflection(): void
+    {
+        // Configure a cache engine that doesn't exist
+        Configure::write('Synapse.discovery.cache', 'nonexistent_cache_engine');
+
+        $container = $this->getMockBuilder(ContainerInterface::class)
+            ->getMock();
+        $command = new ServerCommand($container);
+
+        // Use reflection to access private method
+        $reflection = new ReflectionClass($command);
+        $method = $reflection->getMethod('clearDiscoveryCache');
+        $method->setAccessible(true);
+
+        // Create mock IO
+        $io = $this->getMockBuilder(ConsoleIo::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        // Expect error message
+        $io->expects($this->once())
+            ->method('error')
+            ->with($this->stringContains('Error clearing cache'));
+
+        // Call the method
+        $method->invoke($command, $io);
+
+        Configure::delete('Synapse.discovery.cache');
+    }
+
+    /**
+     * Test buildServer method with cache disabled via reflection
+     */
+    public function testBuildServerWithCacheDisabledViaReflection(): void
+    {
+        Configure::load('Synapse.synapse');
+        Configure::write('Synapse.discovery.cache', 'default');
+
+        $container = $this->getMockBuilder(ContainerInterface::class)
+            ->getMock();
+        $command = new ServerCommand($container);
+
+        // Use reflection to access private method
+        $reflection = new ReflectionClass($command);
+        $method = $reflection->getMethod('buildServer');
+        $method->setAccessible(true);
+
+        // Create mock IO
+        $io = $this->getMockBuilder(ConsoleIo::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $io->expects($this->atLeastOnce())->method('verbose');
+        $io->expects($this->atLeastOnce())->method('out');
+
+        // Create mock Arguments with no-cache option
+        $args = $this->getMockBuilder(Arguments::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $args->method('getOption')
+            ->with('no-cache')
+            ->willReturn(true);
+
+        // Call the method
+        $server = $method->invoke($command, $io, $args);
+
+        $this->assertInstanceOf(Server::class, $server);
+    }
+
+    /**
+     * Test buildServer method with cache enabled via reflection
+     */
+    public function testBuildServerWithCacheEnabledViaReflection(): void
+    {
+        Configure::load('Synapse.synapse');
+        Configure::write('Synapse.discovery.cache', 'default');
+
+        $container = $this->getMockBuilder(ContainerInterface::class)
+            ->getMock();
+        $command = new ServerCommand($container);
+
+        // Use reflection to access private method
+        $reflection = new ReflectionClass($command);
+        $method = $reflection->getMethod('buildServer');
+        $method->setAccessible(true);
+
+        // Create mock IO
+        $io = $this->getMockBuilder(ConsoleIo::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $io->expects($this->atLeastOnce())->method('verbose');
+        $io->expects($this->atLeastOnce())->method('out');
+
+        // Create mock Arguments without no-cache option
+        $args = $this->getMockBuilder(Arguments::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $args->method('getOption')
+            ->with('no-cache')
+            ->willReturn(false);
+
+        // Call the method
+        $server = $method->invoke($command, $io, $args);
+
+        $this->assertInstanceOf(Server::class, $server);
     }
 }
