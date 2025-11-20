@@ -1,0 +1,438 @@
+<?php
+declare(strict_types=1);
+
+namespace Synapse\Test\TestCase\Builder;
+
+use Cake\Cache\Cache;
+use Cake\Core\Configure;
+use Cake\Core\ContainerInterface;
+use Cake\TestSuite\TestCase;
+use Mcp\Server;
+use Psr\SimpleCache\CacheInterface;
+use Synapse\Builder\ServerBuilder;
+
+/**
+ * ServerBuilder Test Case
+ *
+ * Tests the ServerBuilder class for building and configuring MCP servers.
+ */
+class ServerBuilderTest extends TestCase
+{
+    /**
+     * setUp method
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Configure::load('Synapse.synapse');
+    }
+
+    /**
+     * Test default configuration
+     */
+    public function testDefaultConfiguration(): void
+    {
+        $builder = new ServerBuilder();
+
+        $this->assertEquals(['src'], $builder->getScanDirs());
+        $this->assertEquals(['tests', 'vendor', 'tmp'], $builder->getExcludeDirs());
+        $this->assertEquals('2024-11-05', $builder->getProtocolVersion());
+        $this->assertEquals(ServerBuilder::DEFAULT_CACHE_ENGINE, $builder->getCacheEngine());
+        $this->assertEquals('Adaptic MCP Server', $builder->getServerInfo()['name']);
+        $this->assertEquals('1.0.0', $builder->getServerInfo()['version']);
+        $this->assertEquals(ROOT, $builder->getBasePath());
+    }
+
+    /**
+     * Test configuration from array
+     */
+    public function testConfigurationFromArray(): void
+    {
+        $config = [
+            'serverInfo' => ['name' => 'Test Server', 'version' => '2.0.0'],
+            'discovery' => [
+                'scanDirs' => ['custom', 'paths'],
+                'excludeDirs' => ['ignore'],
+                'cache' => 'custom_cache',
+            ],
+            'protocolVersion' => '2024-11-05',
+            'basePath' => '/custom/path',
+        ];
+
+        $builder = new ServerBuilder($config);
+
+        $this->assertEquals('Test Server', $builder->getServerInfo()['name']);
+        $this->assertEquals('2.0.0', $builder->getServerInfo()['version']);
+        $this->assertEquals(['custom', 'paths'], $builder->getScanDirs());
+        $this->assertEquals(['ignore'], $builder->getExcludeDirs());
+        $this->assertEquals('custom_cache', $builder->getCacheEngine());
+        $this->assertEquals('/custom/path', $builder->getBasePath());
+    }
+
+    /**
+     * Test fluent interface
+     */
+    public function testFluentInterface(): void
+    {
+        $builder = new ServerBuilder();
+
+        $result = $builder
+            ->addScanDirectory('extra')
+            ->setProtocolVersion('2024-11-05')
+            ->withoutCache();
+
+        $this->assertSame($builder, $result);
+        $this->assertContains('extra', $builder->getScanDirs());
+        $this->assertNull($builder->getCacheEngine());
+    }
+
+    /**
+     * Test add scan directory does not duplicate
+     */
+    public function testAddScanDirectoryDoesNotDuplicate(): void
+    {
+        $builder = new ServerBuilder(['discovery' => ['scanDirs' => ['src']]]);
+
+        $builder->addScanDirectory('src');
+        $builder->addScanDirectory('custom');
+        $builder->addScanDirectory('custom');
+
+        $scanDirs = $builder->getScanDirs();
+        $this->assertCount(2, $scanDirs);
+        $this->assertContains('src', $scanDirs);
+        $this->assertContains('custom', $scanDirs);
+    }
+
+    /**
+     * Test withPluginTools adds plugin directory
+     */
+    public function testWithPluginToolsAddsPluginDirectory(): void
+    {
+        $builder = new ServerBuilder(['discovery' => ['scanDirs' => ['src']]]);
+
+        $builder->withPluginTools();
+
+        $scanDirs = $builder->getScanDirs();
+        $this->assertGreaterThan(1, count($scanDirs));
+
+        // Plugin src path should be in scan dirs
+        $pluginPath = dirname(dirname(dirname(__DIR__))) . '/src';
+        $this->assertContains($pluginPath, $scanDirs);
+    }
+
+    /**
+     * Test withPluginTools does not duplicate
+     */
+    public function testWithPluginToolsDoesNotDuplicate(): void
+    {
+        $builder = new ServerBuilder(['discovery' => ['scanDirs' => ['src']]]);
+
+        $builder->withPluginTools();
+        $builder->withPluginTools();
+
+        $scanDirs = $builder->getScanDirs();
+        $pluginPath = dirname(dirname(dirname(__DIR__))) . '/src';
+
+        // Count occurrences of plugin path
+        $count = count(array_filter($scanDirs, fn(string $dir): bool => $dir === $pluginPath));
+        $this->assertEquals(1, $count);
+    }
+
+    /**
+     * Test getCache returns valid cache
+     */
+    public function testGetCacheReturnsValidCache(): void
+    {
+        $builder = new ServerBuilder();
+        $cache = $builder->getCache('default');
+
+        $this->assertInstanceOf(CacheInterface::class, $cache);
+    }
+
+    /**
+     * Test getCache returns null for invalid engine
+     */
+    public function testGetCacheReturnsNullForInvalidEngine(): void
+    {
+        $builder = new ServerBuilder();
+        $cache = $builder->getCache('totally_invalid_engine_xyz');
+
+        $this->assertNull($cache);
+    }
+
+    /**
+     * Test withoutCache sets engine to null
+     */
+    public function testWithoutCacheSetsEngineToNull(): void
+    {
+        $builder = new ServerBuilder(['discovery' => ['cache' => 'default']]);
+
+        $this->assertEquals('default', $builder->getCacheEngine());
+
+        $builder->withoutCache();
+
+        $this->assertNull($builder->getCacheEngine());
+    }
+
+    /**
+     * Test clearCache success
+     */
+    public function testClearCacheSuccess(): void
+    {
+        // Add test data
+        $cache = Cache::pool('default');
+        $testKey = 'builder_test_' . uniqid();
+        $cache->set($testKey, 'test_data');
+        $this->assertNotNull($cache->get($testKey));
+
+        // Clear cache
+        $result = ServerBuilder::clearCache('default');
+
+        $this->assertTrue($result);
+        $this->assertNull($cache->get($testKey));
+    }
+
+    /**
+     * Test clearCache handles invalid engine
+     */
+    public function testClearCacheHandlesInvalidEngine(): void
+    {
+        $result = ServerBuilder::clearCache('nonexistent_engine');
+
+        // Should return false but not throw
+        $this->assertFalse($result);
+    }
+
+    /**
+     * Test build creates server instance
+     */
+    public function testBuildCreatesServerInstance(): void
+    {
+        $config = Configure::read('Synapse');
+        $builder = new ServerBuilder($config);
+
+        $server = $builder->build();
+
+        $this->assertInstanceOf(Server::class, $server);
+    }
+
+    /**
+     * Test build with cache enabled
+     */
+    public function testBuildWithCacheEnabled(): void
+    {
+        $config = Configure::read('Synapse');
+        $config['discovery']['cache'] = 'default';
+
+        $builder = new ServerBuilder($config);
+        $server = $builder->build();
+
+        $this->assertInstanceOf(Server::class, $server);
+        $this->assertEquals('default', $builder->getCacheEngine());
+    }
+
+    /**
+     * Test build with cache disabled
+     */
+    public function testBuildWithCacheDisabled(): void
+    {
+        $config = Configure::read('Synapse');
+
+        $builder = (new ServerBuilder($config))->withoutCache();
+        $server = $builder->build();
+
+        $this->assertInstanceOf(Server::class, $server);
+        $this->assertNull($builder->getCacheEngine());
+    }
+
+    /**
+     * Test build with plugin tools
+     */
+    public function testBuildWithPluginTools(): void
+    {
+        $config = Configure::read('Synapse');
+
+        $builder = (new ServerBuilder($config))->withPluginTools();
+        $server = $builder->build();
+
+        $this->assertInstanceOf(Server::class, $server);
+
+        // Verify plugin directory is in scan dirs
+        $pluginPath = dirname(dirname(dirname(__DIR__))) . '/src';
+        $this->assertContains($pluginPath, $builder->getScanDirs());
+    }
+
+    /**
+     * Test build with custom configuration
+     */
+    public function testBuildWithCustomConfiguration(): void
+    {
+        $config = [
+            'serverInfo' => ['name' => 'Custom Server', 'version' => '3.0.0'],
+            'discovery' => [
+                'scanDirs' => ['app/src', 'plugins'],
+                'excludeDirs' => ['tests'],
+                'cache' => 'default',
+            ],
+            'protocolVersion' => '2024-11-05',
+        ];
+
+        $builder = new ServerBuilder($config);
+        $server = $builder->build();
+
+        $this->assertInstanceOf(Server::class, $server);
+        $this->assertEquals(['app/src', 'plugins'], $builder->getScanDirs());
+        $this->assertEquals(['tests'], $builder->getExcludeDirs());
+    }
+
+    /**
+     * Test setProtocolVersion
+     */
+    public function testSetProtocolVersion(): void
+    {
+        $builder = new ServerBuilder();
+
+        $this->assertEquals('2024-11-05', $builder->getProtocolVersion());
+
+        $builder->setProtocolVersion('2024-11-05');
+
+        $this->assertEquals('2024-11-05', $builder->getProtocolVersion());
+    }
+
+    /**
+     * Test multiple scan directories can be added
+     */
+    public function testMultipleScanDirectoriesCanBeAdded(): void
+    {
+        $builder = new ServerBuilder(['discovery' => ['scanDirs' => ['src']]]);
+
+        $builder
+            ->addScanDirectory('custom1')
+            ->addScanDirectory('custom2')
+            ->addScanDirectory('custom3');
+
+        $scanDirs = $builder->getScanDirs();
+        $this->assertCount(4, $scanDirs);
+        $this->assertContains('src', $scanDirs);
+        $this->assertContains('custom1', $scanDirs);
+        $this->assertContains('custom2', $scanDirs);
+        $this->assertContains('custom3', $scanDirs);
+    }
+
+    /**
+     * Test builder with minimal configuration
+     */
+    public function testBuilderWithMinimalConfiguration(): void
+    {
+        $builder = new ServerBuilder();
+        $server = $builder->build();
+
+        $this->assertInstanceOf(Server::class, $server);
+    }
+
+    /**
+     * Test cache configuration is optional
+     */
+    public function testCacheConfigurationIsOptional(): void
+    {
+        $config = [
+            'serverInfo' => ['name' => 'Test', 'version' => '1.0.0'],
+            'discovery' => [
+                'scanDirs' => ['src'],
+                'excludeDirs' => ['tests'],
+                // No cache key
+            ],
+        ];
+
+        $builder = new ServerBuilder($config);
+
+        // Should default to DEFAULT_CACHE_ENGINE
+        $this->assertEquals(ServerBuilder::DEFAULT_CACHE_ENGINE, $builder->getCacheEngine());
+    }
+
+    /**
+     * Test builder can be reused to build multiple servers
+     */
+    public function testBuilderCanBeReusedToBuildMultipleServers(): void
+    {
+        $builder = new ServerBuilder(Configure::read('Synapse'));
+
+        $server1 = $builder->build();
+        $server2 = $builder->build();
+
+        $this->assertInstanceOf(Server::class, $server1);
+        $this->assertInstanceOf(Server::class, $server2);
+        $this->assertNotSame($server1, $server2);
+    }
+
+    /**
+     * Test server info defaults when not provided
+     */
+    public function testServerInfoDefaultsWhenNotProvided(): void
+    {
+        $config = [
+            'discovery' => [
+                'scanDirs' => ['src'],
+            ],
+        ];
+
+        $builder = new ServerBuilder($config);
+        $serverInfo = $builder->getServerInfo();
+
+        $this->assertEquals('Adaptic MCP Server', $serverInfo['name']);
+        $this->assertEquals('1.0.0', $serverInfo['version']);
+    }
+
+    /**
+     * Test discovery defaults when not provided
+     */
+    public function testDiscoveryDefaultsWhenNotProvided(): void
+    {
+        $config = [
+            'serverInfo' => ['name' => 'Test', 'version' => '1.0.0'],
+        ];
+
+        $builder = new ServerBuilder($config);
+
+        $this->assertEquals(['src'], $builder->getScanDirs());
+        $this->assertEquals(['tests', 'vendor', 'tmp'], $builder->getExcludeDirs());
+    }
+
+    /**
+     * Test base path defaults to ROOT constant
+     */
+    public function testBasePathDefaultsToRoot(): void
+    {
+        $builder = new ServerBuilder();
+
+        $this->assertEquals(ROOT, $builder->getBasePath());
+    }
+
+    /**
+     * Test setContainer
+     */
+    public function testSetContainer(): void
+    {
+        $builder = new ServerBuilder();
+        $container = $this->getMockBuilder(ContainerInterface::class)->getMock();
+
+        $result = $builder->setContainer($container);
+
+        $this->assertSame($builder, $result);
+    }
+
+    /**
+     * Test builder with null container
+     */
+    public function testBuilderWithNullContainer(): void
+    {
+        $builder = new ServerBuilder();
+        $result = $builder->setContainer(null);
+
+        $this->assertSame($builder, $result);
+
+        // Should still build successfully
+        $server = $builder->build();
+        $this->assertInstanceOf(Server::class, $server);
+    }
+}

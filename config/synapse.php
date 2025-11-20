@@ -37,7 +37,8 @@ return [
          */
         'discovery' => [
             // Directories to scan for MCP elements (relative to ROOT)
-            'scanDirs' => ['src', 'plugins/Synapse/src'],
+            // Note: The plugin's built-in tools are automatically included
+            'scanDirs' => ['src'],
 
             // Directories to exclude from scanning
             'excludeDirs' => ['tests', 'vendor', 'tmp', 'logs', 'webroot'],
