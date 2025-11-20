@@ -32,10 +32,11 @@ class SynapsePlugin extends BasePlugin
     {
         parent::bootstrap($app);
 
-        // Load plugin configuration
-        $configPath = $this->getConfigPath();
-        if (file_exists($configPath . 'synapse.php')) {
-            Configure::load('Synapse.synapse');
+        Configure::load('Synapse.synapse');
+
+        // Load app specific config file.
+        if (file_exists(ROOT . DS . 'config' . DS . 'app_synapse.php')) {
+            Configure::load('app_synapse');
         }
     }
 
