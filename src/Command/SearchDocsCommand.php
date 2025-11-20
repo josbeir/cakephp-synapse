@@ -143,8 +143,8 @@ class SearchDocsCommand extends Command
             foreach ($results as $i => $result) {
                 $rank = $i + 1;
                 $title = $result['title'] ?? 'Untitled';
-                $absolutePath = $result['path'] ?? '';
-                $relativePath = $result['relative_path'] ?? '';
+                $relativePath = $result['path'] ?? '';
+                $absolutePath = $result['absolute_path'] ?? '';
                 $resultSource = $result['source'] ?? '';
                 $snippet = $result['snippet'] ?? '';
                 $rankScore = $result['rank'] ?? 0;
@@ -161,7 +161,7 @@ class SearchDocsCommand extends Command
                     $io->out(sprintf('   Source: %s', $resultSource));
                     $io->out(sprintf('   File: %s', $absolutePath));
                     if ($relativePath !== '') {
-                        $io->out(sprintf('   Relative Path: %s', $relativePath));
+                        $io->out(sprintf('   Path: %s', $relativePath));
                     }
 
                     $io->out(sprintf('   Relevance: %.2f', $rankScore));

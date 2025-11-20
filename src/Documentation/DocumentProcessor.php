@@ -27,9 +27,7 @@ class DocumentProcessor
             return null;
         }
 
-        $absolutePath = $repository->getAbsolutePath($relativePath);
-
-        return $this->processContent($content, $relativePath, $absolutePath, $sourceKey);
+        return $this->processContent($content, $relativePath, $sourceKey);
     }
 
     /**
@@ -37,14 +35,12 @@ class DocumentProcessor
      *
      * @param string $content Markdown content
      * @param string $relativePath Relative file path
-     * @param string $absolutePath Absolute file path
      * @param string $sourceKey Source configuration key
      * @return array<string, mixed> Processed document data
      */
     public function processContent(
         string $content,
         string $relativePath,
-        string $absolutePath,
         string $sourceKey,
     ): array {
         // Extract frontmatter if present
@@ -66,16 +62,14 @@ class DocumentProcessor
         return [
             'id' => $id,
             'source' => $sourceKey,
-            'path' => $absolutePath,
-            'relative_path' => $relativePath,
+            'path' => $relativePath,
             'title' => $title,
             'headings' => $headings,
             'content' => $cleanContent,
             'metadata' => array_merge(
                 $frontmatter['data'],
                 [
-                    'path' => $absolutePath,
-                    'relative_path' => $relativePath,
+                    'path' => $relativePath,
                     'source' => $sourceKey,
                 ],
             ),

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Synapse\Documentation;
 
+use Cake\Core\Configure;
 use Exception;
 use RuntimeException;
 use SQLite3;
@@ -29,10 +30,13 @@ class SearchEngine
      * Constructor
      *
      * @param string $databasePath Path to SQLite database file
+     * @param string|null $basePath Base path for resolving absolute paths (null = use config)
      * @throws \RuntimeException If SQLite FTS5 is not available
      */
-    public function __construct(private string $databasePath)
-    {
+    public function __construct(
+        private string $databasePath,
+        private ?string $basePath = null,
+    ) {
         // Ensure directory exists
         $dir = dirname($this->databasePath);
         if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
@@ -105,7 +109,6 @@ class SearchEngine
                 doc_id TEXT PRIMARY KEY,
                 source TEXT NOT NULL,
                 path TEXT NOT NULL,
-                relative_path TEXT NOT NULL,
                 title TEXT NOT NULL,
                 metadata TEXT,
                 indexed_at INTEGER NOT NULL
@@ -132,7 +135,6 @@ class SearchEngine
         $docId = $document['id'];
         $source = $document['source'];
         $path = $document['path'];
-        $relativePath = $document['relative_path'] ?? $path;
         $title = $document['title'];
         $headings = implode(' ', $document['headings'] ?? []);
         $content = $document['content'];
@@ -156,7 +158,7 @@ class SearchEngine
 
             $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
             $stmt->bindValue(':source', $source, SQLITE3_TEXT);
-            $stmt->bindValue(':path', $relativePath, SQLITE3_TEXT);
+            $stmt->bindValue(':path', $path, SQLITE3_TEXT);
             $stmt->bindValue(':title', $title, SQLITE3_TEXT);
             $stmt->bindValue(':headings', $headings, SQLITE3_TEXT);
             $stmt->bindValue(':content', $content, SQLITE3_TEXT);
@@ -164,8 +166,8 @@ class SearchEngine
 
             // Insert into metadata table
             $stmt = $this->db->prepare("
-                INSERT INTO documents_meta (doc_id, source, path, relative_path, title, metadata, indexed_at)
-                VALUES (:doc_id, :source, :path, :relative_path, :title, :metadata, :indexed_at)
+                INSERT INTO documents_meta (doc_id, source, path, title, metadata, indexed_at)
+                VALUES (:doc_id, :source, :path, :title, :metadata, :indexed_at)
             ");
             if ($stmt === false) {
                 throw new RuntimeException('Failed to prepare metadata insert statement');
@@ -174,7 +176,6 @@ class SearchEngine
             $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
             $stmt->bindValue(':source', $source, SQLITE3_TEXT);
             $stmt->bindValue(':path', $path, SQLITE3_TEXT);
-            $stmt->bindValue(':relative_path', $relativePath, SQLITE3_TEXT);
             $stmt->bindValue(':title', $title, SQLITE3_TEXT);
             $stmt->bindValue(':metadata', $metadata, SQLITE3_TEXT);
             $stmt->bindValue(':indexed_at', time(), SQLITE3_INTEGER);
@@ -202,8 +203,7 @@ class SearchEngine
             foreach ($documents as $document) {
                 $source = $document['source'];
                 $path = $document['path'];
-                $relativePath = $document['relative_path'] ?? $path;
-                $docId = $document['id'] ?? sprintf('%s::%s', $source, $relativePath);
+                $docId = $document['id'] ?? sprintf('%s::%s', $source, $path);
                 $title = $document['title'];
                 $headings = implode(' ', $document['headings'] ?? []);
                 $content = $document['content'];
@@ -233,7 +233,7 @@ class SearchEngine
 
                 $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
                 $stmt->bindValue(':source', $source, SQLITE3_TEXT);
-                $stmt->bindValue(':path', $relativePath, SQLITE3_TEXT);
+                $stmt->bindValue(':path', $path, SQLITE3_TEXT);
                 $stmt->bindValue(':title', $title, SQLITE3_TEXT);
                 $stmt->bindValue(':headings', $headings, SQLITE3_TEXT);
                 $stmt->bindValue(':content', $content, SQLITE3_TEXT);
@@ -241,8 +241,8 @@ class SearchEngine
 
                 // Insert into metadata table
                 $stmt = $this->db->prepare("
-                    INSERT INTO documents_meta (doc_id, source, path, relative_path, title, metadata, indexed_at)
-                    VALUES (:doc_id, :source, :path, :relative_path, :title, :metadata, :indexed_at)
+                    INSERT INTO documents_meta (doc_id, source, path, title, metadata, indexed_at)
+                    VALUES (:doc_id, :source, :path, :title, :metadata, :indexed_at)
                 ");
                 if ($stmt === false) {
                     throw new RuntimeException('Failed to prepare metadata insert statement');
@@ -251,7 +251,6 @@ class SearchEngine
                 $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
                 $stmt->bindValue(':source', $source, SQLITE3_TEXT);
                 $stmt->bindValue(':path', $path, SQLITE3_TEXT);
-                $stmt->bindValue(':relative_path', $relativePath, SQLITE3_TEXT);
                 $stmt->bindValue(':title', $title, SQLITE3_TEXT);
                 $stmt->bindValue(':metadata', $metadata, SQLITE3_TEXT);
                 $stmt->bindValue(':indexed_at', time(), SQLITE3_INTEGER);
@@ -392,8 +391,6 @@ class SearchEngine
                 fts.doc_id,
                 fts.source,
                 fts.path,
-                meta.path as absolute_path,
-                meta.relative_path,
                 fts.title,
                 meta.metadata,
                 bm25(documents_fts) as score
@@ -447,11 +444,13 @@ class SearchEngine
 
         $results = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+            $absolutePath = $this->resolveAbsolutePath($row['source'], $row['path']);
+
             $results[] = [
                 'id' => $row['doc_id'],
                 'source' => $row['source'],
-                'path' => $row['absolute_path'],
-                'relative_path' => $row['relative_path'],
+                'path' => $row['path'],
+                'absolute_path' => $absolutePath,
                 'title' => $row['title'],
                 'metadata' => json_decode($row['metadata'], true),
                 'score' => abs($row['score']),
@@ -616,5 +615,21 @@ class SearchEngine
         $query = preg_replace('/\s+/', ' ', $query);
 
         return trim($query ?? '');
+    }
+
+    /**
+     * Resolve absolute path from source and relative path
+     *
+     * @param string $source Source key
+     * @param string $relativePath Relative path within source
+     * @return string Absolute path
+     */
+    private function resolveAbsolutePath(string $source, string $relativePath): string
+    {
+        $baseDir = $this->basePath
+            ?? Configure::read('Synapse.documentation.base_path_override')
+            ?? Configure::read('Synapse.documentation.cache_dir');
+
+        return $baseDir . DS . $source . DS . $relativePath;
     }
 }

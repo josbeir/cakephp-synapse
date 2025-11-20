@@ -187,8 +187,8 @@ class DocumentationTools
         foreach ($results as $i => $result) {
             $rank = $i + 1;
             $title = $result['title'] ?? 'Untitled';
-            $absolutePath = $result['path'] ?? '';
-            $relativePath = $result['relative_path'] ?? '';
+            $relativePath = $result['path'] ?? '';
+            $absolutePath = $result['absolute_path'] ?? '';
             $source = $result['source'] ?? '';
             $snippet = $result['snippet'] ?? '';
             $rank_score = $result['rank'] ?? 0;
@@ -198,7 +198,7 @@ class DocumentationTools
             $markdown .= sprintf("**File:** `%s`  \n", $absolutePath);
 
             if ($relativePath !== '') {
-                $markdown .= sprintf("**Relative Path:** `%s`  \n", $relativePath);
+                $markdown .= sprintf("**Path:** `%s`  \n", $relativePath);
             }
 
             $markdown .= sprintf("**Relevance:** %.2f  \n\n", $rank_score);

@@ -467,6 +467,7 @@ class DocumentationToolsTest extends TestCase
             [
                 'title' => 'Complete Result',
                 'path' => 'docs/complete.md',
+                'absolute_path' => '/path/to/cakephp-5x/docs/complete.md',
                 'source' => 'cakephp-5x',
                 'snippet' => 'This is a complete snippet with all fields.',
                 'rank' => 7.25,
@@ -483,7 +484,7 @@ class DocumentationToolsTest extends TestCase
 
         $this->assertStringContainsString('## 1. Complete Result', $content->text);
         $this->assertStringContainsString('**Source:** cakephp-5x', $content->text);
-        $this->assertStringContainsString('**File:** `docs/complete.md`', $content->text);
+        $this->assertStringContainsString('**File:** `/path/to/cakephp-5x/docs/complete.md`', $content->text);
         $this->assertStringContainsString('**Relevance:** 7.25', $content->text);
         $this->assertStringContainsString('**Snippet:**', $content->text);
         $this->assertStringContainsString('This is a complete snippet with all fields.', $content->text);

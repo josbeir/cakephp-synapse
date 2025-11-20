@@ -59,12 +59,11 @@ class DocumentProcessorTest extends TestCase
     public function testProcessContentSimple(): void
     {
         $content = $this->readTestFile('simple.md');
-        $result = $this->DocumentProcessor->processContent($content, 'simple.md', '/absolute/path/simple.md', 'test-source');
+        $result = $this->DocumentProcessor->processContent($content, 'simple.md', 'test-source');
 
         $this->assertEquals('test-source::simple.md', $result['id']);
         $this->assertEquals('test-source', $result['source']);
-        $this->assertEquals('/absolute/path/simple.md', $result['path']);
-        $this->assertEquals('simple.md', $result['relative_path']);
+        $this->assertEquals('simple.md', $result['path']);
         $this->assertEquals('Test Document', $result['title']);
         $this->assertIsArray($result['headings']);
         $this->assertCount(3, $result['headings']);
@@ -81,7 +80,7 @@ class DocumentProcessorTest extends TestCase
     public function testProcessContentWithFrontmatter(): void
     {
         $content = $this->readTestFile('with-frontmatter.md');
-        $result = $this->DocumentProcessor->processContent($content, 'frontmatter.md', '/absolute/path/frontmatter.md', 'test-source');
+        $result = $this->DocumentProcessor->processContent($content, 'frontmatter.md', 'test-source');
 
         $this->assertEquals('Document Title', $result['title']);
         $this->assertArrayHasKey('metadata', $result);
@@ -98,7 +97,7 @@ class DocumentProcessorTest extends TestCase
     public function testExtractTitleFallback(): void
     {
         $content = 'Just some content without a heading';
-        $result = $this->DocumentProcessor->processContent($content, 'intro/getting-started.md', '/absolute/path/intro/getting-started.md', 'test-source');
+        $result = $this->DocumentProcessor->processContent($content, 'intro/getting-started.md', 'test-source');
 
         $this->assertEquals('Getting started', $result['title']);
     }
@@ -109,7 +108,7 @@ class DocumentProcessorTest extends TestCase
     public function testCleanContentRemovesCodeBlocks(): void
     {
         $content = $this->readTestFile('with-code.md');
-        $result = $this->DocumentProcessor->processContent($content, 'test.md', '/absolute/path/test.md', 'test-source');
+        $result = $this->DocumentProcessor->processContent($content, 'test.md', 'test-source');
 
         // Code blocks should be removed
         $this->assertStringNotContainsString('```', $result['content']);
@@ -134,7 +133,7 @@ class DocumentProcessorTest extends TestCase
     public function testCleanContentRemovesHtml(): void
     {
         $content = $this->readTestFile('with-html.md');
-        $result = $this->DocumentProcessor->processContent($content, 'test.md', '/absolute/path/test.md', 'test-source');
+        $result = $this->DocumentProcessor->processContent($content, 'test.md', 'test-source');
 
         // HTML tags should be removed
         $this->assertStringNotContainsString('<div', $result['content']);
@@ -158,7 +157,7 @@ class DocumentProcessorTest extends TestCase
     public function testCleanContentHandlesLinks(): void
     {
         $content = $this->readTestFile('with-links.md');
-        $result = $this->DocumentProcessor->processContent($content, 'test.md', '/absolute/path/test.md', 'test-source');
+        $result = $this->DocumentProcessor->processContent($content, 'test.md', 'test-source');
 
         // Link text should remain
         $this->assertStringContainsString('this link', $result['content']);
@@ -182,7 +181,7 @@ class DocumentProcessorTest extends TestCase
     public function testCleanContentRemovesListMarkers(): void
     {
         $content = $this->readTestFile('with-lists.md');
-        $result = $this->DocumentProcessor->processContent($content, 'test.md', '/absolute/path/test.md', 'test-source');
+        $result = $this->DocumentProcessor->processContent($content, 'test.md', 'test-source');
 
         // List content should remain
         $this->assertStringContainsString('Item 1', $result['content']);
@@ -209,7 +208,7 @@ class DocumentProcessorTest extends TestCase
     public function testExtractHeadings(): void
     {
         $content = $this->readTestFile('simple.md');
-        $result = $this->DocumentProcessor->processContent($content, 'test.md', '/absolute/path/test.md', 'test-source');
+        $result = $this->DocumentProcessor->processContent($content, 'test.md', 'test-source');
 
         $this->assertCount(3, $result['headings']);
         $this->assertEquals('Test Document', $result['headings'][0]);
@@ -223,7 +222,7 @@ class DocumentProcessorTest extends TestCase
     public function testExtractHeadingsComplex(): void
     {
         $content = $this->readTestFile('with-frontmatter.md');
-        $result = $this->DocumentProcessor->processContent($content, 'test.md', '/absolute/path/test.md', 'test-source');
+        $result = $this->DocumentProcessor->processContent($content, 'test.md', 'test-source');
 
         $this->assertCount(3, $result['headings']);
         $this->assertEquals('Document Title', $result['headings'][0]);
@@ -236,9 +235,9 @@ class DocumentProcessorTest extends TestCase
      */
     public function testGenerateIdFormat(): void
     {
-        $result1 = $this->DocumentProcessor->processContent('# Test', 'doc1.md', '/absolute/path/doc1.md', 'source1');
-        $result2 = $this->DocumentProcessor->processContent('# Test', 'doc2.md', '/absolute/path/doc2.md', 'source1');
-        $result3 = $this->DocumentProcessor->processContent('# Test', 'doc1.md', '/absolute/path/doc1.md', 'source2');
+        $result1 = $this->DocumentProcessor->processContent('# Test', 'doc1.md', 'source1');
+        $result2 = $this->DocumentProcessor->processContent('# Test', 'doc2.md', 'source1');
+        $result3 = $this->DocumentProcessor->processContent('# Test', 'doc1.md', 'source2');
 
         $this->assertEquals('source1::doc1.md', $result1['id']);
         $this->assertEquals('source1::doc2.md', $result2['id']);
@@ -319,11 +318,10 @@ class DocumentProcessorTest extends TestCase
     public function testMetadataIncludesPathAndSource(): void
     {
         $content = $this->readTestFile('simple.md');
-        $result = $this->DocumentProcessor->processContent($content, 'test/file.md', '/absolute/path/test/file.md', 'test-source');
+        $result = $this->DocumentProcessor->processContent($content, 'test/file.md', 'test-source');
 
         $this->assertArrayHasKey('metadata', $result);
-        $this->assertEquals('/absolute/path/test/file.md', $result['metadata']['path']);
-        $this->assertEquals('test/file.md', $result['metadata']['relative_path']);
+        $this->assertEquals('test/file.md', $result['metadata']['path']);
         $this->assertEquals('test-source', $result['metadata']['source']);
     }
 
@@ -344,7 +342,7 @@ blank lines.
 And    multiple    spaces.
 MD;
 
-        $result = $this->DocumentProcessor->processContent($content, 'test.md', '/absolute/path/test.md', 'test-source');
+        $result = $this->DocumentProcessor->processContent($content, 'test.md', 'test-source');
 
         // Should not have more than 2 consecutive newlines
         $this->assertStringNotContainsString("\n\n\n", $result['content']);
