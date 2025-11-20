@@ -232,9 +232,24 @@ bin/cake synapse server
 # Start with verbose output
 bin/cake synapse server --verbose
 
+# Enable logging to debug log engine
+bin/cake synapse server --log debug
+
+# Disable caching and enable logging
+bin/cake synapse server --no-cache --log debug
+
 # View help
 bin/cake synapse server --help
 ```
+
+### Command Options
+
+- `--transport`, `-t` - Transport type (currently only `stdio` is supported)
+- `--log`, `-l` - Enable MCP server logging to specified log engine (e.g., `debug`, `error`)
+- `--no-cache`, `-n` - Disable discovery caching for this run
+- `--clear-cache`, `-c` - Clear discovery cache before starting
+- `--verbose`, `-v` - Enable verbose output
+- `--quiet`, `-q` - Suppress all output except errors
 
 ### Transport Options
 
@@ -272,6 +287,58 @@ Or run inside your DDEV instance
   }
 }
 ```
+
+## Logging
+
+The MCP server supports PSR-3 logging via CakePHP's logging system. This logs server activity including discovery, protocol messages, and handler execution.
+
+### Enable Logging
+
+Use the `--log` option to enable logging to any configured log engine:
+
+```bash
+# Log to 'debug' log engine
+bin/cake synapse server --log debug
+
+# Log to 'error' log engine
+bin/cake synapse server --log error
+
+# Log to custom engine
+bin/cake synapse server --log mcp
+```
+
+### Configure Log Engine
+
+Configure your log engines in `config/app.php`:
+
+```php
+'Log' => [
+    'debug' => [
+        'className' => 'File',
+        'path' => LOGS,
+        'file' => 'debug',
+        'levels' => ['notice', 'info', 'debug'],
+        'scopes' => false,
+    ],
+    'mcp' => [
+        'className' => 'File',
+        'path' => LOGS,
+        'file' => 'mcp',
+        'levels' => ['notice', 'info', 'debug', 'error', 'warning'],
+    ],
+],
+```
+
+### What Gets Logged
+
+When logging is enabled, the MCP server logs:
+- Server startup and initialization
+- Discovery process and found elements
+- Protocol messages (requests/responses)
+- Tool/resource handler execution
+- Errors and warnings
+
+This is useful for debugging and understanding how your MCP server interacts with clients.
 
 ## Discovery Caching
 

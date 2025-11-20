@@ -8,6 +8,7 @@ use Cake\Core\Configure;
 use Cake\Core\ContainerInterface;
 use Cake\TestSuite\TestCase;
 use Mcp\Server;
+use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\CacheInterface;
 use Synapse\Builder\ServerBuilder;
 
@@ -434,5 +435,73 @@ class ServerBuilderTest extends TestCase
         // Should still build successfully
         $server = $builder->build();
         $this->assertInstanceOf(Server::class, $server);
+    }
+
+    /**
+     * Test setLogger
+     */
+    public function testSetLogger(): void
+    {
+        $logger = $this->getMockBuilder(LoggerInterface::class)->getMock();
+        $builder = new ServerBuilder();
+
+        $result = $builder->setLogger($logger);
+
+        $this->assertSame($builder, $result);
+        $this->assertSame($logger, $builder->getLogger());
+    }
+
+    /**
+     * Test getLogger returns null by default
+     */
+    public function testGetLoggerReturnsNull(): void
+    {
+        $builder = new ServerBuilder();
+
+        $this->assertNull($builder->getLogger());
+    }
+
+    /**
+     * Test setLogger with null
+     */
+    public function testSetLoggerWithNull(): void
+    {
+        $logger = $this->getMockBuilder(LoggerInterface::class)->getMock();
+        $builder = new ServerBuilder();
+
+        $builder->setLogger($logger);
+        $this->assertSame($logger, $builder->getLogger());
+
+        $builder->setLogger(null);
+        $this->assertNull($builder->getLogger());
+    }
+
+    /**
+     * Test build with logger
+     */
+    public function testBuildWithLogger(): void
+    {
+        $logger = $this->getMockBuilder(LoggerInterface::class)->getMock();
+        $config = Configure::read('Synapse');
+
+        $builder = (new ServerBuilder($config))->setLogger($logger);
+        $server = $builder->build();
+
+        $this->assertInstanceOf(Server::class, $server);
+        $this->assertSame($logger, $builder->getLogger());
+    }
+
+    /**
+     * Test build without logger
+     */
+    public function testBuildWithoutLogger(): void
+    {
+        $config = Configure::read('Synapse');
+
+        $builder = new ServerBuilder($config);
+        $server = $builder->build();
+
+        $this->assertInstanceOf(Server::class, $server);
+        $this->assertNull($builder->getLogger());
     }
 }

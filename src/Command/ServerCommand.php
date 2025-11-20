@@ -10,6 +10,7 @@ use Cake\Console\ConsoleIo;
 use Cake\Console\ConsoleOptionParser;
 use Cake\Core\Configure;
 use Cake\Core\ContainerInterface;
+use Cake\Log\Log;
 use Mcp\Server\Transport\StdioTransport;
 use Synapse\Builder\ServerBuilder;
 use Throwable;
@@ -59,6 +60,11 @@ class ServerCommand extends Command
                 'short' => 'c',
                 'help' => 'Clear discovery cache before starting',
                 'boolean' => true,
+            ])
+            ->addOption('log', [
+                'short' => 'l',
+                'help' => 'Enable MCP server logging to specified log engine',
+                'default' => null,
             ]);
 
         return $parser;
@@ -101,6 +107,18 @@ class ServerCommand extends Command
             } else {
                 $cacheEngine = $config['discovery']['cache'] ?? ServerBuilder::DEFAULT_CACHE_ENGINE;
                 $io->verbose(sprintf('<info>Discovery caching enabled (using: %s)</info>', $cacheEngine));
+            }
+
+            // Configure logging if requested
+            $logEngine = $args->getOption('log');
+            if (is_string($logEngine)) {
+                try {
+                    $logger = Log::engine($logEngine);
+                    $builder->setLogger($logger);
+                    $io->verbose(sprintf('<info>MCP logging enabled (engine: %s)</info>', $logEngine));
+                } catch (Throwable $e) {
+                    $io->warning(sprintf('Failed to initialize logger "%s": %s', $logEngine, $e->getMessage()));
+                }
             }
 
             // Log discovery configuration

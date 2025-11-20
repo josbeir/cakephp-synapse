@@ -7,6 +7,7 @@ use Cake\Cache\Cache;
 use Cake\Core\ContainerInterface;
 use Mcp\Schema\Enum\ProtocolVersion;
 use Mcp\Server;
+use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\CacheInterface;
 use Throwable;
 
@@ -46,6 +47,8 @@ class ServerBuilder
 
     private ?ContainerInterface $container = null;
 
+    private ?LoggerInterface $logger = null;
+
     /**
      * Constructor
      *
@@ -72,13 +75,32 @@ class ServerBuilder
      * Set the DI container
      *
      * @param \Cake\Core\ContainerInterface|null $container DI container
-     * @return $this
      */
-    public function setContainer(?ContainerInterface $container)
+    public function setContainer(?ContainerInterface $container): self
     {
         $this->container = $container;
 
         return $this;
+    }
+
+    /**
+     * Set PSR-3 logger for MCP server
+     *
+     * @param \Psr\Log\LoggerInterface|null $logger PSR-3 logger instance
+     */
+    public function setLogger(?LoggerInterface $logger): self
+    {
+        $this->logger = $logger;
+
+        return $this;
+    }
+
+    /**
+     * Get configured logger
+     */
+    public function getLogger(): ?LoggerInterface
+    {
+        return $this->logger;
     }
 
     /**
@@ -146,6 +168,11 @@ class ServerBuilder
         $builder = Server::builder()
             ->setServerInfo($this->serverInfo['name'], $this->serverInfo['version'])
             ->setProtocolVersion($protocolVersion);
+
+        // Set logger if provided
+        if ($this->logger instanceof LoggerInterface) {
+            $builder->setLogger($this->logger);
+        }
 
         // Get cache if enabled
         $cache = null;
