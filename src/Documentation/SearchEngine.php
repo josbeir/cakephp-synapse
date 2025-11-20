@@ -57,7 +57,10 @@ class SearchEngine
      */
     public function __destruct()
     {
-        $this->db->close();
+        // @phpstan-ignore-next-line
+        if (isset($this->db)) {
+            $this->db->close();
+        }
     }
 
     /**
@@ -504,6 +507,59 @@ class SearchEngine
         }
 
         return $counts;
+    }
+
+    /**
+     * Get document by ID
+     *
+     * @param string $docId Document ID
+     * @return array<string, mixed>|null Document data or null if not found
+     */
+    public function getDocumentById(string $docId): ?array
+    {
+        $this->initialize();
+
+        $stmt = $this->db->prepare("
+            SELECT
+                fts.doc_id,
+                fts.source,
+                fts.path,
+                fts.title,
+                fts.content,
+                meta.metadata
+            FROM documents_fts fts
+            JOIN documents_meta meta ON fts.doc_id = meta.doc_id
+            WHERE fts.doc_id = :doc_id
+        ");
+
+        if ($stmt === false) {
+            return null;
+        }
+
+        $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
+        $result = $stmt->execute();
+
+        if (!$result instanceof SQLite3Result) {
+            return null;
+        }
+
+        $row = $result->fetchArray(SQLITE3_ASSOC);
+
+        if ($row === false) {
+            return null;
+        }
+
+        $absolutePath = $this->resolveAbsolutePath($row['source'], $row['path']);
+
+        return [
+            'id' => $row['doc_id'],
+            'source' => $row['source'],
+            'path' => $row['path'],
+            'absolute_path' => $absolutePath,
+            'title' => $row['title'],
+            'content' => $row['content'],
+            'metadata' => json_decode($row['metadata'], true),
+        ];
     }
 
     /**

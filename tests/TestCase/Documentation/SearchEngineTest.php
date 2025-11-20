@@ -863,4 +863,69 @@ class SearchEngineTest extends TestCase
         Configure::delete('Synapse.documentation.base_path_override');
         @unlink($dbPath); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
     }
+
+    /**
+     * Test getDocumentById retrieves document by ID
+     */
+    public function testGetDocumentByIdRetrievesDocument(): void
+    {
+        $document = [
+            'id' => 'test::doc1.md',
+            'source' => 'test-source',
+            'path' => 'docs/getting-started.md',
+            'title' => 'Getting Started',
+            'headings' => ['Introduction'],
+            'content' => 'This is the full document content for getting started.',
+            'metadata' => ['author' => 'Test Author'],
+        ];
+
+        $this->searchEngine->indexDocument($document);
+
+        $result = $this->searchEngine->getDocumentById('test::doc1.md');
+
+        $this->assertNotNull($result);
+        $this->assertEquals('test::doc1.md', $result['id']);
+        $this->assertEquals('test-source', $result['source']);
+        $this->assertEquals('docs/getting-started.md', $result['path']);
+        $this->assertEquals('Getting Started', $result['title']);
+        $this->assertEquals('This is the full document content for getting started.', $result['content']);
+        $this->assertArrayHasKey('metadata', $result);
+        $this->assertEquals('Test Author', $result['metadata']['author']);
+    }
+
+    /**
+     * Test getDocumentById returns null for nonexistent document
+     */
+    public function testGetDocumentByIdReturnsNullForNonexistent(): void
+    {
+        $result = $this->searchEngine->getDocumentById('nonexistent::doc.md');
+
+        $this->assertNull($result);
+    }
+
+    /**
+     * Test getDocumentById includes absolute path
+     */
+    public function testGetDocumentByIdIncludesAbsolutePath(): void
+    {
+        Configure::write('Synapse.documentation.cache_dir', TMP . 'test_cache');
+
+        $document = [
+            'id' => 'my-docs::guide.md',
+            'source' => 'my-docs',
+            'path' => 'intro/setup.md',
+            'title' => 'Setup Guide',
+            'headings' => [],
+            'content' => 'How to setup the application',
+            'metadata' => [],
+        ];
+
+        $this->searchEngine->indexDocument($document);
+
+        $result = $this->searchEngine->getDocumentById('my-docs::guide.md');
+
+        $this->assertNotNull($result);
+        $this->assertArrayHasKey('absolute_path', $result);
+        $this->assertStringEndsWith('my-docs' . DS . 'intro/setup.md', $result['absolute_path']);
+    }
 }

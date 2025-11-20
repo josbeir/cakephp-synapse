@@ -114,6 +114,52 @@ class DocumentationTools
     }
 
     /**
+     * Get full documentation content by document ID.
+     *
+     * Retrieves the complete markdown content of a documentation file.
+     * Use this after searching to read the full document.
+     *
+     * @param string $docId Document ID in format 'source::path' (e.g., 'cakephp-5x::docs/en/controllers.md')
+     * @return array{content: string, title: string, source: string, path: string, absolute_path: string, id: string, metadata: array<string, mixed>} Document content and metadata
+     */
+    #[McpTool(
+        name: 'get_doc',
+        description: 'Get full content of a documentation file by document ID',
+    )]
+    public function getDocument(string $docId): array
+    {
+        try {
+            // Validate input
+            if (trim($docId) === '') {
+                throw new ToolCallException('Document ID cannot be empty');
+            }
+
+            // Get document from search engine database
+            $searchEngine = $this->searchService->getSearchEngine();
+            $document = $searchEngine->getDocumentById($docId);
+
+            if ($document === null) {
+                throw new ToolCallException(sprintf('Document not found: %s', $docId));
+            }
+
+            return [
+                'content' => $document['content'],
+                'title' => $document['title'],
+                'source' => $document['source'],
+                'path' => $document['path'],
+                'absolute_path' => $document['absolute_path'],
+                'id' => $document['id'],
+                'metadata' => $document['metadata'],
+            ];
+        } catch (ToolCallException $exception) {
+            throw $exception;
+        } catch (Exception $exception) {
+            $message = sprintf('Failed to get document: %s', $exception->getMessage());
+            throw new ToolCallException($message);
+        }
+    }
+
+    /**
      * Documentation search resource template.
      *
      * Provides access to documentation search results as a resource.
@@ -161,6 +207,60 @@ class DocumentationTools
                     ),
                 ],
             ];
+        } catch (Exception $exception) {
+            $message = sprintf('Failed to read documentation resource: %s', $exception->getMessage());
+            throw new ToolCallException($message);
+        }
+    }
+
+    /**
+     * Documentation content resource template.
+     *
+     * Provides direct access to documentation files as resources.
+     * The URI template allows retrieving full document content by ID:
+     * docs://content/{docId}
+     *
+     * Example URIs:
+     * - docs://content/cakephp-5x::docs/en/controllers.md
+     * - docs://content/cakephp-5x::docs/en/orm/query-builder.md
+     *
+     * @param string $docId Document ID in format 'source::path'
+     * @return array{contents: array<\Mcp\Schema\Content\TextResourceContents>} Resource contents
+     */
+    #[McpResourceTemplate(
+        uriTemplate: 'docs://content/{docId}',
+        name: 'Documentation Content',
+        description: 'Get full content of a documentation file by ID',
+        mimeType: 'text/markdown',
+    )]
+    public function contentResource(string $docId): array
+    {
+        try {
+            if (trim($docId) === '') {
+                throw new ToolCallException('Document ID cannot be empty');
+            }
+
+            // Get document from search engine database
+            $searchEngine = $this->searchService->getSearchEngine();
+            $document = $searchEngine->getDocumentById($docId);
+
+            if ($document === null) {
+                throw new ToolCallException(sprintf('Document not found: %s', $docId));
+            }
+
+            $uri = sprintf('docs://content/%s', $docId);
+
+            return [
+                'contents' => [
+                    new TextResourceContents(
+                        uri: $uri,
+                        mimeType: 'text/markdown',
+                        text: $document['content'],
+                    ),
+                ],
+            ];
+        } catch (ToolCallException $exception) {
+            throw $exception;
         } catch (Exception $exception) {
             $message = sprintf('Failed to read documentation resource: %s', $exception->getMessage());
             throw new ToolCallException($message);

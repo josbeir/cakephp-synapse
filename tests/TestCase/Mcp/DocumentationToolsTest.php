@@ -8,6 +8,7 @@ use Mcp\Exception\ToolCallException;
 use Mcp\Schema\Content\TextResourceContents;
 use RuntimeException;
 use Synapse\Documentation\DocumentSearchService;
+use Synapse\Documentation\SearchEngine;
 use Synapse\Mcp\DocumentationTools;
 
 /**
@@ -21,6 +22,8 @@ class DocumentationToolsTest extends TestCase
 
     private DocumentSearchService $mockService;
 
+    private SearchEngine $mockSearchEngine;
+
     /**
      * setUp method
      */
@@ -33,6 +36,13 @@ class DocumentationToolsTest extends TestCase
         $mockService = $this->createMock(DocumentSearchService::class);
         $this->mockService = $mockService;
 
+        /** @var SearchEngine&\PHPUnit\Framework\MockObject\MockObject $mockSearchEngine */
+        $mockSearchEngine = $this->getMockBuilder(SearchEngine::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getDocumentById', '__destruct'])
+            ->getMock();
+        $this->mockSearchEngine = $mockSearchEngine;
+
         $this->tools = new DocumentationTools($this->mockService);
     }
 
@@ -43,6 +53,7 @@ class DocumentationToolsTest extends TestCase
     {
         unset($this->tools);
         unset($this->mockService);
+        unset($this->mockSearchEngine);
 
         parent::tearDown();
     }
@@ -631,5 +642,202 @@ class DocumentationToolsTest extends TestCase
 
         $result = $tools->getStats();
         $this->assertEquals(42, $result['total_documents']);
+    }
+
+    /**
+     * Test getDocument retrieves full document content
+     */
+    public function testGetDocumentRetrievesFullContent(): void
+    {
+        $documentData = [
+            'id' => 'cakephp-5x::docs/getting-started.md',
+            'source' => 'cakephp-5x',
+            'path' => 'docs/getting-started.md',
+            'absolute_path' => '/path/to/cakephp-5x/docs/getting-started.md',
+            'title' => 'Getting Started',
+            'content' => "# Getting Started\n\nThis is the full documentation content.",
+            'metadata' => ['version' => '5.x'],
+        ];
+
+        /** @phpstan-ignore-next-line */
+        $this->mockSearchEngine->expects($this->once())
+            ->method('getDocumentById')
+            ->with('cakephp-5x::docs/getting-started.md')
+            ->willReturn($documentData);
+
+        /** @phpstan-ignore-next-line */
+        $this->mockService->expects($this->once())
+            ->method('getSearchEngine')
+            ->willReturn($this->mockSearchEngine);
+
+        $result = $this->tools->getDocument('cakephp-5x::docs/getting-started.md');
+
+        $this->assertEquals($documentData['content'], $result['content']);
+        $this->assertEquals('Getting Started', $result['title']);
+        $this->assertEquals('cakephp-5x', $result['source']);
+        $this->assertEquals('docs/getting-started.md', $result['path']);
+        $this->assertEquals('cakephp-5x::docs/getting-started.md', $result['id']);
+    }
+
+    /**
+     * Test getDocument returns title from database
+     */
+    public function testGetDocumentReturnsTitleFromDatabase(): void
+    {
+        $documentData = [
+            'id' => 'cakephp-5x::docs/auth.md',
+            'source' => 'cakephp-5x',
+            'path' => 'docs/auth.md',
+            'absolute_path' => '/path/to/cakephp-5x/docs/auth.md',
+            'title' => 'Authentication & Authorization',
+            'content' => "# Authentication & Authorization\n\nLearn about security.",
+            'metadata' => [],
+        ];
+
+        /** @phpstan-ignore-next-line */
+        $this->mockSearchEngine->method('getDocumentById')->willReturn($documentData);
+
+        /** @phpstan-ignore-next-line */
+        $this->mockService->method('getSearchEngine')->willReturn($this->mockSearchEngine);
+
+        $result = $this->tools->getDocument('cakephp-5x::docs/auth.md');
+
+        $this->assertEquals('Authentication & Authorization', $result['title']);
+    }
+
+    /**
+     * Test getDocument returns metadata
+     */
+    public function testGetDocumentReturnsMetadata(): void
+    {
+        $documentData = [
+            'id' => 'cakephp-5x::docs/database-basics.md',
+            'source' => 'cakephp-5x',
+            'path' => 'docs/database-basics.md',
+            'absolute_path' => '/path/to/cakephp-5x/docs/database-basics.md',
+            'title' => 'Database Basics',
+            'content' => 'Some content without a heading.',
+            'metadata' => ['author' => 'CakePHP Team', 'version' => '5.x'],
+        ];
+
+        /** @phpstan-ignore-next-line */
+        $this->mockSearchEngine->method('getDocumentById')->willReturn($documentData);
+
+        /** @phpstan-ignore-next-line */
+        $this->mockService->method('getSearchEngine')->willReturn($this->mockSearchEngine);
+
+        $result = $this->tools->getDocument('cakephp-5x::docs/database-basics.md');
+
+        $this->assertEquals('Database Basics', $result['title']);
+        $this->assertArrayHasKey('metadata', $result);
+        $this->assertEquals('CakePHP Team', $result['metadata']['author']);
+    }
+
+    /**
+     * Test getDocument throws exception for empty document ID
+     */
+    public function testGetDocumentThrowsExceptionForEmptyDocId(): void
+    {
+        $this->expectException(ToolCallException::class);
+        $this->expectExceptionMessage('Document ID cannot be empty');
+
+        $this->tools->getDocument('');
+    }
+
+    /**
+     * Test getDocument throws exception when document not found
+     */
+    public function testGetDocumentThrowsExceptionWhenNotFound(): void
+    {
+        /** @phpstan-ignore-next-line */
+        $this->mockSearchEngine->method('getDocumentById')->willReturn(null);
+
+        /** @phpstan-ignore-next-line */
+        $this->mockService->method('getSearchEngine')->willReturn($this->mockSearchEngine);
+
+        $this->expectException(ToolCallException::class);
+        $this->expectExceptionMessage('Document not found');
+
+        $this->tools->getDocument('cakephp-5x::docs/nonexistent.md');
+    }
+
+    /**
+     * Test getDocument handles search engine errors
+     */
+    public function testGetDocumentHandlesSearchEngineErrors(): void
+    {
+        /** @phpstan-ignore-next-line */
+        $this->mockService->expects($this->once())
+            ->method('getSearchEngine')
+            ->willThrowException(new RuntimeException('Database error'));
+
+        $this->expectException(ToolCallException::class);
+        $this->expectExceptionMessage('Failed to get document');
+
+        $this->tools->getDocument('cakephp-5x::docs/test.md');
+    }
+
+    /**
+     * Test contentResource retrieves full content
+     */
+    public function testContentResourceRetrievesFullContent(): void
+    {
+        $documentData = [
+            'id' => 'cakephp-5x::docs/controllers.md',
+            'source' => 'cakephp-5x',
+            'path' => 'docs/controllers.md',
+            'absolute_path' => '/path/to/cakephp-5x/docs/controllers.md',
+            'title' => 'Controllers',
+            'content' => "# Controllers\n\nLearn about CakePHP controllers.",
+            'metadata' => [],
+        ];
+
+        /** @phpstan-ignore-next-line */
+        $this->mockSearchEngine->expects($this->once())
+            ->method('getDocumentById')
+            ->with('cakephp-5x::docs/controllers.md')
+            ->willReturn($documentData);
+
+        /** @phpstan-ignore-next-line */
+        $this->mockService->expects($this->once())
+            ->method('getSearchEngine')
+            ->willReturn($this->mockSearchEngine);
+
+        $result = $this->tools->contentResource('cakephp-5x::docs/controllers.md');
+
+        $this->assertArrayHasKey('contents', $result);
+        $this->assertCount(1, $result['contents']);
+        $this->assertInstanceOf(TextResourceContents::class, $result['contents'][0]);
+        $this->assertEquals('docs://content/cakephp-5x::docs/controllers.md', $result['contents'][0]->uri);
+        $this->assertEquals('text/markdown', $result['contents'][0]->mimeType);
+        $this->assertEquals($documentData['content'], $result['contents'][0]->text);
+    }
+
+    /**
+     * Test contentResource throws exception for empty document ID
+     */
+    public function testContentResourceThrowsExceptionForEmptyDocId(): void
+    {
+        $this->expectException(ToolCallException::class);
+        $this->expectExceptionMessage('Document ID cannot be empty');
+
+        $this->tools->contentResource('');
+    }
+
+    /**
+     * Test contentResource throws exception for nonexistent document
+     */
+    public function testContentResourceThrowsExceptionForNonexistentDocument(): void
+    {
+        /** @phpstan-ignore-next-line */
+        $this->mockSearchEngine->method('getDocumentById')->willReturn(null);
+
+        /** @phpstan-ignore-next-line */
+        $this->mockService->method('getSearchEngine')->willReturn($this->mockSearchEngine);
+
+        $this->expectException(ToolCallException::class);
+        $this->expectExceptionMessage('Document not found');
+
+        $this->tools->contentResource('cakephp-5x::docs/missing.md');
     }
 }
