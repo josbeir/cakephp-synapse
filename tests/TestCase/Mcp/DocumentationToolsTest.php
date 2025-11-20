@@ -69,14 +69,14 @@ class DocumentationToolsTest extends TestCase
                 'path' => 'authentication.md',
                 'source' => 'cakephp-5x',
                 'snippet' => 'Authentication component...',
-                'rank' => 2.5,
+                'score' => 2.5,
             ],
             [
                 'title' => 'Authorization',
                 'path' => 'authorization.md',
                 'source' => 'cakephp-5x',
                 'snippet' => 'Authorization component...',
-                'rank' => 1.8,
+                'score' => 1.8,
             ],
         ];
 
@@ -321,7 +321,7 @@ class DocumentationToolsTest extends TestCase
                 'path' => 'caching.md',
                 'source' => 'cakephp-5x',
                 'snippet' => 'CakePHP provides a flexible caching...',
-                'rank' => 3.2,
+                'score' => 3.2,
             ],
         ];
 
@@ -363,21 +363,21 @@ class DocumentationToolsTest extends TestCase
                 'path' => 'first.md',
                 'source' => 'cakephp-5x',
                 'snippet' => 'First snippet...',
-                'rank' => 5.0,
+                'score' => 5.0,
             ],
             [
                 'title' => 'Second Result',
                 'path' => 'second.md',
                 'source' => 'cakephp-5x',
                 'snippet' => 'Second snippet...',
-                'rank' => 4.5,
+                'score' => 4.5,
             ],
             [
                 'title' => 'Third Result',
                 'path' => 'third.md',
                 'source' => 'cakephp-5x',
                 'snippet' => 'Third snippet...',
-                'rank' => 4.0,
+                'score' => 4.0,
             ],
         ];
 
@@ -480,7 +480,7 @@ class DocumentationToolsTest extends TestCase
                 'path' => 'docs/complete.md',
                 'source' => 'cakephp-5x',
                 'snippet' => 'This is a complete snippet with all fields.',
-                'rank' => 7.25,
+                'score' => 7.25,
             ],
         ];
 
@@ -558,7 +558,7 @@ class DocumentationToolsTest extends TestCase
                 'path' => 'result.md',
                 'source' => 'cakephp-5x',
                 'snippet' => "Line 1\nLine 2\nLine 3",
-                'rank' => 1.0,
+                'score' => 1.0,
             ],
         ];
 
@@ -586,14 +586,14 @@ class DocumentationToolsTest extends TestCase
                 'path' => 'first.md',
                 'source' => 'cakephp-5x',
                 'snippet' => 'First snippet',
-                'rank' => 1.0,
+                'score' => 1.0,
             ],
             [
                 'title' => 'Second',
                 'path' => 'second.md',
                 'source' => 'cakephp-5x',
                 'snippet' => 'Second snippet',
-                'rank' => 0.9,
+                'score' => 0.9,
             ],
         ];
 

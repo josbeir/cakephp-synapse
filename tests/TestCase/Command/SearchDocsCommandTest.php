@@ -198,8 +198,9 @@ class SearchDocsCommandTest extends TestCase
         }
 
         $this->assertExitSuccess();
-        $this->assertOutputContains('Source:');
-        $this->assertOutputContains('Path:');
+        $this->assertOutputContains('Source');
+        $this->assertOutputContains('Path');
+        $this->assertOutputContains('Score');
     }
 
     /**
@@ -217,7 +218,9 @@ class SearchDocsCommandTest extends TestCase
         }
 
         $this->assertExitSuccess();
-        $this->assertOutputContains('Source:');
+        $this->assertOutputContains('Source');
+        $this->assertOutputContains('Path');
+        $this->assertOutputContains('Score');
     }
 
     /**

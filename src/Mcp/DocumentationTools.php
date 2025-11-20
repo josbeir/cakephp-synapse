@@ -290,7 +290,7 @@ class DocumentationTools
 
             $source = $result['source'] ?? '';
             $snippet = $result['snippet'] ?? '';
-            $rank_score = $result['rank'] ?? 0;
+            $rank_score = $result['score'] ?? 0;
 
             $markdown .= sprintf("## %d. %s\n\n", $rank, $title);
             $markdown .= sprintf("**Source:** %s  \n", $source);

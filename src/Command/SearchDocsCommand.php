@@ -140,42 +140,67 @@ class SearchDocsCommand extends Command
             $io->success(sprintf('Found %d result(s):', count($results)));
             $io->out('');
 
+            // Prepare table data with headers as first row
+            $tableData = [];
+
+            // Add headers as first row
+            if ($detailed) {
+                $tableData[] = ['#', 'Title', 'Source', 'Path', 'Score'];
+            } else {
+                $tableData[] = ['#', 'Title', 'Source', 'Path'];
+            }
+
+            $snippets = [];
             foreach ($results as $i => $result) {
                 $rank = $i + 1;
                 $title = $result['title'] ?? 'Untitled';
                 $relativePath = $result['path'] ?? '';
                 $resultSource = $result['source'] ?? '';
                 $snippet = $result['snippet'] ?? '';
-                $rankScore = $result['rank'] ?? 0;
-
-                // Display result header
-                $io->out(sprintf(
-                    '<info>%d.</info> <question>%s</question>',
-                    $rank,
-                    $title,
-                ));
-                $io->hr();
+                $rankScore = $result['score'] ?? 0;
 
                 if ($detailed) {
-                    $io->out(sprintf('   Source: %s', $resultSource));
-                    if ($relativePath !== '') {
-                        $io->out(sprintf('   Path: %s', $relativePath));
-                    }
-
-                    $io->out(sprintf('   Relevance: %.2f', $rankScore));
+                    $row = [
+                        $rank,
+                        $title,
+                        $resultSource,
+                        $relativePath,
+                        sprintf('%.2f', $rankScore),
+                    ];
                 } else {
-                    $io->out(sprintf('   Path: %s', $relativePath));
+                    $row = [
+                        $rank,
+                        $title,
+                        $resultSource,
+                        $relativePath,
+                    ];
                 }
 
-                // Display snippet if enabled
+                $tableData[] = $row;
+
+                // Store snippet for display after table
                 if (!$noSnippet && $snippet !== '') {
-                    $io->out('');
-                    // Clean up HTML markers and format snippet
-                    $cleanSnippet = str_replace(['<mark>', '</mark>'], ['<warning>', '</warning>'], $snippet);
-                    $io->out('   ' . $cleanSnippet);
+                    $snippets[$rank] = ['title' => $title, 'snippet' => $snippet];
                 }
+            }
 
+            // Display results table
+            $io->helper('Table')->output($tableData);
+
+            // Display snippets if enabled
+            if (!$noSnippet && $snippets !== []) {
                 $io->out('');
+                $io->out('<info>Snippets:</info>');
+                $io->out('');
+
+                foreach ($snippets as $rank => $data) {
+                    $io->out(sprintf('<info>%d.</info> <question>%s</question>', $rank, $data['title']));
+
+                    // Clean up HTML markers and format snippet
+                    $cleanSnippet = str_replace(['<mark>', '</mark>'], ['<warning>', '</warning>'], $data['snippet']);
+                    $io->out('   ' . $cleanSnippet);
+                    $io->out('');
+                }
             }
 
             return static::CODE_SUCCESS;
