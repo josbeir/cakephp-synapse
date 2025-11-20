@@ -8,6 +8,7 @@ use Cake\Core\BasePlugin;
 use Cake\Core\Configure;
 use Cake\Core\ContainerInterface;
 use Cake\Core\PluginApplicationInterface;
+use Synapse\Command\IndexDocsCommand;
 use Synapse\Command\ServerCommand;
 
 /**
@@ -30,7 +31,9 @@ class SynapsePlugin extends BasePlugin
      */
     public function bootstrap(PluginApplicationInterface $app): void
     {
-        parent::bootstrap($app);
+        if (!defined('APP')) {
+            parent::bootstrap($app);
+        }
 
         Configure::load('Synapse.synapse');
 
@@ -51,6 +54,7 @@ class SynapsePlugin extends BasePlugin
 
         // Register MCP server command
         $commands->add('synapse server', ServerCommand::class);
+        $commands->add('synapse index', IndexDocsCommand::class);
 
         return $commands;
     }

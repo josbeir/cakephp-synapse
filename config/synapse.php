@@ -120,27 +120,11 @@ return [
             ],
 
             /**
-             * YetiSearch Configuration
+             * Search Configuration
              *
-             * Configure the YetiSearch indexing and search behavior.
+             * Configure the search behavior.
              */
-            'yetisearch' => [
-                /**
-                 * Chunk Size
-                 *
-                 * Maximum size of document chunks in characters.
-                 * Larger documents are split into chunks for better search results.
-                 */
-                'chunk_size' => 2000,
-
-                /**
-                 * Chunk Overlap
-                 *
-                 * Number of characters to overlap between chunks.
-                 * Helps maintain context across chunk boundaries.
-                 */
-                'chunk_overlap' => 200,
-
+            'search' => [
                 /**
                  * Batch Size
                  *
@@ -150,63 +134,18 @@ return [
                 'batch_size' => 100,
 
                 /**
-                 * Fuzzy Search
+                 * Default Results Limit
                  *
-                 * Enable fuzzy matching for typo tolerance.
-                 * Options: false, 'trigram', 'levenshtein', 'jaro_winkler'
+                 * Default number of search results to return.
                  */
-                'fuzzy' => 'trigram',
+                'default_limit' => 10,
 
                 /**
-                 * Fuzzy Threshold
+                 * Enable Highlighting
                  *
-                 * Minimum similarity score for fuzzy matches (0.0 - 1.0).
-                 * Higher values = stricter matching.
+                 * Whether to highlight matched terms in search results.
                  */
-                'fuzzy_threshold' => 0.7,
-
-                /**
-                 * Enable Caching
-                 *
-                 * Cache search results for improved performance.
-                 */
-                'enable_cache' => true,
-
-                /**
-                 * Cache TTL
-                 *
-                 * Time-to-live for cached search results in seconds.
-                 */
-                'cache_ttl' => 3600,
-
-                /**
-                 * Highlight Tags
-                 *
-                 * HTML tags to wrap matched terms in search results.
-                 */
-                'highlight' => [
-                    'start_tag' => '<mark>',
-                    'end_tag' => '</mark>',
-                ],
-
-                /**
-                 * Field Boosting
-                 *
-                 * Boost scores for specific fields to influence ranking.
-                 * Higher values = more importance.
-                 */
-                'field_boost' => [
-                    'title' => 3.0,
-                    'headings' => 2.0,
-                    'content' => 1.0,
-                ],
-
-                /**
-                 * Snippet Length
-                 *
-                 * Maximum length of snippets in search results (characters).
-                 */
-                'snippet_length' => 300,
+                'highlight' => true,
             ],
         ],
     ],

@@ -20,6 +20,10 @@ class Application extends BaseApplication
 
     public function bootstrap(): void
     {
+        if (!defined('APP')) {
+            parent::bootstrap();
+        }
+
         $this->addPlugin(SynapsePlugin::class);
     }
 
