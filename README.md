@@ -71,7 +71,7 @@ composer require --dev josbeir/cakephp-synapse
 > This plugin is typically used as a development tool to allow AI assistants to interact with your application during development. It should not be installed in production environments.
 
 ```bash
-cake plugin load --only-cli --optional Synapse 
+bin/cake plugin load --only-cli --optional Synapse 
 ```
 
 The plugin will automatically register itself and discover MCP elements in your application.
