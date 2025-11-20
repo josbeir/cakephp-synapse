@@ -51,7 +51,7 @@ class IndexDocsCommandTest extends TestCase
     {
         // Clean up test database
         if (file_exists($this->testDbPath)) {
-            @unlink($this->testDbPath);
+            @unlink($this->testDbPath); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
         }
 
         parent::tearDown();

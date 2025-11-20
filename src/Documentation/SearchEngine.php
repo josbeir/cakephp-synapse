@@ -575,7 +575,7 @@ class SearchEngine
         // FTS5 special characters that need escaping
         // We'll wrap the query in quotes to treat it as a phrase if it contains special chars
         $specialChars = ['@', '#', '$', '%', '^', '&', '*', '(', ')', '[', ']', '{', '}', '\\', '|', '<', '>'];
-        
+
         foreach ($specialChars as $char) {
             if (str_contains($query, $char)) {
                 // Remove special characters rather than trying to escape them
@@ -583,10 +583,10 @@ class SearchEngine
                 break;
             }
         }
-        
+
         // Clean up multiple spaces
         $query = preg_replace('/\s+/', ' ', $query);
-        
-        return trim($query);
+
+        return trim($query ?? '');
     }
 }

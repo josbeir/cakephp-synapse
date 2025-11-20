@@ -49,7 +49,7 @@ class DocumentSearchServiceTest extends TestCase
     {
         // Clean up test database
         if (file_exists($this->testDbPath)) {
-            @unlink($this->testDbPath);
+            @unlink($this->testDbPath); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
         }
 
         parent::tearDown();
@@ -80,7 +80,7 @@ class DocumentSearchServiceTest extends TestCase
 
         // Clean up
         if (file_exists($customPath)) {
-            @unlink($customPath);
+            @unlink($customPath); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
         }
     }
 
@@ -103,8 +103,9 @@ class DocumentSearchServiceTest extends TestCase
 
         // Clean up
         if (file_exists($customPath)) {
-            @unlink($customPath);
+            @unlink($customPath); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
         }
+
         if (is_dir($dir)) {
             rmdir(dirname($dir) . DS . 'deep');
             rmdir(dirname($dir));
@@ -169,12 +170,13 @@ class DocumentSearchServiceTest extends TestCase
         for ($i = 1; $i <= 10; $i++) {
             $documents[] = [
                 'source' => 'test',
-                'path' => "doc{$i}.md",
-                'title' => "Document {$i}",
+                'path' => sprintf('doc%d.md', $i),
+                'title' => 'Document ' . $i,
                 'content' => 'test content for searching',
                 'headings' => [],
             ];
         }
+
         $engine->indexBatch($documents);
 
         $results = $service->search('test');
@@ -195,12 +197,13 @@ class DocumentSearchServiceTest extends TestCase
         for ($i = 1; $i <= 10; $i++) {
             $documents[] = [
                 'source' => 'test',
-                'path' => "doc{$i}.md",
-                'title' => "Document {$i}",
+                'path' => sprintf('doc%d.md', $i),
+                'title' => 'Document ' . $i,
                 'content' => 'test content for searching',
                 'headings' => [],
             ];
         }
+
         $engine->indexBatch($documents);
 
         $results = $service->search('test', ['limit' => 3]);
@@ -569,7 +572,7 @@ class DocumentSearchServiceTest extends TestCase
         // Clean up any created files
         $searchDb = $customCacheDir . DS . 'search.db';
         if (file_exists($searchDb)) {
-            @unlink($searchDb);
+            @unlink($searchDb); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
         }
     }
 
@@ -588,7 +591,7 @@ class DocumentSearchServiceTest extends TestCase
         // Clean up
         $defaultDb = TMP . 'synapse' . DS . 'docs' . DS . 'search.db';
         if (file_exists($defaultDb)) {
-            @unlink($defaultDb);
+            @unlink($defaultDb); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
         }
     }
 

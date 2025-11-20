@@ -32,6 +32,7 @@ class DocumentationToolsTest extends TestCase
         /** @var DocumentSearchService&\PHPUnit\Framework\MockObject\MockObject $mockService */
         $mockService = $this->createMock(DocumentSearchService::class);
         $this->mockService = $mockService;
+
         $this->tools = new DocumentationTools($this->mockService);
     }
 
@@ -104,7 +105,7 @@ class DocumentationToolsTest extends TestCase
             ->method('search')
             ->with(
                 'query',
-                $this->callback(function ($options) {
+                $this->callback(function (array $options): bool {
                     return $options['limit'] === 5;
                 }),
             )
@@ -125,7 +126,7 @@ class DocumentationToolsTest extends TestCase
             ->method('search')
             ->with(
                 'query',
-                $this->callback(function ($options) {
+                $this->callback(function (array $options): bool {
                     return isset($options['fuzzy']) && $options['fuzzy'] === true;
                 }),
             )
@@ -148,7 +149,7 @@ class DocumentationToolsTest extends TestCase
             ->method('search')
             ->with(
                 'query',
-                $this->callback(function ($options) use ($sources) {
+                $this->callback(function (array $options) use ($sources): bool {
                     return isset($options['sources']) && $options['sources'] === $sources;
                 }),
             )
@@ -170,7 +171,7 @@ class DocumentationToolsTest extends TestCase
             ->method('search')
             ->with(
                 'query',
-                $this->callback(function ($options) {
+                $this->callback(function (array $options): bool {
                     return $options['limit'] === 1;
                 }),
             )
@@ -191,7 +192,7 @@ class DocumentationToolsTest extends TestCase
             ->method('search')
             ->with(
                 'query',
-                $this->callback(function ($options) {
+                $this->callback(function (array $options): bool {
                     return $options['limit'] === 50;
                 }),
             )
