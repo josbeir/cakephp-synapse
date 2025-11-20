@@ -9,7 +9,9 @@ use Cake\Core\Configure;
 use Cake\Core\ContainerInterface;
 use Cake\Core\PluginApplicationInterface;
 use Synapse\Command\IndexDocsCommand;
+use Synapse\Command\SearchDocsCommand;
 use Synapse\Command\ServerCommand;
+use Synapse\Test\TestCase\Command\IndexDocsCommandTest;
 
 /**
  * Synapse Plugin
@@ -55,6 +57,7 @@ class SynapsePlugin extends BasePlugin
         // Register MCP server command
         $commands->add('synapse server', ServerCommand::class);
         $commands->add('synapse index', IndexDocsCommand::class);
+        $commands->add('synapse search', SearchDocsCommand::class);
 
         return $commands;
     }

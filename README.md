@@ -234,7 +234,7 @@ Search CakePHP documentation with full-text search powered by SQLite FTS5:
 > [!NOTE]
 > Documentation is indexed from the official [CakePHP markdown documentation](https://github.com/cakephp/docs-md). The index is built locally using SQLite FTS5 for fast, dependency-free full-text search.
 
-Use the CLI to manage the index:
+Use the CLI to manage and search the index:
 
 ```bash
 # Index all sources
@@ -245,6 +245,12 @@ bin/cake index_docs --source cakephp-5x
 
 # Force re-index and optimize
 bin/cake index_docs --force --optimize
+
+# Search documentation from CLI
+bin/cake search_docs "authentication"
+
+# Search with options
+bin/cake search_docs "database queries" --limit 5 --fuzzy --detailed
 ```
 
 ## Running the Server
