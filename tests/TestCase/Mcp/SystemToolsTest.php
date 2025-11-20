@@ -99,9 +99,16 @@ class SystemToolsTest extends TestCase
         $result = $this->systemTools->getDebugStatus();
 
         $this->assertArrayHasKey('debug', $result);
-        $this->assertArrayHasKey('environment', $result);
         $this->assertIsBool($result['debug']);
-        $this->assertIsString($result['environment']);
+
+        // Only check for environment if APP_ENV is set
+        $env = getenv('APP_ENV');
+        if ($env !== false) {
+            $this->assertArrayHasKey('environment', $result);
+            $this->assertIsString($result['environment']);
+        } else {
+            $this->assertArrayNotHasKey('environment', $result);
+        }
     }
 
     /**

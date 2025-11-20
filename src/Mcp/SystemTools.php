@@ -62,9 +62,15 @@ class SystemTools
     #[McpTool(name: 'debug_status')]
     public function getDebugStatus(): array
     {
-        return [
+        $result = [
             'debug' => Configure::read('debug'),
-            'environment' => getenv('APP_ENV') ?: 'production',
         ];
+
+        $env = getenv('APP_ENV');
+        if ($env !== false) {
+            $result['environment'] = $env;
+        }
+
+        return $result;
     }
 }
