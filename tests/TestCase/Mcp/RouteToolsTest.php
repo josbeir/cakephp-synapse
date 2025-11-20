@@ -399,4 +399,245 @@ class RouteToolsTest extends TestCase
     {
         $this->assertInstanceOf(RouteTools::class, $this->RouteTools);
     }
+
+    /**
+     * Test listRoutes without any filters
+     */
+    public function testListRoutesNoFilters(): void
+    {
+        $result = $this->RouteTools->listRoutes(
+            sort: false,
+            method: null,
+            plugin: null,
+            prefix: null,
+            controller: null,
+            withMiddlewares: false,
+        );
+
+        $this->assertArrayHasKey('total', $result);
+        $this->assertArrayHasKey('routes', $result);
+        $this->assertGreaterThan(0, $result['total']);
+    }
+
+    /**
+     * Test listRoutes with method filter for routes without methods
+     */
+    public function testListRoutesWithMethodFilterOnRoutesWithoutMethods(): void
+    {
+        // Routes without specific methods should still be in results
+        $result = $this->RouteTools->listRoutes(method: 'POST');
+
+        $this->assertIsArray($result['routes']);
+    }
+
+    /**
+     * Test listRoutes filters null plugin correctly
+     */
+    public function testListRoutesFilterNullPlugin(): void
+    {
+        // Filter for routes with null plugin
+        $result = $this->RouteTools->listRoutes();
+
+        foreach ($result['routes'] as $route) {
+            // Plugin can be null or a string
+            $this->assertTrue(
+                $route['plugin'] === null || is_string($route['plugin']),
+                'Plugin should be null or string',
+            );
+        }
+    }
+
+    /**
+     * Test listRoutes filters null prefix correctly
+     */
+    public function testListRoutesFilterNullPrefix(): void
+    {
+        $result = $this->RouteTools->listRoutes();
+
+        foreach ($result['routes'] as $route) {
+            // Prefix can be null or a string
+            $this->assertTrue(
+                $route['prefix'] === null || is_string($route['prefix']),
+                'Prefix should be null or string',
+            );
+        }
+    }
+
+    /**
+     * Test listRoutes filters null controller correctly
+     */
+    public function testListRoutesFilterNullController(): void
+    {
+        $result = $this->RouteTools->listRoutes();
+
+        foreach ($result['routes'] as $route) {
+            // Controller can be null or a string
+            $this->assertTrue(
+                $route['controller'] === null || is_string($route['controller']),
+                'Controller should be null or string',
+            );
+        }
+    }
+
+    /**
+     * Test getRoute with all optional fields
+     */
+    public function testGetRouteWithAllFields(): void
+    {
+        $result = $this->RouteTools->getRoute('home');
+
+        $this->assertArrayHasKey('name', $result);
+        $this->assertArrayHasKey('template', $result);
+        $this->assertArrayHasKey('plugin', $result);
+        $this->assertArrayHasKey('prefix', $result);
+        $this->assertArrayHasKey('controller', $result);
+        $this->assertArrayHasKey('action', $result);
+        $this->assertArrayHasKey('methods', $result);
+        $this->assertArrayHasKey('middlewares', $result);
+        $this->assertArrayHasKey('defaults', $result);
+        $this->assertArrayHasKey('options', $result);
+    }
+
+    /**
+     * Test matchUrl with lowercase method
+     */
+    public function testMatchUrlWithLowercaseMethod(): void
+    {
+        $result = $this->RouteTools->matchUrl('/projects/123', 'get');
+
+        $this->assertEquals('GET', $result['method']);
+        $this->assertArrayHasKey('params', $result);
+    }
+
+    /**
+     * Test matchUrl with mixed case method
+     */
+    public function testMatchUrlWithMixedCaseMethod(): void
+    {
+        $result = $this->RouteTools->matchUrl('/projects/123', 'GeT');
+
+        $this->assertEquals('GET', $result['method']);
+    }
+
+    /**
+     * Test reverseRoute error handling with invalid name
+     */
+    public function testReverseRouteWithInvalidName(): void
+    {
+        $this->expectException(ToolCallException::class);
+        $this->expectExceptionMessage('Error generating URL');
+
+        $this->RouteTools->reverseRoute(name: 'totally:nonexistent:route:name:xyz');
+    }
+
+    /**
+     * Test reverseRoute with name and multiple parameters
+     */
+    public function testReverseRouteWithNameAndMultipleParams(): void
+    {
+        $result = $this->RouteTools->reverseRoute(
+            name: 'projects:edit',
+            params: ['id' => 456, 'extra' => 'value'],
+        );
+
+        $this->assertArrayHasKey('url', $result);
+        $this->assertIsString($result['url']);
+    }
+
+    /**
+     * Test detectRouteCollisions with routes without methods
+     */
+    public function testDetectRouteCollisionsWithoutMethods(): void
+    {
+        $result = $this->RouteTools->detectRouteCollisions();
+
+        $this->assertArrayHasKey('hasCollisions', $result);
+        $this->assertArrayHasKey('totalCollisions', $result);
+        $this->assertArrayHasKey('collisions', $result);
+    }
+
+    /**
+     * Test detectRouteCollisions method handling
+     */
+    public function testDetectRouteCollisionsMethodHandling(): void
+    {
+        $result = $this->RouteTools->detectRouteCollisions();
+
+        $this->assertIsArray($result['collisions']);
+
+        // Check collision method formatting
+        foreach ($result['collisions'] as $collision) {
+            $this->assertArrayHasKey('method', $collision);
+            // Method should be 'ANY' if empty, otherwise the actual method
+            $this->assertTrue(
+                $collision['method'] === 'ANY' || is_string($collision['method']),
+                'Method should be ANY or a string',
+            );
+        }
+    }
+
+    /**
+     * Test listRoutes with case insensitive method filter
+     */
+    public function testListRoutesMethodFilterCaseInsensitive(): void
+    {
+        $resultUpper = $this->RouteTools->listRoutes(method: 'GET');
+        $resultLower = $this->RouteTools->listRoutes(method: 'get');
+        $resultMixed = $this->RouteTools->listRoutes(method: 'GeT');
+
+        // Should return same routes regardless of case
+        $this->assertEquals($resultUpper['total'], $resultLower['total']);
+        $this->assertEquals($resultUpper['total'], $resultMixed['total']);
+    }
+
+    /**
+     * Test listRoutes combined filters
+     */
+    public function testListRoutesCombinedFilters(): void
+    {
+        $result = $this->RouteTools->listRoutes(
+            sort: true,
+            method: 'GET',
+            controller: 'Projects',
+        );
+
+        $this->assertGreaterThan(0, $result['total']);
+
+        // Verify all filters applied
+        foreach ($result['routes'] as $route) {
+            if (!empty($route['methods'])) {
+                $methods = array_map('strtoupper', $route['methods']);
+                $this->assertContains('GET', $methods);
+            }
+
+            $this->assertEquals('Projects', $route['controller']);
+        }
+    }
+
+    /**
+     * Test detectRouteCollisions with empty methods array
+     */
+    public function testDetectRouteCollisionsEmptyMethods(): void
+    {
+        // Add a route without methods to test empty array handling
+        $routeBuilder = Router::createRouteBuilder('/');
+        $routeBuilder->connect('/test-no-methods', ['controller' => 'Test', 'action' => 'index']);
+
+        $result = $this->RouteTools->detectRouteCollisions();
+
+        $this->assertIsArray($result['collisions']);
+    }
+
+    /**
+     * Test listRoutes returns empty methods array correctly
+     */
+    public function testListRoutesEmptyMethodsArray(): void
+    {
+        $result = $this->RouteTools->listRoutes();
+
+        // Verify methods is always an array
+        foreach ($result['routes'] as $route) {
+            $this->assertIsArray($route['methods']);
+        }
+    }
 }

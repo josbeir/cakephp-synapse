@@ -48,9 +48,6 @@ The Model Context Protocol is an open protocol that enables seamless integration
 - 🔍 **Auto-Discovery**: Automatically discovers MCP elements using PHP 8 attributes
 - 🛠️ **Built-in Tools**: Pre-built tools for system info, database inspection, and route management
 - 📦 **Extensible**: Create custom tools using simple PHP attributes
-- 🔒 **Type-Safe**: Full PHPStan level 8 compliance
-- ✅ **Well-Tested**: Comprehensive test suite with 100% coverage goal
-- 📝 **Standards-Compliant**: Follows CakePHP coding standards
 
 ## Installation
 
@@ -324,7 +321,7 @@ composer install
 composer test
 
 # Run static analysis
-composer stan
+composer phpstan
 ```
 
 ## License
@@ -339,7 +336,3 @@ This plugin is open-sourced software licensed under the [MIT license](LICENSE.md
 
 > [!NOTE]
 > The MCP PHP SDK is in active development and APIs may change.
-
----
-
-Made with ❤️ by the Adaptic team
