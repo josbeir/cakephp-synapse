@@ -206,14 +206,6 @@ Access system information and configuration:
 - `config_read` - Read configuration values
 - `debug_status` - Check if debug mode is enabled
 
-**Example usage:**
-```php
-// AI assistant can call:
-system_info()
-config_read(key: "App.name")
-debug_status()
-```
-
 ### Database Tools
 
 Inspect and query your database:
@@ -224,18 +216,6 @@ Inspect and query your database:
   - Inspect columns, constraints, indexes
   - Understand foreign key relationships
 
-**Example usage:**
-```php
-// List all database connections
-list_connections()
-
-// Get schema for all tables
-describe_schema(connection: "default")
-
-// Get detailed info for a specific table
-describe_schema(connection: "default", table: "users")
-```
-
 ### Route Tools
 
 Inspect and analyze your application routes:
@@ -245,24 +225,6 @@ Inspect and analyze your application routes:
 - `match_url` - Find which route matches a given URL
 - `reverse_route` - Generate URLs from route names or parameters
 - `detect_route_collisions` - Find potential route conflicts
-
-**Example usage:**
-```php
-// List all GET routes
-list_routes(method: "GET")
-
-// Find routes for a controller
-list_routes(controller: "Articles")
-
-// Match a URL to a route
-match_url(url: "/articles/view/123")
-
-// Generate URL from route name
-reverse_route(name: "articles:view", params: {"id": 123})
-
-// Check for route conflicts
-detect_route_collisions()
-```
 
 ## Running the Server
 
@@ -294,15 +256,24 @@ To connect Claude Desktop or other MCP clients:
 2. Point it to your CakePHP bin directory: `/path/to/your/app/bin/cake synapse server`
 3. The client will communicate with your app via the MCP protocol
 
-Example Claude Desktop configuration (`claude_desktop_config.json`):
+Example IDE/Tool configuration (VSCode/Claude/Zed/...)
 
 ```json
 {
-  "mcpServers": {
-    "my-cakephp-app": {
-      "command": "/path/to/your/app/bin/cake",
-      "args": ["synapse", "server"]
-    }
+  "my-cakephp-app": {
+    "command": "bin/cake",
+    "args": ["synapse", "server"]
+  }
+}
+```
+
+Or run inside your DDEV instance
+
+```json
+{
+  "cakephp-synapse": {
+    "command": "ddev",
+    "args": ["cake","synapse","server"],
   }
 }
 ```
