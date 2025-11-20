@@ -93,18 +93,6 @@ return [
             'cache_dir' => env('MCP_DOCS_CACHE_DIR', TMP . 'synapse' . DS . 'docs'),
 
             /**
-             * Base Path Override
-             *
-             * Optional override for constructing absolute file paths in search results.
-             * Useful when indexing happens in one location (e.g., Docker container)
-             * but files need to be accessed from another location (e.g., host machine).
-             *
-             * If null, uses cache_dir for absolute paths.
-             * Example: '/Users/john/project/tmp/synapse/docs' (host path when Docker uses /app/tmp/synapse/docs)
-             */
-            'base_path_override' => env('MCP_DOCS_BASE_PATH_OVERRIDE', null),
-
-            /**
              * Search Database
              *
              * Path to the SQLite database used by YetiSearch.

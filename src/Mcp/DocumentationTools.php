@@ -120,7 +120,7 @@ class DocumentationTools
      * Use this after searching to read the full document.
      *
      * @param string $docId Document ID in format 'source::path' (e.g., 'cakephp-5x::docs/en/controllers.md')
-     * @return array{content: string, title: string, source: string, path: string, absolute_path: string, id: string, metadata: array<string, mixed>} Document content and metadata
+     * @return array{content: string, title: string, source: string, path: string, id: string, metadata: array<string, mixed>} Document content and metadata
      */
     #[McpTool(
         name: 'get_doc',
@@ -147,7 +147,6 @@ class DocumentationTools
                 'title' => $document['title'],
                 'source' => $document['source'],
                 'path' => $document['path'],
-                'absolute_path' => $document['absolute_path'],
                 'id' => $document['id'],
                 'metadata' => $document['metadata'],
             ];
@@ -288,14 +287,13 @@ class DocumentationTools
             $rank = $i + 1;
             $title = $result['title'] ?? 'Untitled';
             $relativePath = $result['path'] ?? '';
-            $absolutePath = $result['absolute_path'] ?? '';
+
             $source = $result['source'] ?? '';
             $snippet = $result['snippet'] ?? '';
             $rank_score = $result['rank'] ?? 0;
 
             $markdown .= sprintf("## %d. %s\n\n", $rank, $title);
             $markdown .= sprintf("**Source:** %s  \n", $source);
-            $markdown .= sprintf("**File:** `%s`  \n", $absolutePath);
 
             if ($relativePath !== '') {
                 $markdown .= sprintf("**Path:** `%s`  \n", $relativePath);

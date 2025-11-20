@@ -44,11 +44,7 @@ class DocumentSearchService
             throw new RuntimeException(sprintf('Failed to create directory: %s', $dir));
         }
 
-        // Get base path for resolving absolute paths
-        $basePath = Configure::read('Synapse.documentation.base_path_override')
-            ?? Configure::read('Synapse.documentation.cache_dir');
-
-        $this->searchEngine = new SearchEngine($databasePath, $basePath);
+        $this->searchEngine = new SearchEngine($databasePath);
         $this->repositoryManager = $repositoryManager ?? new RepositoryManager();
         $this->documentProcessor = $documentProcessor ?? new DocumentProcessor();
     }

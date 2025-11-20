@@ -759,112 +759,6 @@ class SearchEngineTest extends TestCase
     }
 
     /**
-     * Test search results include computed absolute paths
-     */
-    public function testSearchResultsIncludeAbsolutePath(): void
-    {
-        Configure::write('Synapse.documentation.cache_dir', TMP . 'test_cache');
-
-        $dbPath = TMP . 'tests' . DS . 'absolute_path_test_' . uniqid() . '.db';
-        $engine = new SearchEngine($dbPath);
-
-        // Index a document with relative path
-        $document = [
-            'id' => 'test::doc1.md',
-            'source' => 'test-source',
-            'path' => 'docs/getting-started.md',
-            'title' => 'Getting Started',
-            'headings' => [],
-            'content' => 'Learn how to get started with the framework',
-            'metadata' => [],
-        ];
-
-        $engine->indexDocument($document);
-
-        // Search for the document
-        $results = $engine->search('started');
-
-        $this->assertNotEmpty($results);
-        $this->assertEquals('docs/getting-started.md', $results[0]['path']);
-        $this->assertStringEndsWith('test-source' . DS . 'docs/getting-started.md', $results[0]['absolute_path']);
-
-        // Clean up
-        @unlink($dbPath); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
-    }
-
-    /**
-     * Test base path override affects absolute path resolution
-     */
-    public function testBasePathOverrideAffectsAbsolutePath(): void
-    {
-        Configure::write('Synapse.documentation.base_path_override', '/custom/base/path');
-
-        $dbPath = TMP . 'tests' . DS . 'base_path_override_test_' . uniqid() . '.db';
-        $engine = new SearchEngine($dbPath);
-
-        // Index a document
-        $document = [
-            'id' => 'test::doc1.md',
-            'source' => 'my-docs',
-            'path' => 'intro/setup.md',
-            'title' => 'Setup Guide',
-            'headings' => [],
-            'content' => 'How to setup the application',
-            'metadata' => [],
-        ];
-
-        $engine->indexDocument($document);
-
-        // Search for the document
-        $results = $engine->search('setup');
-
-        $this->assertNotEmpty($results);
-        $this->assertEquals('intro/setup.md', $results[0]['path']);
-        $expected = '/custom/base/path' . DS . 'my-docs' . DS . 'intro/setup.md';
-        $this->assertEquals($expected, $results[0]['absolute_path']);
-
-        // Clean up
-        Configure::delete('Synapse.documentation.base_path_override');
-        @unlink($dbPath); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
-    }
-
-    /**
-     * Test constructor basePath parameter overrides config
-     */
-    public function testConstructorBasePathOverridesConfig(): void
-    {
-        Configure::write('Synapse.documentation.cache_dir', TMP . 'config_cache');
-        Configure::write('Synapse.documentation.base_path_override', '/config/override');
-
-        $dbPath = TMP . 'tests' . DS . 'constructor_path_test_' . uniqid() . '.db';
-        $engine = new SearchEngine($dbPath, '/constructor/path');
-
-        // Index a document
-        $document = [
-            'id' => 'test::doc1.md',
-            'source' => 'docs',
-            'path' => 'guide.md',
-            'title' => 'Guide',
-            'headings' => [],
-            'content' => 'Documentation guide',
-            'metadata' => [],
-        ];
-
-        $engine->indexDocument($document);
-
-        // Search for the document
-        $results = $engine->search('guide');
-
-        $this->assertNotEmpty($results);
-        $expected = '/constructor/path' . DS . 'docs' . DS . 'guide.md';
-        $this->assertEquals($expected, $results[0]['absolute_path']);
-
-        // Clean up
-        Configure::delete('Synapse.documentation.base_path_override');
-        @unlink($dbPath); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
-    }
-
-    /**
      * Test getDocumentById retrieves document by ID
      */
     public function testGetDocumentByIdRetrievesDocument(): void
@@ -904,14 +798,14 @@ class SearchEngineTest extends TestCase
     }
 
     /**
-     * Test getDocumentById includes absolute path
+     * Test getDocumentById retrieves document with correct path and source
      */
-    public function testGetDocumentByIdIncludesAbsolutePath(): void
+    public function testGetDocumentByIdRetrievesCorrectPathAndSource(): void
     {
         Configure::write('Synapse.documentation.cache_dir', TMP . 'test_cache');
 
         $document = [
-            'id' => 'my-docs::guide.md',
+            'id' => 'my-docs::intro/setup.md',
             'source' => 'my-docs',
             'path' => 'intro/setup.md',
             'title' => 'Setup Guide',
@@ -922,10 +816,12 @@ class SearchEngineTest extends TestCase
 
         $this->searchEngine->indexDocument($document);
 
-        $result = $this->searchEngine->getDocumentById('my-docs::guide.md');
+        $result = $this->searchEngine->getDocumentById('my-docs::intro/setup.md');
 
         $this->assertNotNull($result);
-        $this->assertArrayHasKey('absolute_path', $result);
-        $this->assertStringEndsWith('my-docs' . DS . 'intro/setup.md', $result['absolute_path']);
+        $this->assertEquals('intro/setup.md', $result['path']);
+        $this->assertEquals('my-docs', $result['source']);
+        $this->assertEquals('Setup Guide', $result['title']);
+        $this->assertEquals('How to setup the application', $result['content']);
     }
 }

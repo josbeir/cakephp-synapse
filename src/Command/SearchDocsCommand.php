@@ -144,7 +144,6 @@ class SearchDocsCommand extends Command
                 $rank = $i + 1;
                 $title = $result['title'] ?? 'Untitled';
                 $relativePath = $result['path'] ?? '';
-                $absolutePath = $result['absolute_path'] ?? '';
                 $resultSource = $result['source'] ?? '';
                 $snippet = $result['snippet'] ?? '';
                 $rankScore = $result['rank'] ?? 0;
@@ -159,14 +158,13 @@ class SearchDocsCommand extends Command
 
                 if ($detailed) {
                     $io->out(sprintf('   Source: %s', $resultSource));
-                    $io->out(sprintf('   File: %s', $absolutePath));
                     if ($relativePath !== '') {
                         $io->out(sprintf('   Path: %s', $relativePath));
                     }
 
                     $io->out(sprintf('   Relevance: %.2f', $rankScore));
                 } else {
-                    $io->out(sprintf('   File: %s', $absolutePath));
+                    $io->out(sprintf('   Path: %s', $relativePath));
                 }
 
                 // Display snippet if enabled

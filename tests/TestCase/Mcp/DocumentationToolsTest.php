@@ -478,7 +478,6 @@ class DocumentationToolsTest extends TestCase
             [
                 'title' => 'Complete Result',
                 'path' => 'docs/complete.md',
-                'absolute_path' => '/path/to/cakephp-5x/docs/complete.md',
                 'source' => 'cakephp-5x',
                 'snippet' => 'This is a complete snippet with all fields.',
                 'rank' => 7.25,
@@ -495,7 +494,7 @@ class DocumentationToolsTest extends TestCase
 
         $this->assertStringContainsString('## 1. Complete Result', $content->text);
         $this->assertStringContainsString('**Source:** cakephp-5x', $content->text);
-        $this->assertStringContainsString('**File:** `/path/to/cakephp-5x/docs/complete.md`', $content->text);
+        $this->assertStringContainsString('**Path:** `docs/complete.md`', $content->text);
         $this->assertStringContainsString('**Relevance:** 7.25', $content->text);
         $this->assertStringContainsString('**Snippet:**', $content->text);
         $this->assertStringContainsString('This is a complete snippet with all fields.', $content->text);
@@ -522,7 +521,6 @@ class DocumentationToolsTest extends TestCase
 
         $this->assertStringContainsString('## 1. Minimal Result', $content->text);
         $this->assertStringContainsString('**Source:**', $content->text);
-        $this->assertStringContainsString('**File:** ``', $content->text);
         $this->assertStringContainsString('**Relevance:** 0.00', $content->text);
     }
 
@@ -653,7 +651,6 @@ class DocumentationToolsTest extends TestCase
             'id' => 'cakephp-5x::docs/getting-started.md',
             'source' => 'cakephp-5x',
             'path' => 'docs/getting-started.md',
-            'absolute_path' => '/path/to/cakephp-5x/docs/getting-started.md',
             'title' => 'Getting Started',
             'content' => "# Getting Started\n\nThis is the full documentation content.",
             'metadata' => ['version' => '5.x'],
@@ -688,7 +685,6 @@ class DocumentationToolsTest extends TestCase
             'id' => 'cakephp-5x::docs/auth.md',
             'source' => 'cakephp-5x',
             'path' => 'docs/auth.md',
-            'absolute_path' => '/path/to/cakephp-5x/docs/auth.md',
             'title' => 'Authentication & Authorization',
             'content' => "# Authentication & Authorization\n\nLearn about security.",
             'metadata' => [],
@@ -714,7 +710,6 @@ class DocumentationToolsTest extends TestCase
             'id' => 'cakephp-5x::docs/database-basics.md',
             'source' => 'cakephp-5x',
             'path' => 'docs/database-basics.md',
-            'absolute_path' => '/path/to/cakephp-5x/docs/database-basics.md',
             'title' => 'Database Basics',
             'content' => 'Some content without a heading.',
             'metadata' => ['author' => 'CakePHP Team', 'version' => '5.x'],
@@ -786,7 +781,6 @@ class DocumentationToolsTest extends TestCase
             'id' => 'cakephp-5x::docs/controllers.md',
             'source' => 'cakephp-5x',
             'path' => 'docs/controllers.md',
-            'absolute_path' => '/path/to/cakephp-5x/docs/controllers.md',
             'title' => 'Controllers',
             'content' => "# Controllers\n\nLearn about CakePHP controllers.",
             'metadata' => [],

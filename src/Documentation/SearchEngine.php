@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Synapse\Documentation;
 
-use Cake\Core\Configure;
 use Exception;
 use RuntimeException;
 use SQLite3;
@@ -30,12 +29,10 @@ class SearchEngine
      * Constructor
      *
      * @param string $databasePath Path to SQLite database file
-     * @param string|null $basePath Base path for resolving absolute paths (null = use config)
      * @throws \RuntimeException If SQLite FTS5 is not available
      */
     public function __construct(
         private string $databasePath,
-        private ?string $basePath = null,
     ) {
         // Ensure directory exists
         $dir = dirname($this->databasePath);
@@ -447,13 +444,10 @@ class SearchEngine
 
         $results = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-            $absolutePath = $this->resolveAbsolutePath($row['source'], $row['path']);
-
             $results[] = [
                 'id' => $row['doc_id'],
                 'source' => $row['source'],
                 'path' => $row['path'],
-                'absolute_path' => $absolutePath,
                 'title' => $row['title'],
                 'metadata' => json_decode($row['metadata'], true),
                 'score' => abs($row['score']),
@@ -549,13 +543,10 @@ class SearchEngine
             return null;
         }
 
-        $absolutePath = $this->resolveAbsolutePath($row['source'], $row['path']);
-
         return [
             'id' => $row['doc_id'],
             'source' => $row['source'],
             'path' => $row['path'],
-            'absolute_path' => $absolutePath,
             'title' => $row['title'],
             'content' => $row['content'],
             'metadata' => json_decode($row['metadata'], true),
@@ -671,21 +662,5 @@ class SearchEngine
         $query = preg_replace('/\s+/', ' ', $query);
 
         return trim($query ?? '');
-    }
-
-    /**
-     * Resolve absolute path from source and relative path
-     *
-     * @param string $source Source key
-     * @param string $relativePath Relative path within source
-     * @return string Absolute path
-     */
-    private function resolveAbsolutePath(string $source, string $relativePath): string
-    {
-        $baseDir = $this->basePath
-            ?? Configure::read('Synapse.documentation.base_path_override')
-            ?? Configure::read('Synapse.documentation.cache_dir');
-
-        return $baseDir . DS . $source . DS . $relativePath;
     }
 }
