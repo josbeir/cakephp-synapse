@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Synapse\Command;
 
+use Cake\Cache\Cache;
 use Cake\Command\Command;
 use Cake\Console\Arguments;
 use Cake\Console\CommandFactoryInterface;
@@ -13,6 +14,7 @@ use Cake\Core\ContainerInterface;
 use Mcp\Schema\Enum\ProtocolVersion;
 use Mcp\Server;
 use Mcp\Server\Transport\StdioTransport;
+use Psr\SimpleCache\CacheInterface;
 use Throwable;
 
 /**
@@ -23,6 +25,11 @@ use Throwable;
  */
 class ServerCommand extends Command
 {
+    /**
+     * Default cache engine name for discovery caching
+     */
+    private const DEFAULT_CACHE_ENGINE = 'default';
+
     /**
      * Constructor
      *
@@ -50,6 +57,16 @@ class ServerCommand extends Command
                 'help' => 'Transport type (currently only stdio is supported)',
                 'default' => 'stdio',
                 'choices' => ['stdio'],
+            ])
+            ->addOption('no-cache', [
+                'short' => 'n',
+                'help' => 'Disable discovery caching for this run',
+                'boolean' => true,
+            ])
+            ->addOption('clear-cache', [
+                'short' => 'c',
+                'help' => 'Clear discovery cache before starting',
+                'boolean' => true,
             ]);
 
         return $parser;
@@ -65,8 +82,13 @@ class ServerCommand extends Command
     public function execute(Arguments $args, ConsoleIo $io): int
     {
         try {
+            // Handle cache clearing if requested
+            if ($args->getOption('clear-cache')) {
+                $this->clearDiscoveryCache($io);
+            }
+
             $io->out('<info>Building MCP server...</info>');
-            $server = $this->buildServer($io);
+            $server = $this->buildServer($io, $args);
 
             $io->out('<success>✓ MCP server started with stdio transport</success>');
             $io->out('<comment>Listening for MCP requests...</comment>');
@@ -88,8 +110,9 @@ class ServerCommand extends Command
      * Build and configure the MCP server
      *
      * @param \Cake\Console\ConsoleIo $io Console I/O
+     * @param \Cake\Console\Arguments $args Command arguments
      */
-    private function buildServer(ConsoleIo $io): Server
+    private function buildServer(ConsoleIo $io, Arguments $args): Server
     {
         $config = Configure::read('Synapse', []);
         $serverInfo = $config['serverInfo'] ?? [
@@ -114,12 +137,29 @@ class ServerCommand extends Command
         // Build server using the official SDK
         $builder = Server::builder()
             ->setServerInfo($serverInfo['name'], $serverInfo['version'])
-            ->setProtocolVersion($protocolVersion)
-            ->setDiscovery(
-                basePath: ROOT,
-                scanDirs: $scanDirs,
-                excludeDirs: $excludeDirs,
-            );
+            ->setProtocolVersion($protocolVersion);
+
+        // Configure discovery with optional caching
+        $cache = null;
+        $cacheDisabled = $args->getOption('no-cache');
+
+        if (!$cacheDisabled) {
+            $cacheEngine = $discoveryConfig['cache'] ?? self::DEFAULT_CACHE_ENGINE;
+            $cache = $this->getCache($cacheEngine, $io);
+
+            if ($cache instanceof CacheInterface) {
+                $io->verbose(sprintf('<info>Discovery caching enabled (using: %s)</info>', $cacheEngine));
+            }
+        } else {
+            $io->verbose('<comment>Discovery caching disabled via --no-cache</comment>');
+        }
+
+        $builder->setDiscovery(
+            basePath: ROOT,
+            scanDirs: $scanDirs,
+            excludeDirs: $excludeDirs,
+            cache: $cache,
+        );
 
         // Set container from DI
         $builder->setContainer($this->container);
@@ -130,5 +170,50 @@ class ServerCommand extends Command
         $io->verbose('<success>Discovery complete</success>');
 
         return $server;
+    }
+
+    /**
+     * Get PSR-16 cache instance from CakePHP cache configuration
+     *
+     * @param string $engineName Cache engine name from config/app.php
+     * @param \Cake\Console\ConsoleIo $io Console I/O
+     */
+    private function getCache(string $engineName, ConsoleIo $io): ?CacheInterface
+    {
+        try {
+            // Get PSR-16 compatible cache pool from CakePHP
+            $cache = Cache::pool($engineName);
+
+            return $cache;
+        } catch (Throwable $throwable) {
+            $io->warning(sprintf(
+                'Failed to initialize cache "%s": %s',
+                $engineName,
+                $throwable->getMessage(),
+            ));
+
+            return null;
+        }
+    }
+
+    /**
+     * Clear the discovery cache
+     *
+     * @param \Cake\Console\ConsoleIo $io Console I/O
+     */
+    private function clearDiscoveryCache(ConsoleIo $io): void
+    {
+        $config = Configure::read('Synapse.discovery', []);
+        $cacheEngine = $config['cache'] ?? self::DEFAULT_CACHE_ENGINE;
+
+        try {
+            if (Cache::clear($cacheEngine)) {
+                $io->success(sprintf('Discovery cache cleared (engine: %s)', $cacheEngine));
+            } else {
+                $io->warning(sprintf('Failed to clear cache (engine: %s)', $cacheEngine));
+            }
+        } catch (Throwable $throwable) {
+            $io->error(sprintf('Error clearing cache: %s', $throwable->getMessage()));
+        }
     }
 }

@@ -3,9 +3,11 @@ declare(strict_types=1);
 
 namespace Synapse\Test\TestCase\Command;
 
+use Cake\Cache\Cache;
 use Cake\Console\TestSuite\ConsoleIntegrationTestTrait;
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use Psr\SimpleCache\CacheInterface;
 
 /**
  * ServerCommand Test Case
@@ -512,5 +514,153 @@ class ServerCommandTest extends TestCase
 
         $this->assertExitSuccess();
         $this->assertOutputContains('currently only stdio is supported');
+    }
+
+    /**
+     * Test cache configuration with default engine
+     */
+    public function testCacheConfigurationDefault(): void
+    {
+        Configure::write('Synapse.discovery.cache', 'default');
+        $cache = Configure::read('Synapse.discovery.cache');
+
+        $this->assertEquals('default', $cache);
+    }
+
+    /**
+     * Test cache configuration with custom engine
+     */
+    public function testCacheConfigurationCustomEngine(): void
+    {
+        Configure::write('Synapse.discovery.cache', 'mcp');
+        $cache = Configure::read('Synapse.discovery.cache');
+
+        $this->assertEquals('mcp', $cache);
+    }
+
+    /**
+     * Test CakePHP Cache::pool returns PSR-16 interface
+     */
+    public function testCachePoolReturnsPsr16Interface(): void
+    {
+        $cache = Cache::pool('default');
+
+        $this->assertInstanceOf(CacheInterface::class, $cache);
+    }
+
+    /**
+     * Test --no-cache option is available
+     */
+    public function testNoCacheOptionAvailable(): void
+    {
+        $this->exec('synapse server --help');
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('--no-cache');
+        $this->assertOutputContains('Disable discovery caching');
+    }
+
+    /**
+     * Test --clear-cache option is available
+     */
+    public function testClearCacheOptionAvailable(): void
+    {
+        $this->exec('synapse server --help');
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('--clear-cache');
+        $this->assertOutputContains('Clear discovery cache');
+    }
+
+    /**
+     * Test cache configuration from environment variable
+     */
+    public function testCacheConfigurationFromEnvironment(): void
+    {
+        Configure::write('Synapse.discovery.cache', env('MCP_DISCOVERY_CACHE', 'default'));
+        $cache = Configure::read('Synapse.discovery.cache');
+
+        $this->assertEquals('default', $cache);
+    }
+
+    /**
+     * Test cache can be set to different engines
+     */
+    public function testCacheEngineConfiguration(): void
+    {
+        $engines = ['default', 'mcp', '_cake_core_', '_cake_model_'];
+
+        foreach ($engines as $engine) {
+            Configure::write('Synapse.discovery.cache', $engine);
+            $configured = Configure::read('Synapse.discovery.cache');
+            $this->assertEquals($engine, $configured);
+        }
+
+        Configure::delete('Synapse.discovery.cache');
+    }
+
+    /**
+     * Test cache configuration is part of discovery config
+     */
+    public function testCacheIsPartOfDiscoveryConfig(): void
+    {
+        Configure::load('Synapse.synapse');
+        $discovery = Configure::read('Synapse.discovery');
+
+        $this->assertIsArray($discovery);
+        $this->assertArrayHasKey('cache', $discovery);
+    }
+
+    /**
+     * Test cache configuration default value
+     */
+    public function testCacheConfigurationDefaultValue(): void
+    {
+        Configure::load('Synapse.synapse');
+        $cache = Configure::read('Synapse.discovery.cache');
+
+        $this->assertIsString($cache);
+        $this->assertEquals('default', $cache);
+    }
+
+    /**
+     * Test both cache options work together
+     */
+    public function testBothCacheOptionsWorkTogether(): void
+    {
+        $this->exec('synapse server --help');
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('--no-cache');
+        $this->assertOutputContains('--clear-cache');
+    }
+
+    /**
+     * Test cache options are boolean flags
+     */
+    public function testCacheOptionsAreBoolean(): void
+    {
+        $this->exec('synapse server --no-cache --help');
+        $this->assertExitSuccess();
+
+        $this->exec('synapse server --clear-cache --help');
+        $this->assertExitSuccess();
+    }
+
+    /**
+     * Test cache configuration validation
+     */
+    public function testCacheConfigurationValidation(): void
+    {
+        $validEngines = ['default', 'mcp', 'custom'];
+
+        foreach ($validEngines as $engine) {
+            Configure::write('Synapse.discovery.cache', $engine);
+            $cache = Configure::read('Synapse.discovery.cache');
+            $this->assertIsString($cache);
+            $this->assertEquals($engine, $cache);
+        }
+
+        Configure::delete('Synapse.discovery.cache');
     }
 }

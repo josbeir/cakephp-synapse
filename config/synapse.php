@@ -41,6 +41,29 @@ return [
 
             // Directories to exclude from scanning
             'excludeDirs' => ['tests', 'vendor', 'tmp', 'logs', 'webroot'],
+
+            /**
+             * Discovery Cache
+             *
+             * Cache engine name to use for discovery caching (improves startup performance).
+             * Use any cache configuration defined in config/app.php (e.g., 'default', 'mcp').
+             * Defaults to 'default' cache engine if not specified.
+             *
+             * Examples:
+             * - 'default' (use default cache engine - recommended)
+             * - 'mcp' (use dedicated cache engine)
+             * - Any other cache engine name from config/app.php
+             *
+             * Configure cache settings in config/app.php:
+             * 'Cache' => [
+             *     'mcp' => [
+             *         'className' => 'File',
+             *         'duration' => '+1 hour',
+             *         'path' => CACHE . 'mcp' . DS,
+             *     ],
+             * ]
+             */
+            'cache' => env('MCP_DISCOVERY_CACHE', 'default'),
         ],
     ],
 ];
