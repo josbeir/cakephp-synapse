@@ -483,7 +483,7 @@ class DocumentationToolsTest extends TestCase
 
         $this->assertStringContainsString('## 1. Complete Result', $content->text);
         $this->assertStringContainsString('**Source:** cakephp-5x', $content->text);
-        $this->assertStringContainsString('**Path:** `docs/complete.md`', $content->text);
+        $this->assertStringContainsString('**File:** `docs/complete.md`', $content->text);
         $this->assertStringContainsString('**Relevance:** 7.25', $content->text);
         $this->assertStringContainsString('**Snippet:**', $content->text);
         $this->assertStringContainsString('This is a complete snippet with all fields.', $content->text);
@@ -510,7 +510,7 @@ class DocumentationToolsTest extends TestCase
 
         $this->assertStringContainsString('## 1. Minimal Result', $content->text);
         $this->assertStringContainsString('**Source:**', $content->text);
-        $this->assertStringContainsString('**Path:** ``', $content->text);
+        $this->assertStringContainsString('**File:** ``', $content->text);
         $this->assertStringContainsString('**Relevance:** 0.00', $content->text);
     }
 

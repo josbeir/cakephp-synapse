@@ -53,14 +53,15 @@ class DocumentSearchService
      * Index all enabled documentation sources
      *
      * @param bool $force Force re-index even if repository exists
+     * @param bool $pull Pull latest changes before indexing
      * @return array<string, int> Map of source key => number of documents indexed
      */
-    public function indexAll(bool $force = false): array
+    public function indexAll(bool $force = false, bool $pull = false): array
     {
         $results = [];
 
         foreach ($this->repositoryManager->getEnabledSources() as $sourceKey) {
-            $results[$sourceKey] = $this->indexSource($sourceKey, $force);
+            $results[$sourceKey] = $this->indexSource($sourceKey, $force, $pull);
         }
 
         return $results;
@@ -71,16 +72,20 @@ class DocumentSearchService
      *
      * @param string $sourceKey Source configuration key
      * @param bool $force Force re-index even if repository exists
+     * @param bool $pull Pull latest changes before indexing
      * @return int Number of documents indexed
      * @throws \RuntimeException If source cannot be indexed
      */
-    public function indexSource(string $sourceKey, bool $force = false): int
+    public function indexSource(string $sourceKey, bool $force = false, bool $pull = false): int
     {
         $repository = $this->repositoryManager->getRepository($sourceKey);
 
         // Clone repository if needed
         if (!$repository->exists()) {
             $repository->clone();
+        } elseif ($pull) {
+            // Pull latest changes if requested
+            $repository->pull();
         }
 
         // Clear existing documents for this source if forcing re-index

@@ -1,17 +1,17 @@
 <?php
 declare(strict_types=1);
 
-namespace Synapse\Test\TestCase;
+namespace Synapse\TestSuite;
 
 use RuntimeException;
-use Synapse\Documentation\Git\GitAdapter;
+use Synapse\Documentation\Git\GitAdapterInterface;
 
 /**
  * Mock Git Adapter for Testing
  *
  * Simulates git operations without actually executing git commands.
  */
-class MockGitAdapter extends GitAdapter
+class MockGitAdapter implements GitAdapterInterface
 {
     /**
      * Simulated repositories (path => data)
@@ -29,6 +29,23 @@ class MockGitAdapter extends GitAdapter
      * Clone failure message
      */
     private string $cloneFailureMessage = 'Simulated clone failure';
+
+    /**
+     * Whether to simulate pull failure
+     */
+    private bool $simulatePullFailure = false;
+
+    /**
+     * Pull failure message
+     */
+    private string $pullFailureMessage = 'Simulated pull failure';
+
+    /**
+     * Track pull operations (path => count)
+     *
+     * @var array<string, int>
+     */
+    private array $pullOperations = [];
 
     /**
      * Clone a repository (simulated)
@@ -79,6 +96,36 @@ class MockGitAdapter extends GitAdapter
     }
 
     /**
+     * Pull latest changes from remote (simulated)
+     *
+     * @param string $path Repository path
+     * @param string $branch Branch to pull
+     * @throws \RuntimeException If pull fails
+     */
+    public function pull(string $path, string $branch): void
+    {
+        if ($this->simulatePullFailure) {
+            throw new RuntimeException($this->pullFailureMessage);
+        }
+
+        if (!isset($this->repositories[$path])) {
+            throw new RuntimeException('Cannot pull repository that does not exist: ' . $path);
+        }
+
+        // Simulate pull by updating commit hash
+        $this->repositories[$path]['commit'] = $this->generateMockCommitHash();
+        $this->repositories[$path]['branch'] = $branch;
+        $this->repositories[$path]['pulled_at'] = time();
+
+        // Track pull operations
+        if (!isset($this->pullOperations[$path])) {
+            $this->pullOperations[$path] = 0;
+        }
+
+        $this->pullOperations[$path]++;
+    }
+
+    /**
      * Check if git is available (always true in mock)
      */
     public function isGitAvailable(): bool
@@ -96,6 +143,18 @@ class MockGitAdapter extends GitAdapter
     {
         $this->simulateCloneFailure = $fail;
         $this->cloneFailureMessage = $message;
+    }
+
+    /**
+     * Set whether to simulate pull failure
+     *
+     * @param bool $fail Whether to fail
+     * @param string $message Failure message
+     */
+    public function setSimulatePullFailure(bool $fail, string $message = 'Simulated pull failure'): void
+    {
+        $this->simulatePullFailure = $fail;
+        $this->pullFailureMessage = $message;
     }
 
     /**
@@ -125,8 +184,11 @@ class MockGitAdapter extends GitAdapter
     public function reset(): void
     {
         $this->repositories = [];
+        $this->pullOperations = [];
         $this->simulateCloneFailure = false;
         $this->cloneFailureMessage = 'Simulated clone failure';
+        $this->simulatePullFailure = false;
+        $this->pullFailureMessage = 'Simulated pull failure';
     }
 
     /**
@@ -149,5 +211,27 @@ class MockGitAdapter extends GitAdapter
         if (isset($this->repositories[$path])) {
             $this->repositories[$path]['commit'] = $commit;
         }
+    }
+
+    /**
+     * Get the number of times pull was called for a repository
+     *
+     * @param string $path Repository path
+     * @return int Number of pull operations
+     */
+    public function getPullCount(string $path): int
+    {
+        return $this->pullOperations[$path] ?? 0;
+    }
+
+    /**
+     * Check if pull was called for a repository
+     *
+     * @param string $path Repository path
+     * @return bool True if pull was called
+     */
+    public function wasPulled(string $path): bool
+    {
+        return isset($this->pullOperations[$path]) && $this->pullOperations[$path] > 0;
     }
 }

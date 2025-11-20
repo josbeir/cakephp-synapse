@@ -6,6 +6,7 @@ namespace Synapse\Test\TestCase\Command;
 use Cake\Console\TestSuite\ConsoleIntegrationTestTrait;
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use Synapse\TestSuite\MockGitAdapter;
 
 /**
  * IndexDocsCommand Test Case
@@ -33,6 +34,7 @@ class IndexDocsCommandTest extends TestCase
 
         // Configure test settings - completely override all documentation config
         Configure::write('Synapse.documentation', [
+            'git_adapter' => MockGitAdapter::class,
             'cache_dir' => TMP . 'tests' . DS . 'docs',
             'search_db' => $this->testDbPath,
             'search' => [
@@ -62,7 +64,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testCommandWithNoSourcesConfigured(): void
     {
-        $this->exec('index_docs');
+        $this->exec('synapse index');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Documentation Indexing');
@@ -76,7 +78,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testCommandDisplaysHeader(): void
     {
-        $this->exec('index_docs');
+        $this->exec('synapse index');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Documentation Indexing');
@@ -87,7 +89,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testCommandWithStatsOptionShowsStatistics(): void
     {
-        $this->exec('index_docs --stats');
+        $this->exec('synapse index --stats');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Index Statistics');
@@ -100,7 +102,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testCommandShowsStatisticsByDefault(): void
     {
-        $this->exec('index_docs --stats');
+        $this->exec('synapse index --stats');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Index Statistics');
@@ -111,7 +113,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testCommandWithForceOptionDisplaysWarning(): void
     {
-        $this->exec('index_docs --force');
+        $this->exec('synapse index --force');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Force re-index enabled');
@@ -122,7 +124,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testCommandWithShortForceOptionDisplaysWarning(): void
     {
-        $this->exec('index_docs -f');
+        $this->exec('synapse index -f');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Force re-index enabled');
@@ -133,7 +135,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testCommandWithOptimizeOption(): void
     {
-        $this->exec('index_docs --optimize');
+        $this->exec('synapse index --optimize');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Optimizing search index');
@@ -145,7 +147,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testCommandWithShortOptimizeOption(): void
     {
-        $this->exec('index_docs -o');
+        $this->exec('synapse index -o');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Optimizing search index');
@@ -168,7 +170,7 @@ class IndexDocsCommandTest extends TestCase
         ]);
 
         // This will fail because the repository doesn't exist, but we can test the flow
-        $this->exec('index_docs --source test-source');
+        $this->exec('synapse index --source test-source');
 
         // Command will fail due to missing repository, but we should see the source message
         $this->assertOutputContains('Indexing source:');
@@ -189,7 +191,7 @@ class IndexDocsCommandTest extends TestCase
             ],
         ]);
 
-        $this->exec('index_docs -s test-source');
+        $this->exec('synapse index -s test-source');
 
         $this->assertOutputContains('Indexing source:');
         $this->assertOutputContains('test-source');
@@ -209,7 +211,7 @@ class IndexDocsCommandTest extends TestCase
             ],
         ]);
 
-        $this->exec('index_docs --source test-source --force');
+        $this->exec('synapse index --source test-source --force');
 
         $this->assertOutputContains('Indexing source:');
         $this->assertOutputContains('test-source');
@@ -221,7 +223,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testCommandDisplaysSuccessMessage(): void
     {
-        $this->exec('index_docs');
+        $this->exec('synapse index');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Indexed');
@@ -233,7 +235,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testCommandWithAllOptionsCombined(): void
     {
-        $this->exec('index_docs --force --optimize --stats');
+        $this->exec('synapse index --force --optimize --stats');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Documentation Indexing');
@@ -248,7 +250,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testCommandHelpDisplaysUsageInformation(): void
     {
-        $this->exec('index_docs --help');
+        $this->exec('synapse index --help');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Index documentation for full-text search');
@@ -263,7 +265,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testCommandWithVerboseOutput(): void
     {
-        $this->exec('index_docs -v');
+        $this->exec('synapse index -v');
 
         $this->assertExitSuccess();
     }
@@ -273,7 +275,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testStatisticsDisplayShowsDocumentsBySource(): void
     {
-        $this->exec('index_docs --stats');
+        $this->exec('synapse index --stats');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Total documents:');
@@ -285,7 +287,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testCommandDisplaysHorizontalRules(): void
     {
-        $this->exec('index_docs');
+        $this->exec('synapse index');
 
         $this->assertExitSuccess();
         // Console integration test captures output with formatting
@@ -296,7 +298,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testCommandReturnsSuccessExitCode(): void
     {
-        $this->exec('index_docs');
+        $this->exec('synapse index');
 
         $this->assertExitSuccess();
     }
@@ -308,7 +310,7 @@ class IndexDocsCommandTest extends TestCase
     {
         Configure::write('Synapse.documentation.sources', []);
 
-        $this->exec('index_docs --source nonexistent-source');
+        $this->exec('synapse index --source nonexistent-source');
 
         $this->assertExitError();
         $this->assertErrorContains('Indexing failed');
@@ -319,7 +321,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testCommandShowsIndividualSourceCounts(): void
     {
-        $this->exec('index_docs');
+        $this->exec('synapse index');
 
         $this->assertExitSuccess();
         // Should show summary with count
@@ -332,7 +334,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testCommandDescription(): void
     {
-        $this->exec('index_docs --help');
+        $this->exec('synapse index --help');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Index documentation for full-text search');
@@ -343,7 +345,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testSourceOptionDescription(): void
     {
-        $this->exec('index_docs --help');
+        $this->exec('synapse index --help');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Specific source to index');
@@ -354,7 +356,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testForceOptionDescription(): void
     {
-        $this->exec('index_docs --help');
+        $this->exec('synapse index --help');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Force re-index even if source is already indexed');
@@ -365,7 +367,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testOptimizeOptionDescription(): void
     {
-        $this->exec('index_docs --help');
+        $this->exec('synapse index --help');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Optimize the search index after indexing');
@@ -376,7 +378,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testStatsOptionDescription(): void
     {
-        $this->exec('index_docs --help');
+        $this->exec('synapse index --help');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Show index statistics after indexing');
@@ -388,7 +390,7 @@ class IndexDocsCommandTest extends TestCase
     public function testCommandWithBooleanOptionVariations(): void
     {
         // Boolean options should work without values
-        $this->exec('index_docs --force --optimize');
+        $this->exec('synapse index --force --optimize');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Force re-index enabled');
@@ -400,7 +402,7 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testStatisticsWithEmptyIndex(): void
     {
-        $this->exec('index_docs --stats');
+        $this->exec('synapse index --stats');
 
         $this->assertExitSuccess();
         $this->assertOutputContains('Total documents:');
@@ -411,11 +413,73 @@ class IndexDocsCommandTest extends TestCase
      */
     public function testCommandOutputFormatting(): void
     {
-        $this->exec('index_docs');
+        $this->exec('synapse index');
 
         $this->assertExitSuccess();
         // Check that output uses proper formatting tags
         $this->assertOutputContains('Documentation Indexing');
         $this->assertOutputContains('Indexing all enabled sources');
+    }
+
+    /**
+     * Test command with --pull option displays message
+     */
+    public function testCommandWithPullOption(): void
+    {
+        $this->exec('synapse index --pull');
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('Documentation Indexing');
+        $this->assertOutputContains('Pulling latest changes from remote');
+        $this->assertOutputContains('Indexed');
+    }
+
+    /**
+     * Test command with short -p option
+     */
+    public function testCommandWithShortPullOption(): void
+    {
+        $this->exec('synapse index -p');
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('Pulling latest changes from remote');
+    }
+
+    /**
+     * Test command with --pull and --force combined
+     */
+    public function testCommandWithPullAndForce(): void
+    {
+        $this->exec('synapse index --pull --force');
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('Force re-index enabled');
+        $this->assertOutputContains('Pulling latest changes from remote');
+    }
+
+    /**
+     * Test command with --pull for specific source
+     */
+    public function testCommandWithPullForSpecificSource(): void
+    {
+        $this->exec('synapse index --source test-source --pull');
+
+        $this->assertExitError();
+        $this->assertOutputContains('Pulling latest changes from remote');
+        $this->assertOutputContains('Indexing source: <info>test-source</info>');
+        $this->assertErrorContains('Documentation source "test-source" is not configured');
+    }
+
+    /**
+     * Test command with all options including pull
+     */
+    public function testCommandWithAllOptionsIncludingPull(): void
+    {
+        $this->exec('synapse index --force --pull --optimize --stats');
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('Force re-index enabled');
+        $this->assertOutputContains('Pulling latest changes from remote');
+        $this->assertOutputContains('Index Statistics');
     }
 }

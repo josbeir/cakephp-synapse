@@ -6,7 +6,7 @@ namespace Synapse\Test\TestCase\Documentation\Git;
 use Cake\TestSuite\TestCase;
 use RuntimeException;
 use Synapse\Documentation\Git\Repository;
-use Synapse\Test\TestCase\MockGitAdapter;
+use Synapse\TestSuite\MockGitAdapter;
 
 /**
  * Repository Test Case
@@ -411,5 +411,130 @@ class RepositoryTest extends TestCase
         $commit2 = $repository->getCurrentCommit();
 
         $this->assertEquals($commit1, $commit2);
+    }
+
+    /**
+     * Test pull updates repository
+     */
+    public function testPullUpdatesRepository(): void
+    {
+        $repoPath = $this->testDir . 'test-repo';
+
+        $repository = new Repository(
+            url: 'https://github.com/test/repo.git',
+            branch: 'main',
+            path: $repoPath,
+            gitAdapter: $this->gitAdapter,
+        );
+
+        // Clone first
+        $repository->clone();
+        $this->assertTrue($repository->exists());
+
+        $commitBefore = $repository->getCurrentCommit();
+        $this->assertNotNull($commitBefore);
+
+        // Pull should update commit
+        $repository->pull();
+
+        $commitAfter = $repository->getCurrentCommit();
+        $this->assertNotNull($commitAfter);
+        $this->assertNotEquals($commitBefore, $commitAfter);
+        $this->assertTrue($this->gitAdapter->wasPulled($repoPath));
+    }
+
+    /**
+     * Test pull throws exception for non-existent repository
+     */
+    public function testPullThrowsExceptionForNonExistentRepository(): void
+    {
+        $repoPath = $this->testDir . 'non-existent-repo';
+
+        $repository = new Repository(
+            url: 'https://github.com/test/repo.git',
+            branch: 'main',
+            path: $repoPath,
+            gitAdapter: $this->gitAdapter,
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Cannot pull repository that does not exist');
+
+        $repository->pull();
+    }
+
+    /**
+     * Test pull with different branch
+     */
+    public function testPullWithDifferentBranch(): void
+    {
+        $repoPath = $this->testDir . 'test-repo';
+
+        $repository = new Repository(
+            url: 'https://github.com/test/repo.git',
+            branch: 'main',
+            path: $repoPath,
+            gitAdapter: $this->gitAdapter,
+        );
+
+        $repository->clone();
+        $repository->pull();
+
+        $repoData = $this->gitAdapter->getRepositoryData($repoPath);
+        $this->assertNotNull($repoData);
+        $this->assertEquals('main', $repoData['branch']);
+    }
+
+    /**
+     * Test pull failure is handled
+     */
+    public function testPullFailureThrowsException(): void
+    {
+        $repoPath = $this->testDir . 'test-repo';
+
+        $repository = new Repository(
+            url: 'https://github.com/test/repo.git',
+            branch: 'main',
+            path: $repoPath,
+            gitAdapter: $this->gitAdapter,
+        );
+
+        $repository->clone();
+
+        // Simulate pull failure
+        $this->gitAdapter->setSimulatePullFailure(true, 'Network timeout');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Network timeout');
+
+        $repository->pull();
+    }
+
+    /**
+     * Test multiple pulls increment counter
+     */
+    public function testMultiplePullsTracked(): void
+    {
+        $repoPath = $this->testDir . 'test-repo';
+
+        $repository = new Repository(
+            url: 'https://github.com/test/repo.git',
+            branch: 'main',
+            path: $repoPath,
+            gitAdapter: $this->gitAdapter,
+        );
+
+        $repository->clone();
+
+        $this->assertEquals(0, $this->gitAdapter->getPullCount($repoPath));
+
+        $repository->pull();
+        $this->assertEquals(1, $this->gitAdapter->getPullCount($repoPath));
+
+        $repository->pull();
+        $this->assertEquals(2, $this->gitAdapter->getPullCount($repoPath));
+
+        $repository->pull();
+        $this->assertEquals(3, $this->gitAdapter->getPullCount($repoPath));
     }
 }

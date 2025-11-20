@@ -238,19 +238,19 @@ Use the CLI to manage and search the index:
 
 ```bash
 # Index all sources
-bin/cake index_docs
+bin/cake synapse index
 
 # Index specific source
-bin/cake index_docs --source cakephp-5x
+bin/cake synapse index --source cakephp-5x
 
 # Force re-index and optimize
-bin/cake index_docs --force --optimize
+bin/cake synapse index --force --optimize
 
 # Search documentation from CLI
-bin/cake search_docs "authentication"
+bin/cake synapse search "authentication"
 
 # Search with options
-bin/cake search_docs "database queries" --limit 5 --fuzzy --detailed
+bin/cake synapse search "database queries" --limit 5 --fuzzy --detailed
 ```
 
 ## Running the Server

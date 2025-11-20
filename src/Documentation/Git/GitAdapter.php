@@ -10,7 +10,7 @@ use RuntimeException;
  *
  * Encapsulates git command execution for easier testing and mocking.
  */
-class GitAdapter
+class GitAdapter implements GitAdapterInterface
 {
     /**
      * Clone a repository
@@ -64,6 +64,34 @@ class GitAdapter
         }
 
         return trim($output[0]);
+    }
+
+    /**
+     * Pull latest changes from remote
+     *
+     * @param string $path Repository path
+     * @param string $branch Branch to pull
+     * @throws \RuntimeException If pull fails
+     */
+    public function pull(string $path, string $branch): void
+    {
+        $command = sprintf(
+            'cd %s && git fetch origin %s --depth 1 && git reset --hard origin/%s 2>&1',
+            escapeshellarg($path),
+            escapeshellarg($branch),
+            escapeshellarg($branch),
+        );
+
+        $output = [];
+        $returnVar = 0;
+        exec($command, $output, $returnVar);
+
+        if ($returnVar !== 0) {
+            throw new RuntimeException(sprintf(
+                'Git pull failed: %s',
+                implode("\n", $output),
+            ));
+        }
     }
 
     /**

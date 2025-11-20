@@ -105,6 +105,7 @@ class SearchEngine
                 doc_id TEXT PRIMARY KEY,
                 source TEXT NOT NULL,
                 path TEXT NOT NULL,
+                relative_path TEXT NOT NULL,
                 title TEXT NOT NULL,
                 metadata TEXT,
                 indexed_at INTEGER NOT NULL
@@ -131,6 +132,7 @@ class SearchEngine
         $docId = $document['id'];
         $source = $document['source'];
         $path = $document['path'];
+        $relativePath = $document['relative_path'] ?? $path;
         $title = $document['title'];
         $headings = implode(' ', $document['headings'] ?? []);
         $content = $document['content'];
@@ -154,7 +156,7 @@ class SearchEngine
 
             $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
             $stmt->bindValue(':source', $source, SQLITE3_TEXT);
-            $stmt->bindValue(':path', $path, SQLITE3_TEXT);
+            $stmt->bindValue(':path', $relativePath, SQLITE3_TEXT);
             $stmt->bindValue(':title', $title, SQLITE3_TEXT);
             $stmt->bindValue(':headings', $headings, SQLITE3_TEXT);
             $stmt->bindValue(':content', $content, SQLITE3_TEXT);
@@ -162,8 +164,8 @@ class SearchEngine
 
             // Insert into metadata table
             $stmt = $this->db->prepare("
-                INSERT INTO documents_meta (doc_id, source, path, title, metadata, indexed_at)
-                VALUES (:doc_id, :source, :path, :title, :metadata, :indexed_at)
+                INSERT INTO documents_meta (doc_id, source, path, relative_path, title, metadata, indexed_at)
+                VALUES (:doc_id, :source, :path, :relative_path, :title, :metadata, :indexed_at)
             ");
             if ($stmt === false) {
                 throw new RuntimeException('Failed to prepare metadata insert statement');
@@ -172,6 +174,7 @@ class SearchEngine
             $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
             $stmt->bindValue(':source', $source, SQLITE3_TEXT);
             $stmt->bindValue(':path', $path, SQLITE3_TEXT);
+            $stmt->bindValue(':relative_path', $relativePath, SQLITE3_TEXT);
             $stmt->bindValue(':title', $title, SQLITE3_TEXT);
             $stmt->bindValue(':metadata', $metadata, SQLITE3_TEXT);
             $stmt->bindValue(':indexed_at', time(), SQLITE3_INTEGER);
@@ -199,7 +202,8 @@ class SearchEngine
             foreach ($documents as $document) {
                 $source = $document['source'];
                 $path = $document['path'];
-                $docId = $document['id'] ?? sprintf('%s::%s', $source, $path);
+                $relativePath = $document['relative_path'] ?? $path;
+                $docId = $document['id'] ?? sprintf('%s::%s', $source, $relativePath);
                 $title = $document['title'];
                 $headings = implode(' ', $document['headings'] ?? []);
                 $content = $document['content'];
@@ -229,7 +233,7 @@ class SearchEngine
 
                 $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
                 $stmt->bindValue(':source', $source, SQLITE3_TEXT);
-                $stmt->bindValue(':path', $path, SQLITE3_TEXT);
+                $stmt->bindValue(':path', $relativePath, SQLITE3_TEXT);
                 $stmt->bindValue(':title', $title, SQLITE3_TEXT);
                 $stmt->bindValue(':headings', $headings, SQLITE3_TEXT);
                 $stmt->bindValue(':content', $content, SQLITE3_TEXT);
@@ -237,8 +241,8 @@ class SearchEngine
 
                 // Insert into metadata table
                 $stmt = $this->db->prepare("
-                    INSERT INTO documents_meta (doc_id, source, path, title, metadata, indexed_at)
-                    VALUES (:doc_id, :source, :path, :title, :metadata, :indexed_at)
+                    INSERT INTO documents_meta (doc_id, source, path, relative_path, title, metadata, indexed_at)
+                    VALUES (:doc_id, :source, :path, :relative_path, :title, :metadata, :indexed_at)
                 ");
                 if ($stmt === false) {
                     throw new RuntimeException('Failed to prepare metadata insert statement');
@@ -247,6 +251,7 @@ class SearchEngine
                 $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
                 $stmt->bindValue(':source', $source, SQLITE3_TEXT);
                 $stmt->bindValue(':path', $path, SQLITE3_TEXT);
+                $stmt->bindValue(':relative_path', $relativePath, SQLITE3_TEXT);
                 $stmt->bindValue(':title', $title, SQLITE3_TEXT);
                 $stmt->bindValue(':metadata', $metadata, SQLITE3_TEXT);
                 $stmt->bindValue(':indexed_at', time(), SQLITE3_INTEGER);
@@ -387,6 +392,8 @@ class SearchEngine
                 fts.doc_id,
                 fts.source,
                 fts.path,
+                meta.path as absolute_path,
+                meta.relative_path,
                 fts.title,
                 meta.metadata,
                 bm25(documents_fts) as score
@@ -443,7 +450,8 @@ class SearchEngine
             $results[] = [
                 'id' => $row['doc_id'],
                 'source' => $row['source'],
-                'path' => $row['path'],
+                'path' => $row['absolute_path'],
+                'relative_path' => $row['relative_path'],
                 'title' => $row['title'],
                 'metadata' => json_decode($row['metadata'], true),
                 'score' => abs($row['score']),
@@ -507,7 +515,27 @@ class SearchEngine
         $this->initialize();
 
         $this->db->exec("INSERT INTO documents_fts(documents_fts) VALUES('optimize')");
-        $this->db->exec('VACUUM');
+    }
+
+    /**
+     * Destroy the search engine and delete the database file
+     *
+     * Closes the database connection and removes the database file from disk.
+     * This is useful for cleaning up test databases or resetting the search index.
+     *
+     * @return bool True if the database file was deleted, false otherwise
+     */
+    public function destroy(): bool
+    {
+        // Close the database connection
+        $this->db->close();
+
+        // Delete the database file if it exists
+        if (file_exists($this->databasePath)) {
+            return @unlink($this->databasePath); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+        }
+
+        return false;
     }
 
     /**

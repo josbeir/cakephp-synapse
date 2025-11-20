@@ -3,15 +3,11 @@ declare(strict_types=1);
 
 namespace Synapse;
 
-use Cake\Console\CommandCollection;
 use Cake\Core\BasePlugin;
 use Cake\Core\Configure;
 use Cake\Core\ContainerInterface;
 use Cake\Core\PluginApplicationInterface;
-use Synapse\Command\IndexDocsCommand;
-use Synapse\Command\SearchDocsCommand;
 use Synapse\Command\ServerCommand;
-use Synapse\Test\TestCase\Command\IndexDocsCommandTest;
 
 /**
  * Synapse Plugin
@@ -43,23 +39,6 @@ class SynapsePlugin extends BasePlugin
         if (file_exists(ROOT . DS . 'config' . DS . 'app_synapse.php')) {
             Configure::load('app_synapse');
         }
-    }
-
-    /**
-     * Add commands for the plugin.
-     *
-     * @param \Cake\Console\CommandCollection $commands The command collection to update
-     */
-    public function console(CommandCollection $commands): CommandCollection
-    {
-        $commands = parent::console($commands);
-
-        // Register MCP server command
-        $commands->add('synapse server', ServerCommand::class);
-        $commands->add('synapse index', IndexDocsCommand::class);
-        $commands->add('synapse search', SearchDocsCommand::class);
-
-        return $commands;
     }
 
     /**

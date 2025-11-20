@@ -19,18 +19,13 @@ class SearchEngineTest extends TestCase
     protected SearchEngine $searchEngine;
 
     /**
-     * Test database path
-     */
-    protected string $testDbPath;
-
-    /**
      * setUp method
      */
     protected function setUp(): void
     {
         parent::setUp();
-        $this->testDbPath = TMP . 'test_search_' . uniqid() . '.db';
-        $this->searchEngine = new SearchEngine($this->testDbPath);
+
+        $this->searchEngine = new SearchEngine(TEST_SEARCH_DB);
     }
 
     /**
@@ -39,9 +34,7 @@ class SearchEngineTest extends TestCase
     protected function tearDown(): void
     {
         parent::tearDown();
-        if (file_exists($this->testDbPath)) {
-            unlink($this->testDbPath);
-        }
+        $this->searchEngine->destroy();
     }
 
     /**
@@ -49,7 +42,7 @@ class SearchEngineTest extends TestCase
      */
     public function testConstructorCreatesDatabaseFile(): void
     {
-        $this->assertFileExists($this->testDbPath);
+        $this->assertFileExists(TEST_SEARCH_DB);
     }
 
     /**
@@ -59,7 +52,7 @@ class SearchEngineTest extends TestCase
     {
         // This test would require mocking SQLite3, which is complex
         // We'll assume FTS5 is available in test environment
-        $this->assertFileExists($this->testDbPath);
+        $this->assertFileExists(TEST_SEARCH_DB);
     }
 
     /**
@@ -70,7 +63,7 @@ class SearchEngineTest extends TestCase
         $this->searchEngine->initialize();
 
         // Database should have our tables
-        $this->assertFileExists($this->testDbPath);
+        $this->assertFileExists(TEST_SEARCH_DB);
 
         // Try to query the tables to verify they exist
         $count = $this->searchEngine->getDocumentCount();
@@ -85,7 +78,8 @@ class SearchEngineTest extends TestCase
         $document = [
             'id' => 'test::doc1.md',
             'source' => 'test',
-            'path' => 'docs/doc1.md',
+            'path' => '/absolute/path/docs/doc1.md',
+            'relative_path' => 'docs/doc1.md',
             'title' => 'Test Document',
             'headings' => ['Introduction', 'Getting Started'],
             'content' => 'This is test content for the search engine.',
@@ -101,25 +95,27 @@ class SearchEngineTest extends TestCase
     /**
      * Test indexDocument updates existing document
      */
-    public function testIndexDocumentUpdatesExisting(): void
+    public function testIndexDocumentReplacesExisting(): void
     {
-        $document = [
+        $document1 = [
             'id' => 'test::doc1.md',
             'source' => 'test',
-            'path' => 'docs/doc1.md',
+            'path' => '/absolute/path/docs/doc1.md',
+            'relative_path' => 'docs/doc1.md',
             'title' => 'Original Title',
             'headings' => [],
             'content' => 'Original content',
             'metadata' => [],
         ];
 
-        $this->searchEngine->indexDocument($document);
+        $this->searchEngine->indexDocument($document1);
         $this->assertEquals(1, $this->searchEngine->getDocumentCount());
 
         // Index again with updated content
-        $document['title'] = 'Updated Title';
-        $document['content'] = 'Updated content';
-        $this->searchEngine->indexDocument($document);
+        $document2 = $document1;
+        $document2['title'] = 'Updated Title';
+        $document2['content'] = 'Updated content';
+        $this->searchEngine->indexDocument($document2);
 
         // Should still be 1 document
         $this->assertEquals(1, $this->searchEngine->getDocumentCount());
@@ -139,7 +135,8 @@ class SearchEngineTest extends TestCase
             [
                 'id' => 'test::doc1.md',
                 'source' => 'test',
-                'path' => 'docs/doc1.md',
+                'path' => '/absolute/path/docs/doc1.md',
+                'relative_path' => 'docs/doc1.md',
                 'title' => 'Document 1',
                 'headings' => [],
                 'content' => 'First document content',
@@ -148,7 +145,8 @@ class SearchEngineTest extends TestCase
             [
                 'id' => 'test::doc2.md',
                 'source' => 'test',
-                'path' => 'docs/doc2.md',
+                'path' => '/absolute/path/docs/doc2.md',
+                'relative_path' => 'docs/doc2.md',
                 'title' => 'Document 2',
                 'headings' => [],
                 'content' => 'Second document content',
@@ -157,7 +155,8 @@ class SearchEngineTest extends TestCase
             [
                 'id' => 'test::doc3.md',
                 'source' => 'test',
-                'path' => 'docs/doc3.md',
+                'path' => '/absolute/path/docs/doc3.md',
+                'relative_path' => 'docs/doc3.md',
                 'title' => 'Document 3',
                 'headings' => [],
                 'content' => 'Third document content',
@@ -179,7 +178,8 @@ class SearchEngineTest extends TestCase
         $document = [
             'id' => 'test::doc1.md',
             'source' => 'test',
-            'path' => 'docs/doc1.md',
+            'path' => '/absolute/path/docs/doc1.md',
+            'relative_path' => 'docs/doc1.md',
             'title' => 'CakePHP Framework',
             'headings' => ['Introduction', 'Getting Started'],
             'content' => 'CakePHP is a rapid development framework for PHP.',
@@ -203,10 +203,11 @@ class SearchEngineTest extends TestCase
         $document = [
             'id' => 'test::doc1.md',
             'source' => 'test',
-            'path' => 'docs/doc1.md',
+            'path' => '/absolute/path/docs/doc1.md',
+            'relative_path' => 'docs/doc1.md',
             'title' => 'Test Document',
             'headings' => [],
-            'content' => 'This is about testing.',
+            'content' => 'Test content with search terms',
             'metadata' => [],
         ];
 
@@ -303,10 +304,11 @@ class SearchEngineTest extends TestCase
         $document = [
             'id' => 'test::doc1.md',
             'source' => 'test',
-            'path' => 'docs/doc1.md',
+            'path' => '/absolute/path/docs/doc1.md',
+            'relative_path' => 'docs/doc1.md',
             'title' => 'Test Document',
             'headings' => [],
-            'content' => 'Test content.',
+            'content' => 'Test content',
             'metadata' => [],
         ];
 
@@ -327,7 +329,8 @@ class SearchEngineTest extends TestCase
         $document = [
             'id' => 'test::doc1.md',
             'source' => 'test',
-            'path' => 'docs/doc1.md',
+            'path' => '/absolute/path/docs/doc1.md',
+            'relative_path' => 'docs/doc1.md',
             'title' => 'Test Document',
             'headings' => [],
             'content' => 'Test content',
@@ -530,7 +533,8 @@ class SearchEngineTest extends TestCase
         $document = [
             'id' => 'test::doc1.md',
             'source' => 'test',
-            'path' => 'docs/doc1.md',
+            'path' => '/absolute/path/docs/doc1.md',
+            'relative_path' => 'docs/doc1.md',
             'title' => 'Test Document',
             'headings' => [],
             'content' => 'Content',
@@ -690,5 +694,66 @@ class SearchEngineTest extends TestCase
         // May or may not find it depending on tokenizer (porter stemming might match)
         // Just verify it runs without error and returns results
         $this->assertGreaterThanOrEqual(0, count($results));
+    }
+
+    /**
+     * Test destroy method closes connection and deletes database file
+     */
+    public function testDestroyDeletesDatabaseFile(): void
+    {
+        // Create a new search engine with a specific path
+        $dbPath = TMP . 'tests' . DS . 'destroy_test_' . uniqid() . '.db';
+        $engine = new SearchEngine($dbPath);
+
+        // Initialize to create the database file
+        $engine->initialize();
+
+        // Verify the file exists
+        $this->assertFileExists($dbPath);
+
+        // Destroy should delete the file
+        $result = $engine->destroy();
+
+        $this->assertTrue($result);
+        $this->assertFileDoesNotExist($dbPath);
+    }
+
+    /**
+     * Test destroy can be called multiple times
+     */
+    public function testDestroyCanBeCalledMultipleTimes(): void
+    {
+        // Create a search engine and initialize
+        $dbPath = TMP . 'tests' . DS . 'multi_destroy_' . uniqid() . '.db';
+        $engine = new SearchEngine($dbPath);
+        $engine->initialize();
+
+        // First destroy should succeed
+        $result1 = $engine->destroy();
+        $this->assertTrue($result1);
+
+        // Second destroy should return false (file no longer exists)
+        $result2 = $engine->destroy();
+        $this->assertFalse($result2);
+    }
+
+    /**
+     * Test destructor closes database connection
+     */
+    public function testDestructorClosesDatabaseConnection(): void
+    {
+        // Create engine, use it, then let it go out of scope
+        $dbPath = TMP . 'tests' . DS . 'destructor_test_' . uniqid() . '.db';
+        $engine = new SearchEngine($dbPath);
+        $engine->initialize();
+
+        // Trigger destructor
+        unset($engine);
+
+        // File should still exist (destructor only closes connection, doesn't delete)
+        $this->assertFileExists($dbPath);
+
+        // Clean up
+        @unlink($dbPath); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
     }
 }

@@ -18,6 +18,14 @@ use Synapse\Documentation\DocumentSearchService;
 class IndexDocsCommand extends Command
 {
     /**
+     * @inheritDoc
+     */
+    public static function defaultName(): string
+    {
+        return 'synapse index';
+    }
+
+    /**
      * Configure command options
      *
      * @param \Cake\Console\ConsoleOptionParser $parser Option parser
@@ -34,6 +42,12 @@ class IndexDocsCommand extends Command
             ->addOption('force', [
                 'short' => 'f',
                 'help' => 'Force re-index even if source is already indexed',
+                'boolean' => true,
+                'default' => false,
+            ])
+            ->addOption('pull', [
+                'short' => 'p',
+                'help' => 'Pull latest changes from remote before indexing',
                 'boolean' => true,
                 'default' => false,
             ])
@@ -69,6 +83,7 @@ class IndexDocsCommand extends Command
         $source = is_string($source) ? $source : null;
 
         $force = (bool)$args->getOption('force');
+        $pull = (bool)$args->getOption('pull');
         $optimize = (bool)$args->getOption('optimize');
         $showStats = (bool)$args->getOption('stats');
 
@@ -80,7 +95,11 @@ class IndexDocsCommand extends Command
                     $io->out('<warning>Force re-index enabled</warning>');
                 }
 
-                $count = $service->indexSource($source, $force);
+                if ($pull) {
+                    $io->out('<comment>Pulling latest changes from remote</comment>');
+                }
+
+                $count = $service->indexSource($source, $force, $pull);
                 $io->success(sprintf('Indexed %d documents from source: %s', $count, $source));
             } else {
                 // Index all enabled sources
@@ -89,7 +108,11 @@ class IndexDocsCommand extends Command
                     $io->out('<warning>Force re-index enabled</warning>');
                 }
 
-                $results = $service->indexAll($force);
+                if ($pull) {
+                    $io->out('<comment>Pulling latest changes from remote</comment>');
+                }
+
+                $results = $service->indexAll($force, $pull);
 
                 foreach ($results as $sourceKey => $count) {
                     $io->out(sprintf(

@@ -19,6 +19,11 @@ class RepositoryManager
     private array $repositories = [];
 
     /**
+     * Git adapter instance
+     */
+    private ?GitAdapterInterface $gitAdapter = null;
+
+    /**
      * Constructor
      *
      * @param string $cacheDir Base cache directory
@@ -60,6 +65,7 @@ class RepositoryManager
             branch: $config['branch'],
             path: $this->cacheDir . DS . $sourceKey,
             root: $config['root'] ?? '',
+            gitAdapter: $this->getGitAdapter(),
         );
 
         $this->repositories[$sourceKey] = $repository;
@@ -230,5 +236,31 @@ class RepositoryManager
     public function getRepositoryPath(string $sourceKey): string
     {
         return $this->cacheDir . DS . $sourceKey;
+    }
+
+    /**
+     * Get git adapter instance
+     *
+     * Creates adapter from configuration if not already set.
+     */
+    private function getGitAdapter(): GitAdapterInterface
+    {
+        if ($this->gitAdapter instanceof GitAdapterInterface) {
+            return $this->gitAdapter;
+        }
+
+        $adapterClass = Configure::read(
+            'Synapse.documentation.git_adapter',
+            GitAdapter::class,
+        );
+        if (!is_string($adapterClass)) {
+            $adapterClass = GitAdapter::class;
+        }
+
+        $adapter = new $adapterClass();
+        assert($adapter instanceof GitAdapterInterface);
+        $this->gitAdapter = $adapter;
+
+        return $this->gitAdapter;
     }
 }

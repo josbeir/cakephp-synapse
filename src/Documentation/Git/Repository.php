@@ -19,22 +19,22 @@ class Repository
      * @param string $branch Branch to checkout
      * @param string $path Local path where repository is/will be cloned
      * @param string $root Root directory within repo to work with (relative to repo root)
-     * @param \Synapse\Documentation\Git\GitAdapter|null $gitAdapter Git adapter for operations
+     * @param \Synapse\Documentation\Git\GitAdapterInterface|null $gitAdapter Git adapter for operations
      */
     public function __construct(
         public readonly string $url,
         public readonly string $branch,
         public readonly string $path,
         public readonly string $root = '',
-        ?GitAdapter $gitAdapter = null,
+        ?GitAdapterInterface $gitAdapter = null,
     ) {
         $this->gitAdapter = $gitAdapter ?? new GitAdapter();
     }
 
     /**
-     * @var \Synapse\Documentation\Git\GitAdapter Git adapter for operations
+     * @var \Synapse\Documentation\Git\GitAdapterInterface Git adapter for operations
      */
-    private GitAdapter $gitAdapter;
+    private GitAdapterInterface $gitAdapter;
 
     /**
      * Check if repository exists locally
@@ -66,6 +66,25 @@ class Repository
 
         // Delegate to git adapter
         $this->gitAdapter->clone($this->url, $this->branch, $this->path);
+    }
+
+    /**
+     * Pull latest changes from remote
+     *
+     * Updates the repository to the latest version of the configured branch.
+     *
+     * @throws \RuntimeException If pull fails or repository doesn't exist
+     */
+    public function pull(): void
+    {
+        if (!$this->exists()) {
+            throw new RuntimeException(sprintf(
+                'Cannot pull repository that does not exist: %s',
+                $this->path,
+            ));
+        }
+
+        $this->gitAdapter->pull($this->path, $this->branch);
     }
 
     /**

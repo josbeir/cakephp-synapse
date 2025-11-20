@@ -27,25 +27,32 @@ class DocumentProcessor
             return null;
         }
 
-        return $this->processContent($content, $relativePath, $sourceKey);
+        $absolutePath = $repository->getAbsolutePath($relativePath);
+
+        return $this->processContent($content, $relativePath, $absolutePath, $sourceKey);
     }
 
     /**
      * Process markdown content
      *
      * @param string $content Markdown content
-     * @param string $path File path
+     * @param string $relativePath Relative file path
+     * @param string $absolutePath Absolute file path
      * @param string $sourceKey Source configuration key
      * @return array<string, mixed> Processed document data
      */
-    public function processContent(string $content, string $path, string $sourceKey): array
-    {
+    public function processContent(
+        string $content,
+        string $relativePath,
+        string $absolutePath,
+        string $sourceKey,
+    ): array {
         // Extract frontmatter if present
         $frontmatter = $this->extractFrontmatter($content);
         $contentWithoutFrontmatter = $frontmatter['content'];
 
         // Extract title
-        $title = $this->extractTitle($contentWithoutFrontmatter, $path);
+        $title = $this->extractTitle($contentWithoutFrontmatter, $relativePath);
 
         // Extract headings
         $headings = $this->extractHeadings($contentWithoutFrontmatter);
@@ -54,19 +61,21 @@ class DocumentProcessor
         $cleanContent = $this->cleanContent($contentWithoutFrontmatter);
 
         // Generate unique ID
-        $id = $this->generateId($sourceKey, $path);
+        $id = $this->generateId($sourceKey, $relativePath);
 
         return [
             'id' => $id,
             'source' => $sourceKey,
-            'path' => $path,
+            'path' => $absolutePath,
+            'relative_path' => $relativePath,
             'title' => $title,
             'headings' => $headings,
             'content' => $cleanContent,
             'metadata' => array_merge(
                 $frontmatter['data'],
                 [
-                    'path' => $path,
+                    'path' => $absolutePath,
+                    'relative_path' => $relativePath,
                     'source' => $sourceKey,
                 ],
             ),

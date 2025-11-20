@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+use Synapse\Documentation\Git\GitAdapter;
+
 /**
  * Synapse Plugin Configuration
  *
@@ -74,6 +76,14 @@ return [
          * Uses YetiSearch (SQLite FTS5) for indexing and searching.
          */
         'documentation' => [
+            /**
+             * Git Adapter
+             *
+             * Class name for git operations. Allows overriding for testing.
+             * Defaults to Synapse\Documentation\Git\GitAdapter::class
+             */
+            'git_adapter' => GitAdapter::class,
+
             /**
              * Cache Directory
              *

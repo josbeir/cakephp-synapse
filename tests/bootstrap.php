@@ -8,6 +8,7 @@ use Cake\Database\Connection;
 use Cake\Database\Driver\Sqlite;
 use Cake\Datasource\ConnectionManager;
 use Cake\TestSuite\Fixture\SchemaLoader;
+use Synapse\Documentation\SearchEngine;
 
 if (!defined('DS')) {
     define('DS', DIRECTORY_SEPARATOR);
@@ -26,6 +27,7 @@ define('CAKE', CORE_PATH . APP_DIR . DS);
 define('WWW_ROOT', PLUGIN_ROOT . DS . 'webroot' . DS);
 define('TESTS', __DIR__ . DS);
 define('CONFIG', TESTS . 'config' . DS);
+define('TEST_SEARCH_DB', TMP . 'tests' . DS . 'search.db');
 
 require_once PLUGIN_ROOT . '/vendor/autoload.php';
 require_once CORE_PATH . 'config/bootstrap.php';
@@ -102,3 +104,6 @@ ConnectionManager::setConfig('default', [
 
 // Load test database schema
 (new SchemaLoader())->loadSqlFiles(TESTS . 'schema.sql', 'test');
+
+// Clean up test search database before tests run
+(new SearchEngine(TEST_SEARCH_DB))->destroy();

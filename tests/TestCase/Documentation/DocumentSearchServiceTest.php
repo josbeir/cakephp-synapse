@@ -9,6 +9,7 @@ use Synapse\Documentation\DocumentProcessor;
 use Synapse\Documentation\DocumentSearchService;
 use Synapse\Documentation\Git\RepositoryManager;
 use Synapse\Documentation\SearchEngine;
+use Synapse\TestSuite\MockGitAdapter;
 
 /**
  * DocumentSearchService Test Case
@@ -18,6 +19,8 @@ use Synapse\Documentation\SearchEngine;
 class DocumentSearchServiceTest extends TestCase
 {
     private string $testDbPath;
+
+    private string $testCacheDir;
 
     /**
      * setUp method
@@ -33,13 +36,20 @@ class DocumentSearchServiceTest extends TestCase
             mkdir($dir, 0755, true);
         }
 
+        // Set up unique cache directory for this test
+        $this->testCacheDir = TMP . 'tests' . DS . 'cache_' . uniqid();
+        if (!is_dir($this->testCacheDir)) {
+            mkdir($this->testCacheDir, 0755, true);
+        }
+
         // Configure test settings
-        Configure::write('Synapse.documentation.cache_dir', TMP . 'tests' . DS . 'docs');
+        Configure::write('Synapse.documentation.cache_dir', $this->testCacheDir);
         Configure::write('Synapse.documentation.search_db', $this->testDbPath);
         Configure::write('Synapse.documentation.search.batch_size', 10);
         Configure::write('Synapse.documentation.search.default_limit', 10);
         Configure::write('Synapse.documentation.search.highlight', true);
         Configure::write('Synapse.documentation.auto_build', false);
+        Configure::write('Synapse.documentation.git_adapter', MockGitAdapter::class);
     }
 
     /**
@@ -50,6 +60,11 @@ class DocumentSearchServiceTest extends TestCase
         // Clean up test database
         if (file_exists($this->testDbPath)) {
             @unlink($this->testDbPath); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+        }
+
+        // Clean up test cache directory
+        if (is_dir($this->testCacheDir)) {
+            $this->removeDirectory($this->testCacheDir);
         }
 
         parent::tearDown();
@@ -606,5 +621,200 @@ class DocumentSearchServiceTest extends TestCase
 
         $this->assertEquals(0, $stats['total_documents']);
         $this->assertEmpty($stats['documents_by_source']);
+    }
+
+    /**
+     * Test indexSource indexes documents from a repository
+     */
+    public function testIndexSourceIndexesDocuments(): void
+    {
+        // Create a test repository with markdown files
+        $repoPath = $this->testCacheDir . DS . 'test-source';
+        mkdir($repoPath . DS . '.git', 0755, true);
+        mkdir($repoPath . DS . 'docs', 0755, true);
+
+        // Create test markdown file
+        $mdFile = $repoPath . DS . 'docs' . DS . 'test.md';
+        file_put_contents($mdFile, "# Test Document\n\nThis is test content.");
+
+        // Configure sources
+        Configure::write('Synapse.documentation.sources', [
+            'test-source' => [
+                'enabled' => true,
+                'repository' => 'https://github.com/test/repo.git',
+                'branch' => 'main',
+                'root' => 'docs',
+            ],
+        ]);
+
+        $service = new DocumentSearchService($this->testDbPath);
+        $count = $service->indexSource('test-source');
+
+        $this->assertGreaterThan(0, $count);
+
+        // Verify document was indexed
+        $results = $service->search('test');
+        $this->assertNotEmpty($results);
+    }
+
+    /**
+     * Test indexSource with force option clears existing documents
+     */
+    public function testIndexSourceWithForceOption(): void
+    {
+        // Create a test repository with markdown files
+        $repoPath = $this->testCacheDir . DS . 'test-source';
+        mkdir($repoPath . DS . '.git', 0755, true);
+        mkdir($repoPath . DS . 'docs', 0755, true);
+
+        $mdFile = $repoPath . DS . 'docs' . DS . 'test.md';
+        file_put_contents($mdFile, "# Test Document\n\nOriginal content.");
+
+        Configure::write('Synapse.documentation.sources', [
+            'test-source' => [
+                'enabled' => true,
+                'repository' => 'https://github.com/test/repo.git',
+                'branch' => 'main',
+                'root' => 'docs',
+            ],
+        ]);
+
+        $service = new DocumentSearchService($this->testDbPath);
+
+        // Index first time
+        $service->indexSource('test-source');
+
+        $stats1 = $service->getStatistics();
+
+        // Index again with force
+        $service->indexSource('test-source', force: true);
+        $stats2 = $service->getStatistics();
+
+        // Should have same count (documents replaced)
+        $this->assertEquals($stats1['total_documents'], $stats2['total_documents']);
+    }
+
+    /**
+     * Test indexAll indexes all enabled sources
+     */
+    public function testIndexAllIndexesAllEnabledSources(): void
+    {
+        // Create test repositories
+        $repo1Path = $this->testCacheDir . DS . 'source-1';
+        mkdir($repo1Path . DS . '.git', 0755, true);
+        mkdir($repo1Path . DS . 'docs', 0755, true);
+        file_put_contents($repo1Path . DS . 'docs' . DS . 'test1.md', "# Doc 1\n\nContent 1.");
+
+        $repo2Path = $this->testCacheDir . DS . 'source-2';
+        mkdir($repo2Path . DS . '.git', 0755, true);
+        mkdir($repo2Path . DS . 'docs', 0755, true);
+        file_put_contents($repo2Path . DS . 'docs' . DS . 'test2.md', "# Doc 2\n\nContent 2.");
+
+        Configure::write('Synapse.documentation.sources', [
+            'source-1' => [
+                'enabled' => true,
+                'repository' => 'https://github.com/test/repo1.git',
+                'branch' => 'main',
+                'root' => 'docs',
+            ],
+            'source-2' => [
+                'enabled' => true,
+                'repository' => 'https://github.com/test/repo2.git',
+                'branch' => 'main',
+                'root' => 'docs',
+            ],
+            'disabled-source' => [
+                'enabled' => false,
+                'repository' => 'https://github.com/test/repo3.git',
+                'branch' => 'main',
+            ],
+        ]);
+
+        $service = new DocumentSearchService($this->testDbPath);
+        $results = $service->indexAll();
+
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('source-1', $results);
+        $this->assertArrayHasKey('source-2', $results);
+        $this->assertArrayNotHasKey('disabled-source', $results);
+        $this->assertGreaterThan(0, $results['source-1']);
+        $this->assertGreaterThan(0, $results['source-2']);
+    }
+
+    /**
+     * Test indexAll with force option
+     */
+    public function testIndexAllWithForceOption(): void
+    {
+        // Create test repository
+        $repoPath = $this->testCacheDir . DS . 'test-source';
+        mkdir($repoPath . DS . '.git', 0755, true);
+        mkdir($repoPath . DS . 'docs', 0755, true);
+        file_put_contents($repoPath . DS . 'docs' . DS . 'test.md', "# Doc\n\nContent.");
+
+        Configure::write('Synapse.documentation.sources', [
+            'test-source' => [
+                'enabled' => true,
+                'repository' => 'https://github.com/test/repo.git',
+                'branch' => 'main',
+                'root' => 'docs',
+            ],
+        ]);
+
+        $service = new DocumentSearchService($this->testDbPath);
+
+        // Index with force
+        $results = $service->indexAll(force: true);
+
+        $this->assertArrayHasKey('test-source', $results);
+        $this->assertGreaterThan(0, $results['test-source']);
+    }
+
+    /**
+     * Test indexSource returns zero for repository with no markdown files
+     */
+    public function testIndexSourceReturnsZeroForNoMarkdownFiles(): void
+    {
+        // Create a test repository without markdown files
+        $repoPath = $this->testCacheDir . DS . 'empty-source';
+        mkdir($repoPath . DS . '.git', 0755, true);
+        mkdir($repoPath . DS . 'docs', 0755, true);
+
+        // Create a non-markdown file
+        file_put_contents($repoPath . DS . 'docs' . DS . 'readme.txt', 'This is not markdown.');
+
+        Configure::write('Synapse.documentation.sources', [
+            'empty-source' => [
+                'enabled' => true,
+                'repository' => 'https://github.com/test/repo.git',
+                'branch' => 'main',
+                'root' => 'docs',
+            ],
+        ]);
+
+        $service = new DocumentSearchService($this->testDbPath);
+        $count = $service->indexSource('empty-source');
+
+        $this->assertEquals(0, $count);
+    }
+
+    /**
+     * Recursively remove directory
+     *
+     * @param string $dir Directory to remove
+     */
+    private function removeDirectory(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        $files = array_diff(scandir($dir) ?: [], ['.', '..']);
+        foreach ($files as $file) {
+            $path = $dir . DS . $file;
+            is_dir($path) ? $this->removeDirectory($path) : @unlink($path); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+        }
+
+        rmdir($dir);
     }
 }

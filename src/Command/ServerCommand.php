@@ -24,6 +24,14 @@ use Throwable;
 class ServerCommand extends Command
 {
     /**
+     * @inheritDoc
+     */
+    public static function defaultName(): string
+    {
+        return 'synapse server';
+    }
+
+    /**
      * Constructor
      *
      * @param \Cake\Core\ContainerInterface $container CakePHP DI container
