@@ -6,7 +6,7 @@
 [![CakePHP Version](https://img.shields.io/badge/CakePHP-5.2%2B-red.svg)](https://cakephp.org/)
 [![Packagist Downloads](https://img.shields.io/packagist/dt/josbeir/cakephp-synapse)](https://packagist.org/packages/josbeir/cakephp-synapse)
 
-# CakePHP Synapse Plugin
+# Synapse: a CakePHP MCP-Server plugin
 
 Expose your CakePHP application functionality via the Model Context Protocol (MCP).
 
