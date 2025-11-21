@@ -94,6 +94,12 @@ bin/cake synapse server
    - Read configuration
    - And more!
 
+> [TIP]
+> Use the MCP inspector tool to quickly see and test the available tools in action
+> ```bash
+> $ npx @modelcontextprotocol/inspector bin/cake synapse server
+> ```
+
 ## Configuration
 
 Various configuration options are available for Synapse. Refer to `config/synapse.php` in this plugin for details on available settings and customization.
