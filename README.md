@@ -41,8 +41,8 @@ Synapse is a CakePHP plugin that implements the [Model Context Protocol (MCP)](h
 The Model Context Protocol is an open protocol that enables seamless integration between AI assistants (like Claude) and your application's data and functionality. With Synapse, you can expose:
 
 - **Tools**: Functions that AI assistants can call (e.g., database queries, route inspection)
-- **Resources**: Data sources that can be read (coming soon)
-- **Prompts**: Pre-configured templates for common tasks (coming soon)
+- **Resources**: Data sources that can be read
+- **Prompts**: Pre-configured templates for common tasks
 
 ## Features
 
@@ -96,39 +96,7 @@ bin/cake synapse server
 
 ## Configuration
 
-Create a configuration file at `config/synapse.php`:
-
-```php
-<?php
-return [
-    'Synapse' => [
-        // Server information sent to MCP clients
-        'serverInfo' => [
-            'name' => 'My App MCP Server',
-            'version' => '1.0.0',
-        ],
-
-        // MCP protocol version
-        'protocolVersion' => '2024-11-05',
-
-        // Discovery settings
-        'discovery' => [
-            'scanDirs' => ['src', 'plugins'],
-            'excludeDirs' => ['tests', 'vendor', 'tmp'],
-        ],
-    ],
-];
-```
-
-### Environment Variables
-
-You can also configure using environment variables:
-
-```bash
-MCP_SERVER_NAME="My App MCP Server"
-MCP_SERVER_VERSION="1.0.0"
-MCP_PROTOCOL_VERSION="2024-11-05"
-```
+Various configuration options are available for Synapse. Refer to `config/synapse.php` in this plugin for details on available settings and customization.
 
 ## Creating MCP Tools
 

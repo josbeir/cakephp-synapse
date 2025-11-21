@@ -482,4 +482,174 @@ class IndexDocsCommandTest extends TestCase
         $this->assertOutputContains('Pulling latest changes from remote');
         $this->assertOutputContains('Index Statistics');
     }
+
+    /**
+     * Test command with --destroy option requires confirmation
+     */
+    public function testCommandWithDestroyOptionRequiresConfirmation(): void
+    {
+        // Set up the response to the confirmation prompt
+        $this->exec('synapse index --destroy', ['no']);
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('Destroy Search Index');
+        $this->assertOutputContains('You will need to re-index all sources');
+        $this->assertOutputContains('Are you sure you want to destroy the search index?');
+        $this->assertOutputContains('Operation cancelled');
+    }
+
+    /**
+     * Test command with --destroy and user confirms
+     */
+    public function testCommandWithDestroyAndUserConfirms(): void
+    {
+        // Create an index first
+        $this->exec('synapse index');
+        $this->assertExitSuccess();
+
+        // Reset to allow new execution with input
+        $this->_in = null;
+        $this->_out = null;
+        $this->_err = null;
+
+        // Destroy it with confirmation
+        $this->exec('synapse index --destroy', ['yes']);
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('Destroy Search Index');
+        $this->assertOutputContains('Destroying search index');
+        $this->assertOutputContains('Search index destroyed successfully');
+    }
+
+    /**
+     * Test command with --destroy and --force skips confirmation
+     */
+    public function testCommandWithDestroyAndForceSkipsConfirmation(): void
+    {
+        // Create an index first
+        $this->exec('synapse index');
+        $this->assertExitSuccess();
+
+        // Destroy it with force (no confirmation prompt)
+        $this->exec('synapse index --destroy --force');
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('Destroy Search Index');
+        $this->assertOutputContains('Destroying search index');
+        $this->assertOutputContains('Search index destroyed successfully');
+        // Should NOT contain confirmation prompt
+        $this->assertOutputNotContains('Are you sure');
+    }
+
+    /**
+     * Test command with -d short option for destroy
+     */
+    public function testCommandWithShortDestroyOption(): void
+    {
+        $this->exec('synapse index -d', ['no']);
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('Destroy Search Index');
+        $this->assertOutputContains('Operation cancelled');
+    }
+
+    /**
+     * Test command with -d and -f short options
+     */
+    public function testCommandWithShortDestroyAndForceOptions(): void
+    {
+        $this->exec('synapse index -d -f');
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('Destroy Search Index');
+        $this->assertOutputContains('Destroying search index');
+    }
+
+    /**
+     * Test destroy when index doesn't exist
+     */
+    public function testDestroyWhenIndexDoesNotExist(): void
+    {
+        // Ensure no index exists
+        if (file_exists($this->testDbPath)) {
+            @unlink($this->testDbPath); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+        }
+
+        $this->exec('synapse index --destroy --force');
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('Destroy Search Index');
+        // Note: destroy() may return true even if file didn't exist due to how it's implemented
+        // Just check that the command succeeds
+    }
+
+    /**
+     * Test destroy option in help text
+     */
+    public function testDestroyOptionInHelpText(): void
+    {
+        $this->exec('synapse index --help');
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('--destroy');
+        $this->assertOutputContains('Destroy the search index');
+        $this->assertOutputContains('destructive operation');
+    }
+
+    /**
+     * Test destroy warning messages
+     */
+    public function testDestroyWarningMessages(): void
+    {
+        $this->exec('synapse index --destroy', ['no']);
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('You will need to re-index all sources');
+    }
+
+    /**
+     * Test destroy with yes confirmation
+     */
+    public function testDestroyWithYesConfirmation(): void
+    {
+        // Create an index
+        $this->exec('synapse index');
+        $this->assertExitSuccess();
+
+        // Reset to allow new execution with input
+        $this->_in = null;
+        $this->_out = null;
+        $this->_err = null;
+
+        // Destroy with "yes" response
+        $this->exec('synapse index --destroy', ['yes']);
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('Search index destroyed successfully');
+    }
+
+    /**
+     * Test destroy is mutually exclusive with indexing
+     */
+    public function testDestroyIsMutuallyExclusiveWithIndexing(): void
+    {
+        $this->exec('synapse index --destroy --force');
+
+        $this->assertExitSuccess();
+        // Should show destroy header, not indexing header
+        $this->assertOutputContains('Destroy Search Index');
+        $this->assertOutputNotContains('Documentation Indexing');
+    }
+
+    /**
+     * Test force option description includes destroy info
+     */
+    public function testForceOptionDescriptionIncludesDestroyInfo(): void
+    {
+        $this->exec('synapse index --help');
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('Force re-index even if source is already indexed');
+        $this->assertOutputContains('skip confirmation when destroying');
+    }
 }

@@ -41,7 +41,7 @@ class IndexDocsCommand extends Command
             ])
             ->addOption('force', [
                 'short' => 'f',
-                'help' => 'Force re-index even if source is already indexed',
+                'help' => 'Force re-index even if source is already indexed, or skip confirmation when destroying',
                 'boolean' => true,
                 'default' => false,
             ])
@@ -61,6 +61,12 @@ class IndexDocsCommand extends Command
                 'help' => 'Show index statistics after indexing',
                 'boolean' => true,
                 'default' => true,
+            ])
+            ->addOption('destroy', [
+                'short' => 'd',
+                'help' => 'Destroy the search index (destructive operation, requires confirmation unless --force)',
+                'boolean' => true,
+                'default' => false,
             ]);
 
         return $parser;
@@ -75,10 +81,17 @@ class IndexDocsCommand extends Command
      */
     public function execute(Arguments $args, ConsoleIo $io): ?int
     {
+        $service = new DocumentSearchService();
+        $destroy = (bool)$args->getOption('destroy');
+
+        // Handle destroy operation separately
+        if ($destroy) {
+            return $this->handleDestroy($service, $args, $io);
+        }
+
         $io->out('<info>Documentation Indexing</info>');
         $io->hr();
 
-        $service = new DocumentSearchService();
         $source = $args->getOption('source');
         $source = is_string($source) ? $source : null;
 
@@ -172,5 +185,57 @@ class IndexDocsCommand extends Command
         }
 
         $io->out(sprintf('Enabled sources: <info>%s</info>', implode(', ', $stats['sources'])));
+    }
+
+    /**
+     * Handle index destruction
+     *
+     * @param \Synapse\Documentation\DocumentSearchService $service Search service
+     * @param \Cake\Console\Arguments $args Command arguments
+     * @param \Cake\Console\ConsoleIo $io Console I/O
+     * @return int Exit code
+     */
+    private function handleDestroy(DocumentSearchService $service, Arguments $args, ConsoleIo $io): int
+    {
+        $io->out('<warning>Destroy Search Index</warning>');
+        $io->hr();
+
+        $force = (bool)$args->getOption('force');
+
+        // Require confirmation unless --force is used
+        if (!$force) {
+            $io->warning('This will permanently delete the search index and all indexed documents.');
+            $io->out('You will need to re-index all sources to use search functionality again.');
+            $io->out('');
+
+            $confirm = $io->askChoice('Are you sure you want to destroy the search index?', ['yes', 'no'], 'no');
+
+            if ($confirm !== 'yes') {
+                $io->out('<info>Operation cancelled</info>');
+
+                return static::CODE_SUCCESS;
+            }
+        }
+
+        try {
+            $io->out('Destroying search index...');
+
+            $destroyed = $service->destroy();
+
+            if ($destroyed) {
+                $io->success('Search index destroyed successfully');
+            } else {
+                $io->warning('Search index did not exist or was already destroyed');
+            }
+
+            return static::CODE_SUCCESS;
+        } catch (Exception $exception) {
+            $io->error('Failed to destroy search index: ' . $exception->getMessage());
+            if ($io->level() >= ConsoleIo::VERBOSE) {
+                $io->out($exception->getTraceAsString());
+            }
+
+            return static::CODE_ERROR;
+        }
     }
 }

@@ -33,7 +33,7 @@ class Application extends BaseApplication
     {
         parent::pluginBootstrap();
 
-        // Make sure we override to the Mock adapter in our application context too.
+        // Make sure we override he Mock adapter in our application context too.
         Configure::write('Synapse.documentation.git_adapter', MockGitAdapter::class);
 
         // Override sources to empty array to prevent real repos from being used during tests

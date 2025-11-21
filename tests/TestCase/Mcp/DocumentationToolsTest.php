@@ -153,22 +153,23 @@ class DocumentationToolsTest extends TestCase
      */
     public function testSearchDocsWithSourceFilter(): void
     {
-        $sources = ['cakephp-5x', 'cakephp-4x'];
+        $sourcesString = 'cakephp-5x,cakephp-4x';
+        $sourcesArray = ['cakephp-5x', 'cakephp-4x'];
 
         /** @phpstan-ignore-next-line */
         $this->mockService->expects($this->once())
             ->method('search')
             ->with(
                 'query',
-                $this->callback(function (array $options) use ($sources): bool {
-                    return isset($options['sources']) && $options['sources'] === $sources;
+                $this->callback(function (array $options) use ($sourcesArray): bool {
+                    return isset($options['sources']) && $options['sources'] === $sourcesArray;
                 }),
             )
             ->willReturn([]);
 
-        $result = $this->tools->searchDocs('query', sources: $sources);
+        $result = $this->tools->searchDocs('query', sources: $sourcesString);
 
-        $this->assertEquals($sources, $result['options']['sources']);
+        $this->assertEquals($sourcesString, $result['options']['sources']);
     }
 
     /**

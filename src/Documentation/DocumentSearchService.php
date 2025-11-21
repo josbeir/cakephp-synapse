@@ -184,6 +184,19 @@ class DocumentSearchService
     }
 
     /**
+     * Destroy the search index
+     *
+     * Completely removes the search database file.
+     * This is a destructive operation that cannot be undone.
+     *
+     * @return bool True if the index was destroyed, false if it didn't exist
+     */
+    public function destroy(): bool
+    {
+        return $this->searchEngine->destroy();
+    }
+
+    /**
      * Check if repository exists for a source
      *
      * @param string $sourceKey Source configuration key

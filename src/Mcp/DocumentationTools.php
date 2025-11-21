@@ -39,7 +39,7 @@ class DocumentationTools
      * @param string $query The search query
      * @param int $limit Maximum number of results to return (default: 10, max: 50)
      * @param bool $fuzzy Enable fuzzy/prefix matching for typo tolerance (default: false)
-     * @param array<string>|null $sources Filter results to specific documentation sources (e.g., ['cakephp-5x'])
+     * @param string $sources Comma-separated list of sources to filter (e.g., 'cakephp-5x,cakephp-4x')
      * @return array{results: array<int, array<string, mixed>>, total: int, query: string, options: array<string, mixed>} Search results with metadata
      */
     #[McpTool(
@@ -50,7 +50,7 @@ class DocumentationTools
         string $query,
         int $limit = 10,
         bool $fuzzy = false,
-        ?array $sources = null,
+        string $sources = '',
     ): array {
         try {
             // Validate and sanitize inputs
@@ -65,8 +65,13 @@ class DocumentationTools
                 'highlight' => true,
             ];
 
-            if ($sources !== null && $sources !== []) {
-                $options['sources'] = $sources;
+            // Parse comma-separated sources
+            if ($sources !== '') {
+                $sourcesArray = array_map('trim', explode(',', $sources));
+                $sourcesArray = array_filter($sourcesArray);
+                if ($sourcesArray !== []) {
+                    $options['sources'] = $sourcesArray;
+                }
             }
 
             if ($fuzzy) {
@@ -82,7 +87,7 @@ class DocumentationTools
                 'options' => [
                     'limit' => $limit,
                     'fuzzy' => $fuzzy,
-                    'sources' => $sources ?? 'all',
+                    'sources' => $sources !== '' ? $sources : 'all',
                 ],
             ];
         } catch (Exception $exception) {
