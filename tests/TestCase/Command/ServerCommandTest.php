@@ -247,46 +247,4 @@ class ServerCommandTest extends TestCase
         $this->assertExitSuccess();
         $this->assertOutputContains('default');
     }
-
-    /**
-     * Test log option is available
-     */
-    public function testLogOptionAvailable(): void
-    {
-        $this->exec('synapse server --help');
-
-        $this->assertExitSuccess();
-        $this->assertOutputContains('--log');
-    }
-
-    /**
-     * Test log short option alias
-     */
-    public function testLogShortOption(): void
-    {
-        $this->exec('synapse server -h');
-
-        $this->assertExitSuccess();
-        $this->assertOutputContains('-l');
-    }
-
-    /**
-     * Test log option accepts value
-     */
-    public function testLogOptionAcceptsValue(): void
-    {
-        $this->exec('synapse server --log debug --help');
-
-        $this->assertExitSuccess();
-    }
-
-    /**
-     * Test log option with short form
-     */
-    public function testLogOptionShortForm(): void
-    {
-        $this->exec('synapse server -l debug --help');
-
-        $this->assertExitSuccess();
-    }
 }

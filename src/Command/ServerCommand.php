@@ -12,6 +12,7 @@ use Cake\Core\Configure;
 use Cake\Core\ContainerInterface;
 use Cake\Log\Log;
 use Mcp\Server\Transport\StdioTransport;
+use Psr\Log\NullLogger;
 use Synapse\Builder\ServerBuilder;
 use Throwable;
 
@@ -68,11 +69,6 @@ class ServerCommand extends Command
                 'short' => 'c',
                 'help' => 'Clear discovery cache before starting',
                 'boolean' => true,
-            ])
-            ->addOption('log', [
-                'short' => 'l',
-                'help' => 'Enable MCP server logging to specified log engine',
-                'default' => null,
             ]);
 
         return $parser;
@@ -87,70 +83,80 @@ class ServerCommand extends Command
      */
     public function execute(Arguments $args, ConsoleIo $io): int
     {
-        try {
-            $config = Configure::read('Synapse', []);
+        $config = Configure::read('Synapse', []);
 
+        $logEngine = $config['logger'];
+        $logger = new NullLogger();
+
+        // Use stderr in verbose mode so we can see what's happening.
+        // Note that this overrides the configured log engine.
+        if ($args->getOption('verbose')) {
+            $logEngine = 'stderr';
+        }
+
+        if ($logEngine !== null && is_string($logEngine)) {
+            $logger = Log::engine($logEngine) ?: $logger;
+        }
+
+        try {
             // Handle cache clearing if requested
             if ($args->getOption('clear-cache')) {
                 $cacheEngine = $config['discovery']['cache'] ?? ServerBuilder::DEFAULT_CACHE_ENGINE;
 
                 if (ServerBuilder::clearCache($cacheEngine)) {
-                    $io->success(sprintf('Discovery cache cleared (engine: %s)', $cacheEngine));
+                    $logger->info(
+                        sprintf('Discovery cache cleared (cache engine: %s)', $cacheEngine),
+                    );
                 } else {
-                    $io->warning(sprintf('Failed to clear cache (engine: %s)', $cacheEngine));
+                    $logger->warning(
+                        sprintf('Failed to clear discovery cache (cache engine: %s)', $cacheEngine),
+                    );
                 }
             }
 
-            $io->out('<info>Building MCP server...</info>');
+            $logger->info('Building MCP server...');
 
             // Build server using ServerBuilder
             $builder = (new ServerBuilder($config))
                 ->setContainer($this->container)
+                ->setLogger($logger)
                 ->withPluginTools();
 
             // Disable cache if --no-cache flag
             if ($args->getOption('no-cache')) {
                 $builder->withoutCache();
-                $io->verbose('<comment>Discovery caching disabled via --no-cache</comment>');
+                $logger->debug('Discovery caching disabled via --no-cache');
             } else {
                 $cacheEngine = $config['discovery']['cache'] ?? ServerBuilder::DEFAULT_CACHE_ENGINE;
-                $io->verbose(sprintf('<info>Discovery caching enabled (using: %s)</info>', $cacheEngine));
-            }
-
-            // Configure logging if requested
-            $logEngine = $args->getOption('log');
-            if (is_string($logEngine)) {
-                try {
-                    $logger = Log::engine($logEngine);
-                    $builder->setLogger($logger);
-                    $io->verbose(sprintf('<info>MCP logging enabled (engine: %s)</info>', $logEngine));
-                } catch (Throwable $e) {
-                    $io->warning(sprintf('Failed to initialize logger "%s": %s', $logEngine, $e->getMessage()));
-                }
+                $logger->debug(
+                    sprintf('Discovery caching enabled (cache engine: %s)', $cacheEngine),
+                );
             }
 
             // Log discovery configuration
-            $io->verbose(sprintf(
-                'Discovery: scanning %s, excluding %s',
-                implode(', ', $builder->getScanDirs()),
-                implode(', ', $builder->getExcludeDirs()),
-            ));
+            $logger->debug(
+                sprintf(
+                    'Discovery: scanning %s, excluding %s',
+                    implode(', ', $builder->getScanDirs()),
+                    implode(', ', $builder->getExcludeDirs()),
+                ),
+            );
 
-            $io->out('<info>Discovering MCP elements...</info>');
+            $logger->info('Discovering MCP elements...');
+
             $server = $builder->build();
-            $io->verbose('<success>Discovery complete</success>');
 
-            $io->out('<success>✓ MCP server started with stdio transport</success>');
-            $io->out('<comment>Listening for MCP requests...</comment>');
+            $logger->info('Discovery complete');
+            $logger->info('MCP server started with stdio transport');
+            $logger->info('Listening for MCP requests...');
 
             // Start server (blocking call)
-            $transport = new StdioTransport();
-            $server->run($transport);
+            $stdioTransport = new StdioTransport();
+            $server->run($stdioTransport);
 
             return static::CODE_SUCCESS;
         } catch (Throwable $throwable) {
-            $io->error('Server error: ' . $throwable->getMessage());
-            $io->err($throwable->getTraceAsString());
+            $logger->error('MCP Server error: ' . $throwable->getMessage());
 
             return static::CODE_ERROR;
         }

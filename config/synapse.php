@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use Cake\Log\Engine\ConsoleLog;
 use Synapse\Documentation\Git\GitAdapter;
 
 /**
@@ -19,6 +20,14 @@ return [
             'name' => env('MCP_SERVER_NAME', 'Adaptic MCP Server'),
             'version' => env('MCP_SERVER_VERSION', '1.0.0'),
         ],
+
+        /**
+         * Logger Configuration
+         *
+         * Configure the logger engine name to use for MCP server logging.
+         * Defaults to stderr to not clash with stdio output.
+         */
+        'logger' => null,
 
         /**
          * Protocol Version

@@ -7,6 +7,7 @@ use Cake\Core\BasePlugin;
 use Cake\Core\Configure;
 use Cake\Core\ContainerInterface;
 use Cake\Core\PluginApplicationInterface;
+use Cake\Log\Log;
 use Synapse\Command\ServerCommand;
 
 /**
@@ -38,6 +39,12 @@ class SynapsePlugin extends BasePlugin
         // Load app specific config file.
         if (file_exists(ROOT . DS . 'config' . DS . 'app_synapse.php')) {
             Configure::load('app_synapse');
+        }
+
+        // Configure synapse logger for MCP server (if not already configured)
+        $logConfig = Configure::read('Log.synapse');
+        if ($logConfig !== null && !Log::getConfig('synapse')) {
+            Log::setConfig('synapse', $logConfig);
         }
     }
 

@@ -10,8 +10,6 @@
 
 Expose your CakePHP application functionality via the Model Context Protocol (MCP).
 
-[![MCP](https://modelcontextprotocol.io/static/mcp-logo.svg)](https://modelcontextprotocol.io/)
-
 ## Table of Contents
 
 - [Overview](#overview)
@@ -249,11 +247,8 @@ bin/cake synapse server
 # Start with verbose output
 bin/cake synapse server --verbose
 
-# Enable logging to debug log engine
-bin/cake synapse server --log debug
-
-# Disable caching and enable logging
-bin/cake synapse server --no-cache --log debug
+# Disable caching
+bin/cake synapse server --no-cache
 
 # View help
 bin/cake synapse server --help
@@ -265,7 +260,7 @@ bin/cake synapse server --help
 - `--log`, `-l` - Enable MCP server logging to specified log engine (e.g., `debug`, `error`)
 - `--no-cache`, `-n` - Disable discovery caching for this run
 - `--clear-cache`, `-c` - Clear discovery cache before starting
-- `--verbose`, `-v` - Enable verbose output
+- `--verbose`, `-v` - Enable verbose output (pipes logging to stderr)
 - `--quiet`, `-q` - Suppress all output except errors
 
 ### Transport Options
