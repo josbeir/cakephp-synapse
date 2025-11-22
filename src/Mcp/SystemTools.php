@@ -73,4 +73,17 @@ class SystemTools
 
         return $result;
     }
+
+    /**
+     * List all environment variables.
+     *
+     * Returns all environment variables currently available in the application.
+     *
+     * @return array<string, string|false> Environment variables
+     */
+    #[McpTool(name: 'list_env_vars')]
+    public function listEnvVars(): array
+    {
+        return getenv();
+    }
 }

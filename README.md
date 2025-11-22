@@ -198,6 +198,7 @@ Access system information and configuration:
 - `system_info` - Get CakePHP version, PHP version, debug mode, etc.
 - `config_read` - Read configuration values
 - `debug_status` - Check if debug mode is enabled
+- `list_env_vars` - List all available environment variables
 
 ### Database Tools
 

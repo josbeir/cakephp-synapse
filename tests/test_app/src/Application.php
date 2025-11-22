@@ -33,6 +33,9 @@ class Application extends BaseApplication
     {
         parent::pluginBootstrap();
 
+        // Allows MCP tool discovery from test_app
+        Configure::write('Synapse.discovery.scanDirs', ['../../src']);
+
         // Make sure we override he Mock adapter in our application context too.
         Configure::write('Synapse.documentation.git_adapter', MockGitAdapter::class);
 

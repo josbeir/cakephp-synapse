@@ -136,4 +136,21 @@ class SystemToolsTest extends TestCase
     {
         $this->assertInstanceOf(SystemTools::class, $this->systemTools);
     }
+
+    /**
+     * Test listEnvVars method
+     */
+    public function testListEnvVars(): void
+    {
+        // Set a test environment variable
+        putenv('TEST_ENV_VAR=test_value');
+
+        $result = $this->systemTools->listEnvVars();
+
+        $this->assertArrayHasKey('TEST_ENV_VAR', $result);
+        $this->assertEquals('test_value', $result['TEST_ENV_VAR']);
+
+        // Clean up
+        putenv('TEST_ENV_VAR');
+    }
 }
