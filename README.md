@@ -200,6 +200,14 @@ Access system information and configuration:
 - `debug_status` - Check if debug mode is enabled
 - `list_env_vars` - List all available environment variables
 
+### Tinker Tool
+
+Execute PHP code in the CakePHP application context:
+
+- `tinker` - Execute arbitrary PHP code with full application context
+
+**⚠️ Warning**: This tool executes arbitrary code in your application. Use responsibly and avoid modifying data without explicit approval.
+
 ### Database Tools
 
 Inspect and query your database:
