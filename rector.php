@@ -8,7 +8,7 @@ use Rector\TypeDeclaration\Rector\ClassMethod\ReturnTypeFromStrictFluentReturnRe
 use Rector\ValueObject\PhpVersion;
 
 return RectorConfig::configure()
-    ->withPhpVersion(PhpVersion::PHP_83)
+    ->withPhpVersion(PhpVersion::PHP_82)
     ->withPaths([
         __DIR__ . '/src',
         __DIR__ . '/tests',
