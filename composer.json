@@ -2,6 +2,13 @@
     "name": "josbeir/cakephp-synapse",
     "description": "CakePHP MCP Server Plugin - Expose CakePHP functionality via Model Context Protocol",
     "type": "cakephp-plugin",
+    "keywords": [
+        "cakephp",
+        "plugin",
+        "mcp",
+        "server",
+        "synapse"
+    ],
     "license": "MIT",
     "require": {
         "php": ">=8.2",
