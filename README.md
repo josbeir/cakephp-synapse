@@ -206,7 +206,8 @@ Execute PHP code in the CakePHP application context:
 
 - `tinker` - Execute arbitrary PHP code with full application context
 
-**⚠️ Warning**: This tool executes arbitrary code in your application. Use responsibly and avoid modifying data without explicit approval.
+> [!WARNING]
+> This tool executes arbitrary code in your application. Use responsibly and avoid modifying data without explicit approval.
 
 ### Database Tools
 
