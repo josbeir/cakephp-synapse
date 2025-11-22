@@ -8,6 +8,7 @@ use Cake\Routing\Exception\MissingRouteException;
 use Cake\Routing\Router;
 use Exception;
 use Mcp\Capability\Attribute\McpTool;
+use Mcp\Capability\Attribute\Schema;
 use Mcp\Exception\ToolCallException;
 
 /**
@@ -196,8 +197,18 @@ class RouteTools
         name: 'reverse_route',
         description: 'Generate URL from route name or parameters (reverse routing)',
     )]
-    public function reverseRoute(?string $name = null, array $params = [], bool $full = false): array
-    {
+    public function reverseRoute(
+        ?string $name = null,
+        #[Schema(
+            type: 'object',
+            description: 'Route parameters like controller, action, plugin, prefix, and pass parameters. ' .
+                'Examples: {"controller": "Articles", "action": "view", "id": "123"} or ' .
+                '{"plugin": "MyPlugin", "controller": "Users", "action": "index"}',
+            additionalProperties: true,
+        )]
+        array $params = [],
+        bool $full = false,
+    ): array {
         try {
             $url = null;
 
