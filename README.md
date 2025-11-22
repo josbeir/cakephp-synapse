@@ -225,7 +225,6 @@ Inspect and analyze your application routes:
 - `list_routes` - List all routes with filtering and sorting
 - `get_route` - Get detailed information about a specific route
 - `match_url` - Find which route matches a given URL
-- `reverse_route` - Generate URLs from route names or parameters
 - `detect_route_collisions` - Find potential route conflicts
 
 ### Documentation Search

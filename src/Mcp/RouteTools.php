@@ -8,7 +8,6 @@ use Cake\Routing\Exception\MissingRouteException;
 use Cake\Routing\Router;
 use Exception;
 use Mcp\Capability\Attribute\McpTool;
-use Mcp\Capability\Attribute\Schema;
 use Mcp\Exception\ToolCallException;
 
 /**
@@ -179,60 +178,6 @@ class RouteTools
         } catch (Exception $e) {
             $message = sprintf("Error parsing URL '%s': %s", $url, $e->getMessage());
             throw new ToolCallException($message);
-        }
-    }
-
-    /**
-     * Generate URL from route parameters (reverse routing).
-     *
-     * Creates a URL from either a named route or route parameters.
-     * Supports generating full URLs with domain.
-     *
-     * @param string|null $name Named route (e.g., 'projects:view')
-     * @param array<string, mixed> $params Route parameters
-     * @param bool $full Generate full URL with domain
-     * @return array<string, mixed> Generated URL or error
-     */
-    #[McpTool(
-        name: 'reverse_route',
-        description: 'Generate URL from route name or parameters (reverse routing)',
-    )]
-    public function reverseRoute(
-        ?string $name = null,
-        #[Schema(
-            type: 'object',
-            description: 'Route parameters like controller, action, plugin, prefix, and pass parameters. ' .
-                'Examples: {"controller": "Articles", "action": "view", "id": "123"} or ' .
-                '{"plugin": "MyPlugin", "controller": "Users", "action": "index"}',
-            additionalProperties: true,
-        )]
-        array $params = [],
-        bool $full = false,
-    ): array {
-        try {
-            $url = null;
-
-            if ($name !== null) {
-                // Named route - merge params properly
-                $urlArray = ['_name' => $name];
-                foreach ($params as $key => $value) {
-                    $urlArray[$key] = $value;
-                }
-
-                $url = Router::url($urlArray, $full);
-            } elseif ($params !== []) {
-                // Parameter-based routing
-                $url = Router::url($params, $full);
-            } else {
-                throw new ToolCallException('Either name or params must be provided');
-            }
-
-            return [
-                'url' => $url,
-                'full' => $full,
-            ];
-        } catch (Exception $exception) {
-            throw new ToolCallException('Error generating URL: ' . $exception->getMessage());
         }
     }
 

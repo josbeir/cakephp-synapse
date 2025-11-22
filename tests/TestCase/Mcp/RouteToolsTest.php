@@ -281,61 +281,6 @@ class RouteToolsTest extends TestCase
     }
 
     /**
-     * Test reverseRoute with named route
-     */
-    public function testReverseRouteWithName(): void
-    {
-        $result = $this->RouteTools->reverseRoute(name: 'projects:view', params: ['id' => 123]);
-
-        $this->assertArrayHasKey('url', $result);
-        $this->assertIsString($result['url']);
-        $this->assertStringContainsString('projects', $result['url']);
-        $this->assertArrayHasKey('full', $result);
-        $this->assertFalse($result['full']);
-    }
-
-    /**
-     * Test reverseRoute with parameters
-     */
-    public function testReverseRouteWithParams(): void
-    {
-        $result = $this->RouteTools->reverseRoute(
-            params: ['controller' => 'Pages', 'action' => 'display', 'pass' => ['home']],
-        );
-
-        $this->assertArrayHasKey('url', $result);
-        $this->assertIsString($result['url']);
-    }
-
-    /**
-     * Test reverseRoute with full URL
-     */
-    public function testReverseRouteWithFullUrl(): void
-    {
-        $result = $this->RouteTools->reverseRoute(
-            name: 'home',
-            params: [],
-            full: true,
-        );
-
-        $this->assertArrayHasKey('url', $result);
-        $this->assertArrayHasKey('full', $result);
-        $this->assertTrue($result['full']);
-        $this->assertStringContainsString('http', $result['url']);
-    }
-
-    /**
-     * Test reverseRoute without name or params
-     */
-    public function testReverseRouteWithoutNameOrParams(): void
-    {
-        $this->expectException(ToolCallException::class);
-        $this->expectExceptionMessage('Either name or params must be provided');
-
-        $this->RouteTools->reverseRoute();
-    }
-
-    /**
      * Test detectRouteCollisions
      */
     public function testDetectRouteCollisions(): void
@@ -517,31 +462,6 @@ class RouteToolsTest extends TestCase
         $result = $this->RouteTools->matchUrl('/projects/123', 'GeT');
 
         $this->assertEquals('GET', $result['method']);
-    }
-
-    /**
-     * Test reverseRoute error handling with invalid name
-     */
-    public function testReverseRouteWithInvalidName(): void
-    {
-        $this->expectException(ToolCallException::class);
-        $this->expectExceptionMessage('Error generating URL');
-
-        $this->RouteTools->reverseRoute(name: 'totally:nonexistent:route:name:xyz');
-    }
-
-    /**
-     * Test reverseRoute with name and multiple parameters
-     */
-    public function testReverseRouteWithNameAndMultipleParams(): void
-    {
-        $result = $this->RouteTools->reverseRoute(
-            name: 'projects:edit',
-            params: ['id' => 456, 'extra' => 'value'],
-        );
-
-        $this->assertArrayHasKey('url', $result);
-        $this->assertIsString($result['url']);
     }
 
     /**
