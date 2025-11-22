@@ -340,17 +340,12 @@ class DocumentationToolsTest extends TestCase
 
         $result = $this->tools->searchResource('caching');
 
-        $this->assertArrayHasKey('contents', $result);
-        $this->assertIsArray($result['contents']);
-        $this->assertCount(1, $result['contents']);
-
-        $content = $result['contents'][0];
-        $this->assertInstanceOf(TextResourceContents::class, $content);
-        $this->assertEquals('docs://search/caching', $content->uri);
-        $this->assertEquals('text/markdown', $content->mimeType);
-        $this->assertStringContainsString('# Documentation Search: caching', $content->text);
-        $this->assertStringContainsString('Found 1 result(s)', $content->text);
-        $this->assertStringContainsString('## 1. Caching', $content->text);
+        $this->assertInstanceOf(TextResourceContents::class, $result);
+        $this->assertEquals('docs://search/caching', $result->uri);
+        $this->assertEquals('text/markdown', $result->mimeType);
+        $this->assertStringContainsString('# Documentation Search: caching', $result->text);
+        $this->assertStringContainsString('Found 1 result(s)', $result->text);
+        $this->assertStringContainsString('## 1. Caching', $result->text);
     }
 
     /**
@@ -388,7 +383,7 @@ class DocumentationToolsTest extends TestCase
             ->willReturn($expectedResults);
 
         $result = $this->tools->searchResource('test query');
-        $content = $result['contents'][0];
+        $content = $result;
 
         $this->assertStringContainsString('Found 3 result(s)', $content->text);
         $this->assertStringContainsString('## 1. First Result', $content->text);
@@ -410,7 +405,7 @@ class DocumentationToolsTest extends TestCase
             ->willReturn([]);
 
         $result = $this->tools->searchResource('nonexistent');
-        $content = $result['contents'][0];
+        $content = $result;
 
         $this->assertStringContainsString('# Documentation Search: nonexistent', $content->text);
         $this->assertStringContainsString('No results found', $content->text);
@@ -465,7 +460,7 @@ class DocumentationToolsTest extends TestCase
             ->willReturn([]);
 
         $result = $this->tools->searchResource('test query with spaces');
-        $content = $result['contents'][0];
+        $content = $result;
 
         $this->assertEquals('docs://search/test+query+with+spaces', $content->uri);
     }
@@ -491,7 +486,7 @@ class DocumentationToolsTest extends TestCase
             ->willReturn($expectedResults);
 
         $result = $this->tools->searchResource('complete');
-        $content = $result['contents'][0];
+        $content = $result;
 
         $this->assertStringContainsString('## 1. Complete Result', $content->text);
         $this->assertStringContainsString('**Source:** cakephp-5x', $content->text);
@@ -518,7 +513,7 @@ class DocumentationToolsTest extends TestCase
             ->willReturn($expectedResults);
 
         $result = $this->tools->searchResource('minimal');
-        $content = $result['contents'][0];
+        $content = $result;
 
         $this->assertStringContainsString('## 1. Minimal Result', $content->text);
         $this->assertStringContainsString('**Source:**', $content->text);
@@ -543,7 +538,7 @@ class DocumentationToolsTest extends TestCase
             ->willReturn($expectedResults);
 
         $result = $this->tools->searchResource('query');
-        $content = $result['contents'][0];
+        $content = $result;
 
         $this->assertStringContainsString('## 1. Untitled', $content->text);
     }
@@ -569,7 +564,7 @@ class DocumentationToolsTest extends TestCase
             ->willReturn($expectedResults);
 
         $result = $this->tools->searchResource('query');
-        $content = $result['contents'][0];
+        $content = $result;
 
         $this->assertStringContainsString('> Line 1', $content->text);
         $this->assertStringContainsString('> Line 2', $content->text);
@@ -604,7 +599,7 @@ class DocumentationToolsTest extends TestCase
             ->willReturn($expectedResults);
 
         $result = $this->tools->searchResource('query');
-        $content = $result['contents'][0];
+        $content = $result;
 
         // Should have separator between results
         $this->assertStringContainsString('---', $content->text);
@@ -800,12 +795,10 @@ class DocumentationToolsTest extends TestCase
 
         $result = $this->tools->contentResource('cakephp-5x::docs/controllers.md');
 
-        $this->assertArrayHasKey('contents', $result);
-        $this->assertCount(1, $result['contents']);
-        $this->assertInstanceOf(TextResourceContents::class, $result['contents'][0]);
-        $this->assertEquals('docs://content/cakephp-5x::docs/controllers.md', $result['contents'][0]->uri);
-        $this->assertEquals('text/markdown', $result['contents'][0]->mimeType);
-        $this->assertEquals($documentData['content'], $result['contents'][0]->text);
+        $this->assertInstanceOf(TextResourceContents::class, $result);
+        $this->assertEquals('docs://content/cakephp-5x::docs/controllers.md', $result->uri);
+        $this->assertEquals('text/markdown', $result->mimeType);
+        $this->assertEquals($documentData['content'], $result->text);
     }
 
     /**

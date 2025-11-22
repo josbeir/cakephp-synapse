@@ -176,15 +176,15 @@ class DocumentationTools
      * - docs://search/caching
      *
      * @param string $query The search query from the URI
-     * @return array{contents: array<\Mcp\Schema\Content\TextResourceContents>} Resource contents
+     * @return \Mcp\Schema\Content\TextResourceContents Resource contents
      */
     #[McpResourceTemplate(
         uriTemplate: 'docs://search/{query}',
-        name: 'Documentation Search',
+        name: 'documentation_search',
         description: 'Search CakePHP documentation and return formatted results',
         mimeType: 'text/markdown',
     )]
-    public function searchResource(string $query): array
+    public function searchResource(string $query): TextResourceContents
     {
         try {
             if (trim($query) === '') {
@@ -202,15 +202,11 @@ class DocumentationTools
 
             $uri = sprintf('docs://search/%s', urlencode($query));
 
-            return [
-                'contents' => [
-                    new TextResourceContents(
-                        uri: $uri,
-                        mimeType: 'text/markdown',
-                        text: $content,
-                    ),
-                ],
-            ];
+            return new TextResourceContents(
+                uri: $uri,
+                mimeType: 'text/markdown',
+                text: $content,
+            );
         } catch (Exception $exception) {
             $message = sprintf('Failed to read documentation resource: %s', $exception->getMessage());
             throw new ToolCallException($message);
@@ -229,15 +225,15 @@ class DocumentationTools
      * - docs://content/cakephp-5x::docs/en/orm/query-builder.md
      *
      * @param string $docId Document ID in format 'source::path'
-     * @return array{contents: array<\Mcp\Schema\Content\TextResourceContents>} Resource contents
+     * @return \Mcp\Schema\Content\TextResourceContents Resource contents
      */
     #[McpResourceTemplate(
         uriTemplate: 'docs://content/{docId}',
-        name: 'Documentation Content',
+        name: 'documentation_content',
         description: 'Get full content of a documentation file by ID',
         mimeType: 'text/markdown',
     )]
-    public function contentResource(string $docId): array
+    public function contentResource(string $docId): TextResourceContents
     {
         try {
             if (trim($docId) === '') {
@@ -254,15 +250,11 @@ class DocumentationTools
 
             $uri = sprintf('docs://content/%s', $docId);
 
-            return [
-                'contents' => [
-                    new TextResourceContents(
-                        uri: $uri,
-                        mimeType: 'text/markdown',
-                        text: $document['content'],
-                    ),
-                ],
-            ];
+            return new TextResourceContents(
+                uri: $uri,
+                mimeType: 'text/markdown',
+                text: $document['content'],
+            );
         } catch (ToolCallException $exception) {
             throw $exception;
         } catch (Exception $exception) {
