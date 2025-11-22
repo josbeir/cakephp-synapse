@@ -6,7 +6,7 @@
     "require": {
         "php": ">=8.2",
         "cakephp/cakephp": "^5.2",
-        "mcp/sdk": "dev-main",
+        "mcp/sdk": "^0.1",
         "ext-sqlite3": "*"
     },
     "require-dev": {
