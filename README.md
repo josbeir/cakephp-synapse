@@ -15,6 +15,8 @@ Expose your CakePHP application functionality via the Model Context Protocol (MC
 - [Overview](#overview)
 - [Features](#features)
 - [Installation](#installation)
+  - [Requirements](#requirements)
+  - [Installing the Plugin](#installing-the-plugin)
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
 - [Creating MCP Tools](#creating-mcp-tools)
@@ -78,21 +80,43 @@ The plugin will automatically register itself and discover MCP elements in your 
 
 1. **Install the plugin** (see above)
 
-2. **Start the MCP server**:
+2. **Configure your MCP-enabled client**:
 
-```bash
-bin/cake synapse server
+To connect Claude Code/Desktop or other MCP clients (VSCode/Zed/...):
+
+1. Configure the client to use stdio transport
+2. Point it to your CakePHP bin directory: `bin/cake synapse server`
+3. The client will communicate with your app via the MCP protocol
+
+Most clients require a **command** wich will be your cake executable `bin/cake` followed by **arguments**: `synapse server`
+
+```json
+{
+  "my-cakephp-app": {
+    "command": "bin/cake",
+    "args": ["synapse", "server"]
+  }
+}
 ```
 
-3. **Connect an MCP client** (like Claude Desktop or another MCP-compatible tool) to `stdio` transport
+Or run when using `DDEV` instance
 
-4. **Try it out** - The AI assistant can now:
+```json
+{
+  "my-cakephp-app": {
+    "command": "ddev",
+    "args": ["cake", "synapse", "server"],
+  }
+}
+```
+
+3. **Try it out** - The AI assistant can now:
    - Query your database schema
    - Inspect routes
    - Read configuration
    - And more!
 
-> [TIP]
+> [!TIP]
 > Use the MCP inspector tool to quickly see and test the available tools in action
 > ```bash
 > $ npx @modelcontextprotocol/inspector bin/cake synapse server
@@ -270,88 +294,6 @@ Currently, Synapse supports:
 
 Future versions may include HTTP/SSE transport.
 
-### Connecting MCP Clients
-
-To connect Claude Desktop or other MCP clients:
-
-1. Configure the client to use stdio transport
-2. Point it to your CakePHP bin directory: `/path/to/your/app/bin/cake synapse server`
-3. The client will communicate with your app via the MCP protocol
-
-Example IDE/Tool configuration (VSCode/Claude/Zed/...)
-
-```json
-{
-  "my-cakephp-app": {
-    "command": "bin/cake",
-    "args": ["synapse", "server"]
-  }
-}
-```
-
-Or run inside your DDEV instance
-
-```json
-{
-  "cakephp-synapse": {
-    "command": "ddev",
-    "args": ["cake","synapse","server"],
-  }
-}
-```
-
-## Logging
-
-The MCP server supports PSR-3 logging via CakePHP's logging system. This logs server activity including discovery, protocol messages, and handler execution.
-
-### Enable Logging
-
-Use the `--log` option to enable logging to any configured log engine:
-
-```bash
-# Log to 'debug' log engine
-bin/cake synapse server --log debug
-
-# Log to 'error' log engine
-bin/cake synapse server --log error
-
-# Log to custom engine
-bin/cake synapse server --log mcp
-```
-
-### Configure Log Engine
-
-Configure your log engines in `config/app.php`:
-
-```php
-'Log' => [
-    'debug' => [
-        'className' => 'File',
-        'path' => LOGS,
-        'file' => 'debug',
-        'levels' => ['notice', 'info', 'debug'],
-        'scopes' => false,
-    ],
-    'mcp' => [
-        'className' => 'File',
-        'path' => LOGS,
-        'file' => 'mcp',
-        'levels' => ['notice', 'info', 'debug', 'error', 'warning'],
-    ],
-],
-```
-
-### What Gets Logged
-
-When logging is enabled, the MCP server logs:
-- Server startup and initialization
-- Discovery process and found elements
-- Protocol messages (requests/responses)
-- Tool/resource handler execution
-- Errors and warnings
-
-This is useful for debugging and understanding how your MCP server interacts with clients.
-
 ## Discovery Caching
 
 Discovery caching dramatically improves server startup performance by caching the discovered MCP elements (tools, resources, prompts). This can reduce startup time by up to 99%!
@@ -375,16 +317,6 @@ return [
         ],
     ],
 ];
-```
-
-Or use an environment variable:
-
-```bash
-# Use default cache engine
-MCP_DISCOVERY_CACHE=default
-
-# Use a custom cache engine
-MCP_DISCOVERY_CACHE=mcp
 ```
 
 ### Command Options
