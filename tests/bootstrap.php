@@ -105,5 +105,41 @@ ConnectionManager::setConfig('default', [
 // Load test database schema
 (new SchemaLoader())->loadSqlFiles(TESTS . 'schema.sql', 'test');
 
+/**
+ * Lock helper to safely manage search engine operations in parallel environments
+ *
+ * @param callable $callback The operation to perform
+ * @return mixed The result of the callback
+ */
+function withSearchEngineLock(callable $callback): mixed
+{
+    $lockFile = TMP . 'tests' . DS . 'search.db.lock';
+    $lockDir = dirname($lockFile);
+
+    if (!is_dir($lockDir)) {
+        mkdir($lockDir, 0770, true);
+    }
+
+    $lock = fopen($lockFile, 'c');
+    if ($lock === false) {
+        return $callback();
+    }
+
+    if (!flock($lock, LOCK_EX)) {
+        fclose($lock);
+
+        return $callback();
+    }
+
+    try {
+        return $callback();
+    } finally {
+        flock($lock, LOCK_UN);
+        fclose($lock);
+    }
+}
+
 // Clean up test search database before tests run
-(new SearchEngine(TEST_SEARCH_DB))->destroy();
+withSearchEngineLock(function (): void {
+    (new SearchEngine(TEST_SEARCH_DB))->destroy();
+});
