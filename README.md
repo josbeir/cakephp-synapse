@@ -22,14 +22,19 @@ Expose your CakePHP application functionality via the Model Context Protocol (MC
 - [Creating MCP Tools](#creating-mcp-tools)
 - [Built-in Tools](#built-in-tools)
   - [System Tools](#system-tools)
+  - [Tinker Tool](#tinker-tool)
   - [Database Tools](#database-tools)
   - [Route Tools](#route-tools)
   - [Documentation Search](#documentation-search)
 - [Running the Server](#running-the-server)
+  - [Command Options](#command-options)
+  - [Testing with MCP Inspector](#testing-with-mcp-inspector)
+  - [Transport Options](#transport-options)
 - [Discovery Caching](#discovery-caching)
 - [Testing](#testing)
 - [Contributing](#contributing)
 - [License](#license)
+- [Credits](#credits)
 
 ## Overview
 
@@ -71,7 +76,7 @@ composer require --dev josbeir/cakephp-synapse
 > This plugin is typically used as a development tool to allow AI assistants to interact with your application during development. It should not be installed in production environments.
 
 ```bash
-bin/cake plugin load --only-cli --optional Synapse 
+bin/cake plugin load --only-cli --optional Synapse
 ```
 
 The plugin will automatically register itself and discover MCP elements in your application.
@@ -117,18 +122,6 @@ Or run when using `DDEV` instance
 }
 ```
 
-3. **Try it out** - The AI assistant can now:
-   - Query your database schema
-   - Inspect routes
-   - Read configuration
-   - And more!
-
-> [!TIP]
-> Use the MCP inspector tool to quickly see and test the available tools in action
-> ```bash
-> $ npx @modelcontextprotocol/inspector bin/cake synapse server
-> ```
-
 ## Configuration
 
 Various configuration options are available for Synapse. Refer to `config/synapse.php` in this plugin for details on available settings and customization.
@@ -153,14 +146,14 @@ class MyTools
     {
         $usersTable = $this->fetchTable('Users');
         $user = $usersTable->get($id);
-        
+
         return [
             'id' => $user->id,
             'email' => $user->email,
             'name' => $user->name,
         ];
     }
-    
+
     #[McpTool(name: 'list_users')]
     public function listUsers(int $limit = 10): array
     {
@@ -168,7 +161,7 @@ class MyTools
         $users = $usersTable->find()
             ->limit($limit)
             ->toArray();
-            
+
         return [
             'total' => count($users),
             'users' => $users,
@@ -202,16 +195,20 @@ Synapse includes several built-in tools for common operations:
 
 Access system information and configuration:
 
-- `system_info` - Get CakePHP version, PHP version, debug mode, etc.
-- `config_read` - Read configuration values
-- `debug_status` - Check if debug mode is enabled
-- `list_env_vars` - List all available environment variables
+| Tool | Description |
+|------|-------------|
+| `system_info` | Get CakePHP version, PHP version, debug mode, etc. |
+| `config_read` | Read configuration values |
+| `debug_status` | Check if debug mode is enabled |
+| `list_env_vars` | List all available environment variables |
 
 ### Tinker Tool
 
 Execute PHP code in the CakePHP application context:
 
-- `tinker` - Execute arbitrary PHP code with full application context
+| Tool | Description |
+|------|-------------|
+| `tinker` | Execute arbitrary PHP code with full application context |
 
 > [!WARNING]
 > This tool executes arbitrary code in your application. Use responsibly and avoid modifying data without explicit approval.
@@ -220,30 +217,36 @@ Execute PHP code in the CakePHP application context:
 
 Inspect and query your database:
 
-- `list_connections` - List all configured database connections
-- `describe_schema` - Get detailed schema information for tables
-  - View all tables in a connection
-  - Inspect columns, constraints, indexes
-  - Understand foreign key relationships
+| Tool | Description |
+|------|-------------|
+| `database_connections` | List all configured database connections |
+| `database_schema` | Get detailed schema information for tables (view all tables, inspect columns, constraints, indexes, understand foreign key relationships) |
+
+> [!TIP]
+> The `tinker` tool can be used to query the database using CakePHP's ORM. The tinker context provides access to `$this->fetchTable()` for easy database operations.
 
 ### Route Tools
 
 Inspect and analyze your application routes:
 
-- `list_routes` - List all routes with filtering and sorting
-- `get_route` - Get detailed information about a specific route
-- `match_url` - Find which route matches a given URL
-- `detect_route_collisions` - Find potential route conflicts
+| Tool | Description |
+|------|-------------|
+| `list_routes` | List all routes with filtering and sorting |
+| `get_route` | Get detailed information about a specific route |
+| `match_url` | Find which route matches a given URL |
+| `detect_route_collisions` | Find potential route conflicts |
 
 ### Documentation Search
 
 Search CakePHP documentation with full-text search powered by SQLite FTS5:
 
-- `search_docs` - Search documentation with relevance ranking, fuzzy matching, and filtering
-- `get_doc` - Retrieve full document content by document ID (format: `source::path`)
-- `docs_stats` - View index statistics and available sources
-- `docs://search/{query}` - Resource for accessing formatted search results
-- `docs://{documentId}` - Resource for accessing a specific document by ID
+| Tool/Resource | Description |
+|---------------|-------------|
+| `search_docs` | Search documentation with relevance ranking, fuzzy matching, and filtering |
+| `get_doc` | Retrieve full document content by document ID (format: `source::path`) |
+| `docs_stats` | View index statistics and available sources |
+| `docs://search/{query}` | Resource for accessing formatted search results |
+| `docs://content/{documentId}` | Resource for accessing a specific document by ID |
 
 > [!NOTE]
 > Documentation is indexed from the official [CakePHP markdown documentation](https://github.com/cakephp/docs-md). The index is built locally using SQLite FTS5 for fast, dependency-free full-text search.
@@ -290,18 +293,47 @@ bin/cake synapse server --verbose
 # Disable caching
 bin/cake synapse server --no-cache
 
+# Launch MCP Inspector for testing (requires Node.js/npx)
+bin/cake synapse server --inspect
+
 # View help
 bin/cake synapse server --help
 ```
 
 ### Command Options
 
-- `--transport`, `-t` - Transport type (currently only `stdio` is supported)
-- `--log`, `-l` - Enable MCP server logging to specified log engine (e.g., `debug`, `error`)
-- `--no-cache`, `-n` - Disable discovery caching for this run
-- `--clear-cache`, `-c` - Clear discovery cache before starting
-- `--verbose`, `-v` - Enable verbose output (pipes logging to stderr)
-- `--quiet`, `-q` - Suppress all output except errors
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--transport` | `-t` | Transport type (currently only `stdio` is supported) |
+| `--no-cache` | `-n` | Disable discovery caching for this run |
+| `--clear-cache` | `-c` | Clear discovery cache before starting |
+| `--inspect` | `-i` | Launch MCP Inspector to test the server interactively (requires Node.js/npx) |
+| `--verbose` | `-v` | Enable verbose output (pipes logging to stderr) |
+| `--quiet` | `-q` | Suppress all output except errors |
+
+### Testing with MCP Inspector
+
+The `--inspect` flag launches the [MCP Inspector](https://github.com/modelcontextprotocol/inspector), a development tool that provides a web-based UI for testing your MCP server:
+
+```bash
+bin/cake synapse server --inspect
+```
+
+This will:
+1. Start the MCP Inspector (downloads automatically via npx if not installed)
+2. Launch the server in inspector mode
+3. Open a web browser with an interactive UI
+4. Allow you to test tools, resources, and prompts interactively
+
+**Requirements:**
+- Node.js and npx must be installed
+- A web browser
+
+The inspector is invaluable during development for:
+- Testing tool functionality
+- Inspecting resource data
+- Debugging server behavior
+- Verifying tool schemas and documentation
 
 ### Transport Options
 
@@ -312,28 +344,11 @@ Future versions may include HTTP/SSE transport.
 
 ## Discovery Caching
 
-Discovery caching dramatically improves server startup performance by caching the discovered MCP elements (tools, resources, prompts). This can reduce startup time by up to 99%!
-
-> [!NOTE]
-> While caching improves performance, remember that this plugin is intended for development use. The caching feature is most useful when running the MCP server frequently during development sessions.
+Discovery caching improves server startup performance by caching the discovered MCP elements (tools, resources, prompts).
 
 ### Configuration
 
-Synapse uses CakePHP's built-in PSR-16 cache system. Configure caching in `config/synapse.php`:
-
-```php
-return [
-    'Synapse' => [
-        'discovery' => [
-            'scanDirs' => ['src', 'plugins/Synapse/src'],
-            'excludeDirs' => ['tests', 'vendor', 'tmp', 'logs', 'webroot'],
-
-            // Cache configuration (defaults to 'default')
-            'cache' => 'default',  // or 'mcp', or any cache config name
-        ],
-    ],
-];
-```
+Synapse uses CakePHP's built-in PSR-16 cache system. Configure caching in `config/synapse.php`
 
 ### Command Options
 
@@ -349,12 +364,6 @@ bin/cake synapse server -c
 # Combine options
 bin/cake synapse server --clear-cache --verbose
 ```
-
-### Performance
-
-- **Without cache**: ~100-500ms startup time (depending on codebase size)
-- **With cache**: ~1-5ms startup time (99% improvement!)
-- **Recommendation**: Enable caching for faster startup times during development
 
 ## Testing
 

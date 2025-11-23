@@ -71,6 +71,7 @@ class ServerCommandTest extends TestCase
         $this->assertOutputContains('--transport');
         $this->assertOutputContains('--no-cache');
         $this->assertOutputContains('--clear-cache');
+        $this->assertOutputContains('--inspect');
         $this->assertOutputContains('--verbose');
         $this->assertOutputContains('--quiet');
     }
@@ -143,6 +144,9 @@ class ServerCommandTest extends TestCase
         $this->assertExitSuccess();
 
         $this->exec('synapse server -c -h');
+        $this->assertExitSuccess();
+
+        $this->exec('synapse server -i -h');
         $this->assertExitSuccess();
 
         $this->exec('synapse server -v -h');
@@ -246,5 +250,62 @@ class ServerCommandTest extends TestCase
 
         $this->assertExitSuccess();
         $this->assertOutputContains('default');
+    }
+
+    /**
+     * Test inspect option is available
+     */
+    public function testInspectOptionAvailable(): void
+    {
+        $this->exec('synapse server --help');
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('--inspect');
+        $this->assertOutputContains('MCP Inspector');
+    }
+
+    /**
+     * Test inspect option has short alias
+     */
+    public function testInspectOptionHasShortAlias(): void
+    {
+        $this->exec('synapse server --help');
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('-i');
+        $this->assertOutputContains('inspect');
+    }
+
+    /**
+     * Test inspect option mentions Node.js requirement
+     */
+    public function testInspectOptionMentionsNodeJs(): void
+    {
+        $this->exec('synapse server --help');
+
+        $this->assertExitSuccess();
+        $this->assertOutputContains('Node.js');
+    }
+
+    /**
+     * Test inspect option is boolean
+     */
+    public function testInspectOptionIsBoolean(): void
+    {
+        $this->exec('synapse server --inspect --help');
+
+        $this->assertExitSuccess();
+    }
+
+    /**
+     * Test inspect option works with other options
+     */
+    public function testInspectOptionWithOtherOptions(): void
+    {
+        $this->exec('synapse server --inspect --verbose --help');
+        $this->assertExitSuccess();
+
+        $this->exec('synapse server -i -v -n -h');
+        $this->assertExitSuccess();
     }
 }

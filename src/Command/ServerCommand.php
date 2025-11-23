@@ -69,6 +69,11 @@ class ServerCommand extends Command
                 'short' => 'c',
                 'help' => 'Clear discovery cache before starting',
                 'boolean' => true,
+            ])
+            ->addOption('inspect', [
+                'short' => 'i',
+                'help' => 'Launch MCP Inspector to test the server interactively (requires Node.js/npx)',
+                'boolean' => true,
             ]);
 
         return $parser;
@@ -83,6 +88,11 @@ class ServerCommand extends Command
      */
     public function execute(Arguments $args, ConsoleIo $io): int
     {
+        // If --inspect flag is present, launch inspector
+        if ($args->getOption('inspect')) {
+            return $this->launchInspector($io);
+        }
+
         $config = Configure::read('Synapse', []);
 
         $logEngine = $config['logger'];
@@ -160,5 +170,71 @@ class ServerCommand extends Command
 
             return static::CODE_ERROR;
         }
+    }
+
+    /**
+     * Launch MCP Inspector to test the server
+     *
+     * @param \Cake\Console\ConsoleIo $io Console I/O
+     * @return int Exit code
+     */
+    private function launchInspector(ConsoleIo $io): int
+    {
+        $io->out('<info>Launching MCP Inspector...</info>');
+        $io->out('');
+
+        // Check if npx is available
+        $npxPath = $this->findExecutable('npx');
+        if ($npxPath === null) {
+            $io->error('npx not found. Please install Node.js to use the MCP Inspector.');
+            $io->out('Visit: https://nodejs.org/');
+
+            return static::CODE_ERROR;
+        }
+
+        // Build command - inspector will launch the actual server
+        $command = sprintf(
+            '%s @modelcontextprotocol/inspector %s',
+            escapeshellarg($npxPath),
+            'bin/cake synapse server',
+        );
+
+        $io->out('<info>Command:</info> ' . $command);
+        $io->out('');
+        $io->out('The inspector will open in your browser...');
+        $io->out('Press <warning>Ctrl+C</warning> to stop');
+        $io->out('');
+
+        // Execute and return exit code
+        passthru($command, $exitCode);
+
+        return $exitCode === 0 ? static::CODE_SUCCESS : static::CODE_ERROR;
+    }
+
+    /**
+     * Find executable in system PATH
+     *
+     * @param string $name Executable name
+     * @return string|null Full path to executable or null if not found
+     */
+    private function findExecutable(string $name): ?string
+    {
+        // Try which command first (Unix/Linux/macOS)
+        $which = trim((string)shell_exec(sprintf('which %s 2>/dev/null', escapeshellarg($name))));
+        if ($which !== '' && is_executable($which)) {
+            return $which;
+        }
+
+        // Try where command (Windows)
+        $where = trim((string)shell_exec(sprintf('where %s 2>nul', escapeshellarg($name))));
+        if ($where !== '') {
+            $paths = explode("\n", $where);
+            $firstPath = trim($paths[0]);
+            if ($firstPath !== '' && is_executable($firstPath)) {
+                return $firstPath;
+            }
+        }
+
+        return null;
     }
 }
