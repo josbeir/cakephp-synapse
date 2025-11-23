@@ -21,16 +21,8 @@ Expose your CakePHP application functionality via the Model Context Protocol (MC
 - [Configuration](#configuration)
 - [Creating MCP Tools](#creating-mcp-tools)
 - [Built-in Tools](#built-in-tools)
-  - [System Tools](#system-tools)
-  - [Tinker Tool](#tinker-tool)
-  - [Database Tools](#database-tools)
-  - [Route Tools](#route-tools)
-  - [Documentation Search](#documentation-search)
 - [Built-in Prompts](#built-in-prompts)
-  - [Available Prompts](#available-prompts)
-  - [Using Prompts](#using-prompts)
-  - [Configuring CakePHP Version](#configuring-cakephp-version)
-  - [Quality Assurance Prompt](#quality-assurance-prompt)
+- [CLI usage](#cli-usage)
 - [Running the Server](#running-the-server)
   - [Command Options](#command-options)
   - [Testing with MCP Inspector](#testing-with-mcp-inspector)
@@ -194,74 +186,35 @@ public function searchArticles(
 
 ## Built-in Tools
 
-Synapse includes several built-in tools for common operations:
+Synapse includes several built-in tools and resources for common operations:
 
-### System Tools
-
-Access system information and configuration:
-
-| Tool | Description |
-|------|-------------|
-| `system_info` | Get CakePHP version, PHP version, debug mode, etc. |
-| `config_read` | Read configuration values |
-| `debug_status` | Check if debug mode is enabled |
-| `list_env_vars` | List all available environment variables |
-
-### Tinker Tool
-
-Execute PHP code in the CakePHP application context:
-
-| Tool | Description |
-|------|-------------|
-| `tinker` | Execute arbitrary PHP code with full application context |
+| Category | Name | Description |
+|----------|------|-------------|
+| System | `system_info` | Get CakePHP version, PHP version, debug mode, etc. |
+| System | `config_read` | Read configuration values |
+| System | `debug_status` | Check if debug mode is enabled |
+| System | `list_env_vars` | List all available environment variables |
+| Code Execution | `tinker` | Execute arbitrary PHP code with full application context |
+| Database | `database_connections` | List all configured database connections |
+| Database | `database_schema` | Get detailed schema information for tables (view all tables, inspect columns, constraints, indexes, understand foreign key relationships) |
+| Routes | `list_routes` | List all routes with filtering and sorting |
+| Routes | `get_route` | Get detailed information about a specific route |
+| Routes | `match_url` | Find which route matches a given URL |
+| Routes | `detect_route_collisions` | Find potential route conflicts |
+| Documentation | `search_docs` | Search documentation with relevance ranking, fuzzy matching, and filtering |
+| Documentation | `get_doc` | Retrieve full document content by document ID (format: `source::path`) |
+| Documentation | `docs_stats` | View index statistics and available sources |
+| Documentation | `docs://search/{query}` | Search CakePHP documentation and return formatted results |
+| Documentation | `docs://content/{documentId}` | Retrieve full document content by document ID (format: `source::path`) |
 
 > [!WARNING]
-> This tool executes arbitrary code in your application. Use responsibly and avoid modifying data without explicit approval.
-
-### Database Tools
-
-Inspect and query your database:
-
-| Tool | Description |
-|------|-------------|
-| `database_connections` | List all configured database connections |
-| `database_schema` | Get detailed schema information for tables (view all tables, inspect columns, constraints, indexes, understand foreign key relationships) |
+> The `tinker` tool executes arbitrary code in your application. Use responsibly and avoid modifying data without explicit approval.
 
 > [!TIP]
 > The `tinker` tool can be used to query the database using CakePHP's ORM. The tinker context provides access to `$this->fetchTable()` for easy database operations.
 
-### Route Tools
-
-Inspect and analyze your application routes:
-
-| Tool | Description |
-|------|-------------|
-| `list_routes` | List all routes with filtering and sorting |
-| `get_route` | Get detailed information about a specific route |
-| `match_url` | Find which route matches a given URL |
-| `detect_route_collisions` | Find potential route conflicts |
-
-### Documentation Search
-
-Search CakePHP documentation with full-text search powered by SQLite FTS5:
-
-| Tool | Description |
-|------|-------------|
-| `search_docs` | Search documentation with relevance ranking, fuzzy matching, and filtering |
-| `get_doc` | Retrieve full document content by document ID (format: `source::path`) |
-| `docs_stats` | View index statistics and available sources |
-
 > [!NOTE]
 > Documentation is indexed from the official [CakePHP markdown documentation](https://github.com/cakephp/docs-md). The index is built locally using SQLite FTS5 for fast, dependency-free full-text search.
-
-### Resources
-
-Access documentation through resource templates:
-
-| Resource | Description |
-|----------|-------------|
-| `docs://search/{query}` | Search CakePHP documentation and return formatted results |
-| `docs://content/{documentId}` | Retrieve full document content by document ID (format: `source::path`) |
 
 ## Built-in Prompts
 
@@ -283,18 +236,6 @@ Synapse includes pre-defined prompt workflows that guide LLMs through common Cak
 | `tinker-workshop` | Interactive PHP exploration and testing guide | `goal` (required: explore/test/debug), `subject` (optional) |
 | `quality-assurance` | Coding guidelines and QA best practices for CakePHP | `context` (optional: guidelines/integration/troubleshooting/all), `tools` (optional: all or comma-separated list) |
 
-### Using Prompts
-
-Prompts are workflow templates that guide the LLM through multi-step processes. When using an MCP client like Claude:
-
-```
-"Use the documentation-expert prompt to learn about CakePHP Authentication"
-
-"Use debug-helper with error='Call to undefined method' and context='controller'"
-
-"Use feature-builder to implement a REST API endpoint"
-```
-
 **Prompts automatically:**
 - Search relevant documentation
 - Read detailed guides
@@ -307,53 +248,32 @@ Prompts are workflow templates that guide the LLM through multi-step processes. 
 - **Consistency** - Standardized approaches to common problems
 - **Discovery** - See available workflows without remembering tool combinations
 
-### Configuring CakePHP Version
+### Configuring prompts
 
-Prompts reference a specific CakePHP version in their guidance. Configure this in `config/synapse.php`:
+Prompts can reference a specific CakePHP version and use various quality tools. Configure both in `config/synapse.php`:
 
-```php
 return [
     'Synapse' => [
         'prompts' => [
-            // Target CakePHP version for prompt responses
-            // Examples: '5.x', '5.2', '4.5', '4.x'
+            // Target CakePHP version for prompt responses (e.g. '5.x', '5.2', '4.5', '4.x')
             'cakephp_version' => env('MCP_CAKEPHP_VERSION', '5.x'),
+
+            // Target PHP version for prompt responses (e.g. '8.2', '8.3', '8.x')
+            'php_version' => env('MCP_PHP_VERSION', PHP_VERSION),
+
+            // Quality tools configuration
+            'quality_tools' => [
+                'phpcs' => ['enabled' => true, 'standard' => 'cakephp'],
+                'phpstan' => ['enabled' => true, 'level' => 8],
+                'phpunit' => ['enabled' => true, 'coverage' => true],
+                'rector' => ['enabled' => false, 'set' => 'cakephp'],
+                'psalm' => ['enabled' => false, 'level' => 3],
+            ],
         ],
     ],
 ];
-```
 
-Or set via environment variable:
-
-```bash
-export MCP_CAKEPHP_VERSION=5.2
-bin/cake synapse server
-```
-
-This allows targeting specific version documentation and conventions when working with different CakePHP versions.
-
-### Quality Assurance Prompt
-
-The `quality-assurance` prompt provides comprehensive coding guidelines and QA best practices for CakePHP development. It supports multiple quality tools including PHPCS, PHPStan, PHPUnit, Rector, and Psalm.
-
-Configure which tools are enabled and their settings in `config/synapse.php`:
-
-```php
-'Synapse' => [
-    'prompts' => [
-        'quality_tools' => [
-            'phpcs' => ['enabled' => true, 'standard' => 'cakephp'],
-            'phpstan' => ['enabled' => true, 'level' => 8],
-            'phpunit' => ['enabled' => true, 'coverage' => true],
-            'rector' => ['enabled' => false, 'set' => 'cakephp'],
-            'psalm' => ['enabled' => false, 'level' => 3],
-        ],
-    ],
-],
-```
-
-**Context options:** guidelines, integration, troubleshooting, all
-**Tools options:** all, or comma-separated list (phpcs, phpstan, phpunit, rector, psalm)
+## CLI usage
 
 Use the CLI to manage and search the index:
 
