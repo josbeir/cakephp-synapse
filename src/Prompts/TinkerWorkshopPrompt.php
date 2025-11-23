@@ -30,6 +30,13 @@ class TinkerWorkshopPrompt extends AbstractPrompt
         string $goal,
         string $subject = '',
     ): array {
+        $this->validateEnumParameter(
+            $goal,
+            ['explore', 'test', 'debug'],
+            'goal',
+            'tinker-workshop',
+        );
+
         $subjectHint = $subject !== '' && $subject !== '0' ? ' with ' . $subject : '';
 
         return [

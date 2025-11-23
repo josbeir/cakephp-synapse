@@ -5,6 +5,7 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use Mcp\Exception\PromptGetException;
 use Mcp\Schema\Content\PromptMessage;
 use Mcp\Schema\Content\TextContent;
 use Mcp\Schema\Enum\Role;
@@ -125,5 +126,29 @@ class DocumentationExpertPromptTest extends TestCase
         /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
+    }
+
+    public function testInvalidDepthThrowsException(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage("Invalid value for parameter 'depth': 'expert'");
+
+        $this->prompt->handle('Authentication', 'expert');
+    }
+
+    public function testInvalidDepthContainsExpectedValues(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage('Expected one of: basic, intermediate, advanced');
+
+        $this->prompt->handle('ORM', 'invalid');
+    }
+
+    public function testInvalidDepthContainsPromptName(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage('Prompt: documentation-expert');
+
+        $this->prompt->handle('Controllers', 'custom');
     }
 }

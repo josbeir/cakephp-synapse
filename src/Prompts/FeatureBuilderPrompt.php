@@ -30,6 +30,13 @@ class FeatureBuilderPrompt extends AbstractPrompt
         string $feature,
         string $component = 'full-stack',
     ): array {
+        $this->validateEnumParameter(
+            $component,
+            ['controller', 'model', 'behavior', 'helper', 'middleware', 'command', 'full-stack'],
+            'component',
+            'feature-builder',
+        );
+
         return [
             new PromptMessage(
                 role: Role::User,

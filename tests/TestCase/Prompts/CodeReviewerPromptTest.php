@@ -5,6 +5,7 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use Mcp\Exception\PromptGetException;
 use Mcp\Schema\Content\PromptMessage;
 use Mcp\Schema\Content\TextContent;
 use Mcp\Schema\Enum\Role;
@@ -128,5 +129,37 @@ class CodeReviewerPromptTest extends TestCase
         /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
+    }
+
+    public function testInvalidFocusThrowsException(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage("Invalid value for parameter 'focus': 'invalid'");
+
+        $this->prompt->handle('public function test() {}', 'invalid');
+    }
+
+    public function testInvalidFocusContainsExpectedValues(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage('Expected one of: conventions, security, performance, testing, all');
+
+        $this->prompt->handle('$x = 1;', 'optimization');
+    }
+
+    public function testInvalidFocusContainsPromptName(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage('Prompt: code-reviewer');
+
+        $this->prompt->handle('function test() {}', 'bad');
+    }
+
+    public function testDefaultFocusIsValid(): void
+    {
+        $result = $this->prompt->handle('return true;');
+
+        $this->assertNotEmpty($result);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content);
     }
 }

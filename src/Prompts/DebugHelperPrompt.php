@@ -30,6 +30,15 @@ class DebugHelperPrompt extends AbstractPrompt
         string $error,
         string $context = '',
     ): array {
+        if ($context !== '' && $context !== '0') {
+            $this->validateEnumParameter(
+                $context,
+                ['controller', 'model', 'database', 'view'],
+                'context',
+                'debug-helper',
+            );
+        }
+
         $contextHint = $context !== '' && $context !== '0' ? sprintf(' in the %s layer', $context) : '';
 
         return [

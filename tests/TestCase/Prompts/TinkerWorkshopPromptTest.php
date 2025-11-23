@@ -5,6 +5,7 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use Mcp\Exception\PromptGetException;
 use Mcp\Schema\Content\PromptMessage;
 use Mcp\Schema\Content\TextContent;
 use Mcp\Schema\Enum\Role;
@@ -116,5 +117,37 @@ class TinkerWorkshopPromptTest extends TestCase
         /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
+    }
+
+    public function testInvalidGoalThrowsException(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage("Invalid value for parameter 'goal': 'invalid'");
+
+        $this->prompt->handle('invalid', 'some subject');
+    }
+
+    public function testInvalidGoalContainsExpectedValues(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage('Expected one of: explore, test, debug');
+
+        $this->prompt->handle('analyze', 'database queries');
+    }
+
+    public function testInvalidGoalContainsPromptName(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage('Prompt: tinker-workshop');
+
+        $this->prompt->handle('bad', 'something');
+    }
+
+    public function testValidGoalsWithoutSubject(): void
+    {
+        $result = $this->prompt->handle('explore');
+
+        $this->assertNotEmpty($result);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content);
     }
 }

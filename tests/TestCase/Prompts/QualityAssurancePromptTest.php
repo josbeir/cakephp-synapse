@@ -5,6 +5,7 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use Mcp\Exception\PromptGetException;
 use Mcp\Schema\Content\PromptMessage;
 use Mcp\Schema\Content\TextContent;
 use Mcp\Schema\Enum\Role;
@@ -421,16 +422,14 @@ class QualityAssurancePromptTest extends TestCase
     }
 
     /**
-     * Test filtered tools with non-existent tool
+     * Test filtered tools with non-existent tool throws exception
      */
     public function testFilteredToolsWithNonExistent(): void
     {
-        $result = $this->prompt->handle(context: 'all', tools: 'phpcs,nonexistent');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage("Invalid values for parameter 'tools': nonexistent");
 
-        $this->assertStringContainsString('PHPCS', $text);
-        $this->assertStringNotContainsString('nonexistent', $text);
+        $this->prompt->handle(context: 'all', tools: 'phpcs,nonexistent');
     }
 
     /**
@@ -463,5 +462,54 @@ class QualityAssurancePromptTest extends TestCase
 
         $this->assertStringContainsString('`phpcs.xml`', $text);
         $this->assertStringNotContainsString('`phpstan.neon`', $text);
+    }
+
+    public function testInvalidContextThrowsException(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage("Invalid value for parameter 'context': 'invalid'");
+
+        $this->prompt->handle('invalid');
+    }
+
+    public function testInvalidContextContainsExpectedValues(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage('Expected one of: guidelines, integration, troubleshooting, all');
+
+        $this->prompt->handle('setup');
+    }
+
+    public function testInvalidContextContainsPromptName(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage('Prompt: quality-assurance');
+
+        $this->prompt->handle('bad');
+    }
+
+    public function testInvalidToolsThrowsException(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage("Invalid values for parameter 'tools': invalid");
+
+        $this->prompt->handle('guidelines', 'phpcs,invalid');
+    }
+
+    public function testValidContextAndTools(): void
+    {
+        $result = $this->prompt->handle('integration', 'phpcs,phpstan');
+
+        $this->assertNotEmpty($result);
+        $this->assertInstanceOf(PromptMessage::class, $result[0]);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content);
+    }
+
+    public function testDefaultContextAndToolsAreValid(): void
+    {
+        $result = $this->prompt->handle();
+
+        $this->assertNotEmpty($result);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content);
     }
 }

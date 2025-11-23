@@ -30,6 +30,13 @@ class TestingAssistantPrompt extends AbstractPrompt
         string $subject,
         string $testType = 'all',
     ): array {
+        $this->validateEnumParameter(
+            $testType,
+            ['unit', 'integration', 'fixture', 'all'],
+            'testType',
+            'testing-assistant',
+        );
+
         return [
             new PromptMessage(
                 role: Role::User,

@@ -5,6 +5,7 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use Mcp\Exception\PromptGetException;
 use Mcp\Schema\Content\PromptMessage;
 use Mcp\Schema\Content\TextContent;
 use Mcp\Schema\Enum\Role;
@@ -96,5 +97,37 @@ class DebugHelperPromptTest extends TestCase
         /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
+    }
+
+    public function testInvalidContextThrowsException(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage("Invalid value for parameter 'context': 'invalid'");
+
+        $this->prompt->handle('Some error', 'invalid');
+    }
+
+    public function testInvalidContextContainsExpectedValues(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage('Expected one of: controller, model, database, view');
+
+        $this->prompt->handle('Error message', 'service');
+    }
+
+    public function testInvalidContextContainsPromptName(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage('Prompt: debug-helper');
+
+        $this->prompt->handle('Test error', 'bad');
+    }
+
+    public function testEmptyContextIsValid(): void
+    {
+        $result = $this->prompt->handle('Error message', '');
+
+        $this->assertNotEmpty($result);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content);
     }
 }

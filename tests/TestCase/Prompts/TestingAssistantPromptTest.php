@@ -5,6 +5,7 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use Mcp\Exception\PromptGetException;
 use Mcp\Schema\Content\PromptMessage;
 use Mcp\Schema\Content\TextContent;
 use Mcp\Schema\Enum\Role;
@@ -118,5 +119,37 @@ class TestingAssistantPromptTest extends TestCase
         /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
+    }
+
+    public function testInvalidTestTypeThrowsException(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage("Invalid value for parameter 'testType': 'invalid'");
+
+        $this->prompt->handle('authentication logic', 'invalid');
+    }
+
+    public function testInvalidTestTypeContainsExpectedValues(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage('Expected one of: unit, integration, fixture, all');
+
+        $this->prompt->handle('payment processing', 'acceptance');
+    }
+
+    public function testInvalidTestTypeContainsPromptName(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage('Prompt: testing-assistant');
+
+        $this->prompt->handle('user model', 'bad');
+    }
+
+    public function testDefaultTestTypeIsValid(): void
+    {
+        $result = $this->prompt->handle('database queries');
+
+        $this->assertNotEmpty($result);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content);
     }
 }

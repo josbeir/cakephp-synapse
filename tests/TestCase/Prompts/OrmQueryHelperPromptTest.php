@@ -5,6 +5,7 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use Mcp\Exception\PromptGetException;
 use Mcp\Schema\Content\PromptMessage;
 use Mcp\Schema\Content\TextContent;
 use Mcp\Schema\Enum\Role;
@@ -108,5 +109,34 @@ class OrmQueryHelperPromptTest extends TestCase
         /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
+    }
+
+    public function testEmptyQueryGoalThrowsException(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage("Parameter 'queryGoal' cannot be empty");
+
+        $this->prompt->handle('');
+    }
+
+    public function testEmptyQueryGoalWithTablesThrowsException(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage("Parameter 'queryGoal' cannot be empty");
+
+        $this->prompt->handle('', 'users,posts');
+    }
+
+    public function testValidQueryGoalWithTables(): void
+    {
+        $result = $this->prompt->handle('find active users', 'users,roles');
+
+        $this->assertNotEmpty($result);
+        $this->assertInstanceOf(PromptMessage::class, $result[0]);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content);
+        /** @var TextContent $content */
+        $content = $result[0]->content;
+        $this->assertStringContainsString('find active users', $content->text);
+        $this->assertStringContainsString('users,roles', $content->text);
     }
 }

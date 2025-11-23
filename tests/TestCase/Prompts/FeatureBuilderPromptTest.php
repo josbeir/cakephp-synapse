@@ -5,6 +5,7 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use Mcp\Exception\PromptGetException;
 use Mcp\Schema\Content\PromptMessage;
 use Mcp\Schema\Content\TextContent;
 use Mcp\Schema\Enum\Role;
@@ -111,5 +112,37 @@ class FeatureBuilderPromptTest extends TestCase
         /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
+    }
+
+    public function testInvalidComponentThrowsException(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage("Invalid value for parameter 'component': 'invalid'");
+
+        $this->prompt->handle('user authentication', 'invalid');
+    }
+
+    public function testInvalidComponentContainsExpectedValues(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage('Expected one of: controller, model, behavior, helper, middleware, command, full-stack');
+
+        $this->prompt->handle('feature', 'service');
+    }
+
+    public function testInvalidComponentContainsPromptName(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage('Prompt: feature-builder');
+
+        $this->prompt->handle('REST API', 'bad');
+    }
+
+    public function testDefaultComponentIsValid(): void
+    {
+        $result = $this->prompt->handle('payment integration');
+
+        $this->assertNotEmpty($result);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content);
     }
 }

@@ -30,6 +30,8 @@ class OrmQueryHelperPrompt extends AbstractPrompt
         string $queryGoal,
         string $tables = '',
     ): array {
+        $this->validateNonEmptyParameter($queryGoal, 'queryGoal', 'orm-query-helper');
+
         $tablesHint = $tables !== '' && $tables !== '0' ? '
 Tables involved: ' . $tables : '';
 

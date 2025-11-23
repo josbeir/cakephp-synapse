@@ -5,6 +5,7 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use Mcp\Exception\PromptGetException;
 use Mcp\Schema\Content\PromptMessage;
 use Mcp\Schema\Content\TextContent;
 use Mcp\Schema\Enum\Role;
@@ -98,5 +99,35 @@ class MigrationGuidePromptTest extends TestCase
         /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
+    }
+
+    public function testEmptyFromVersionThrowsException(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage("Parameter 'fromVersion' cannot be empty");
+
+        $this->prompt->handle('', '5.2');
+    }
+
+    public function testEmptyToVersionThrowsException(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage("Parameter 'toVersion' cannot be empty");
+
+        $this->prompt->handle('4.5', '');
+    }
+
+    public function testValidVersionsWithArea(): void
+    {
+        $result = $this->prompt->handle('4.0', '5.0', 'orm');
+
+        $this->assertNotEmpty($result);
+        $this->assertInstanceOf(PromptMessage::class, $result[0]);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content);
+        /** @var TextContent $content */
+        $content = $result[0]->content;
+        $this->assertStringContainsString('4.0', $content->text);
+        $this->assertStringContainsString('5.0', $content->text);
+        $this->assertStringContainsString('orm', $content->text);
     }
 }

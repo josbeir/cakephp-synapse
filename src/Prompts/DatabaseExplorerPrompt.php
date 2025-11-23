@@ -30,6 +30,14 @@ class DatabaseExplorerPrompt extends AbstractPrompt
         string $table,
         string $show = 'all',
     ): array {
+        $this->validateNonEmptyParameter($table, 'table', 'database-explorer');
+        $this->validateEnumParameter(
+            $show,
+            ['schema', 'data', 'relationships', 'all'],
+            'show',
+            'database-explorer',
+        );
+
         return [
             new PromptMessage(
                 role: Role::User,

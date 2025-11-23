@@ -30,6 +30,13 @@ class CodeReviewerPrompt extends AbstractPrompt
         string $code,
         string $focus = 'all',
     ): array {
+        $this->validateEnumParameter(
+            $focus,
+            ['conventions', 'security', 'performance', 'testing', 'all'],
+            'focus',
+            'code-reviewer',
+        );
+
         return [
             new PromptMessage(
                 role: Role::User,

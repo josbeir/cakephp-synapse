@@ -30,6 +30,8 @@ class PerformanceAnalyzerPrompt extends AbstractPrompt
         string $concern,
         string $context = '',
     ): array {
+        $this->validateNonEmptyParameter($concern, 'concern', 'performance-analyzer');
+
         $contextSection = $context !== '' && $context !== '0' ? '
 
 Context:

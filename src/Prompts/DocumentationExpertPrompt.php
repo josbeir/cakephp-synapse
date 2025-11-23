@@ -30,6 +30,13 @@ class DocumentationExpertPrompt extends AbstractPrompt
         string $topic,
         string $depth = 'intermediate',
     ): array {
+        $this->validateEnumParameter(
+            $depth,
+            ['basic', 'intermediate', 'advanced'],
+            'depth',
+            'documentation-expert',
+        );
+
         return match ($depth) {
             'basic' => $this->getBasicDocumentationMessages($topic),
             'advanced' => $this->getAdvancedDocumentationMessages($topic),

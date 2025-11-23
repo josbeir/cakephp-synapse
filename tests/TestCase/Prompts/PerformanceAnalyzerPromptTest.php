@@ -5,7 +5,9 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use Mcp\Exception\PromptGetException;
 use Mcp\Schema\Content\PromptMessage;
+use Mcp\Schema\Content\TextContent;
 use Mcp\Schema\Enum\Role;
 use Synapse\Prompts\PerformanceAnalyzerPrompt;
 
@@ -102,5 +104,34 @@ class PerformanceAnalyzerPromptTest extends TestCase
         /** @var \Mcp\Schema\Content\TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
+    }
+
+    public function testEmptyConcernThrowsException(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage("Parameter 'concern' cannot be empty");
+
+        $this->prompt->handle('');
+    }
+
+    public function testEmptyConcernWithContextThrowsException(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage("Parameter 'concern' cannot be empty");
+
+        $this->prompt->handle('', 'some code snippet');
+    }
+
+    public function testValidConcernWithContext(): void
+    {
+        $result = $this->prompt->handle('high memory usage', 'loop processing');
+
+        $this->assertNotEmpty($result);
+        $this->assertInstanceOf(PromptMessage::class, $result[0]);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content);
+        /** @var TextContent $content */
+        $content = $result[0]->content;
+        $this->assertStringContainsString('high memory usage', $content->text);
+        $this->assertStringContainsString('loop processing', $content->text);
     }
 }

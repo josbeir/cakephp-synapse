@@ -55,6 +55,21 @@ class QualityAssurancePrompt extends AbstractPrompt
         string $context = 'all',
         string $tools = 'all',
     ): array {
+        $this->validateEnumParameter(
+            $context,
+            ['guidelines', 'integration', 'troubleshooting', 'all'],
+            'context',
+            'quality-assurance',
+        );
+
+        $allowedTools = array_keys($this->qualityTools);
+        $this->validateCommaSeparatedParameter(
+            $tools,
+            array_merge($allowedTools, ['all']),
+            'tools',
+            'quality-assurance',
+        );
+
         $enabledTools = $this->getEnabledTools($tools);
 
         if ($enabledTools === []) {

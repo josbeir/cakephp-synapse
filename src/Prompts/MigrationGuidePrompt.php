@@ -32,6 +32,9 @@ class MigrationGuidePrompt extends AbstractPrompt
         string $toVersion,
         string $area = 'general',
     ): array {
+        $this->validateNonEmptyParameter($fromVersion, 'fromVersion', 'migration-guide');
+        $this->validateNonEmptyParameter($toVersion, 'toVersion', 'migration-guide');
+
         return [
             new PromptMessage(
                 role: Role::User,

@@ -5,6 +5,7 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use Mcp\Exception\PromptGetException;
 use Mcp\Schema\Content\PromptMessage;
 use Mcp\Schema\Content\TextContent;
 use Mcp\Schema\Enum\Role;
@@ -106,5 +107,45 @@ class DatabaseExplorerPromptTest extends TestCase
         /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
+    }
+
+    public function testEmptyTableThrowsException(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage("Parameter 'table' cannot be empty");
+
+        $this->prompt->handle('');
+    }
+
+    public function testInvalidShowThrowsException(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage("Invalid value for parameter 'show': 'invalid'");
+
+        $this->prompt->handle('users', 'invalid');
+    }
+
+    public function testInvalidShowContainsExpectedValues(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage('Expected one of: schema, data, relationships, all');
+
+        $this->prompt->handle('posts', 'query');
+    }
+
+    public function testInvalidShowContainsPromptName(): void
+    {
+        $this->expectException(PromptGetException::class);
+        $this->expectExceptionMessage('Prompt: database-explorer');
+
+        $this->prompt->handle('articles', 'bad');
+    }
+
+    public function testDefaultShowIsValid(): void
+    {
+        $result = $this->prompt->handle('products');
+
+        $this->assertNotEmpty($result);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content);
     }
 }
