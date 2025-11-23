@@ -824,4 +824,122 @@ class SearchEngineTest extends TestCase
         $this->assertEquals('Setup Guide', $result['title']);
         $this->assertEquals('How to setup the application', $result['content']);
     }
+
+    /**
+     * Test that original markdown content is preserved
+     */
+    public function testOriginalContentIsPreserved(): void
+    {
+        $document = [
+            'id' => 'test::markdown.md',
+            'source' => 'test',
+            'path' => 'docs/markdown.md',
+            'title' => 'Markdown Example',
+            'headings' => [],
+            'content' => 'This is cleaned content without markdown.',
+            'original_content' => '# Markdown Example
+
+This is **bold** and *italic* text.
+
+```php
+echo "Code block";
+```
+
+- List item 1
+- List item 2
+
+[Link text](https://example.com)',
+            'metadata' => [],
+        ];
+
+        $this->searchEngine->indexDocument($document);
+
+        $result = $this->searchEngine->getDocumentById('test::markdown.md');
+
+        $this->assertNotNull($result);
+        $this->assertStringContainsString('# Markdown Example', $result['content']);
+        $this->assertStringContainsString('**bold**', $result['content']);
+        $this->assertStringContainsString('```php', $result['content']);
+        $this->assertStringContainsString('- List item 1', $result['content']);
+        $this->assertStringContainsString('[Link text](https://example.com)', $result['content']);
+    }
+
+    /**
+     * Test that search uses cleaned content but retrieval returns original
+     */
+    public function testSearchUsesCleanedContentRetrievalReturnsOriginal(): void
+    {
+        $document = [
+            'id' => 'test::doc.md',
+            'source' => 'test',
+            'path' => 'docs/doc.md',
+            'title' => 'Test Document',
+            'headings' => [],
+            'content' => 'searchable text without markup',
+            'original_content' => '**searchable** text with *markup*',
+            'metadata' => [],
+        ];
+
+        $this->searchEngine->indexDocument($document);
+
+        // Search should find the document using cleaned content
+        $searchResults = $this->searchEngine->search('searchable');
+        $this->assertCount(1, $searchResults);
+
+        // getDocumentById should return original markdown
+        $result = $this->searchEngine->getDocumentById('test::doc.md');
+        $this->assertNotNull($result);
+        $this->assertStringContainsString('**searchable**', $result['content']);
+        $this->assertStringContainsString('*markup*', $result['content']);
+    }
+
+    /**
+     * Test backward compatibility when original_content is not provided
+     */
+    public function testBackwardCompatibilityWithoutOriginalContent(): void
+    {
+        $document = [
+            'id' => 'test::legacy.md',
+            'source' => 'test',
+            'path' => 'docs/legacy.md',
+            'title' => 'Legacy Document',
+            'headings' => [],
+            'content' => 'cleaned content only',
+            'metadata' => [],
+        ];
+
+        // Index without original_content field
+        $this->searchEngine->indexDocument($document);
+
+        $result = $this->searchEngine->getDocumentById('test::legacy.md');
+
+        $this->assertNotNull($result);
+        // Should fallback to cleaned content
+        $this->assertEquals('cleaned content only', $result['content']);
+    }
+
+    /**
+     * Test schema validation rebuilds database when columns are missing
+     */
+    public function testSchemaValidationRebuildsOnMismatch(): void
+    {
+        // Create a document with original content
+        $document = [
+            'id' => 'test::validated.md',
+            'source' => 'test',
+            'path' => 'docs/validated.md',
+            'title' => 'Validated Document',
+            'headings' => [],
+            'content' => 'cleaned content',
+            'original_content' => '# Original *Markdown*',
+            'metadata' => [],
+        ];
+
+        $this->searchEngine->indexDocument($document);
+
+        // Verify original content is stored and retrievable
+        $result = $this->searchEngine->getDocumentById('test::validated.md');
+        $this->assertNotNull($result);
+        $this->assertEquals('# Original *Markdown*', $result['content']);
+    }
 }

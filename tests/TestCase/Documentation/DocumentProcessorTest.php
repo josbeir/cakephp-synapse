@@ -350,4 +350,81 @@ MD;
         $this->assertStringContainsString('multiple spaces', $result['content']);
         $this->assertStringNotContainsString('multiple    spaces', $result['content']);
     }
+
+    /**
+     * Test that original_content field preserves markdown formatting
+     */
+    public function testOriginalContentPreservesMarkdown(): void
+    {
+        $content = $this->readTestFile('with-code.md');
+
+        $result = $this->DocumentProcessor->processContent($content, 'test.md', 'test-source');
+
+        // Verify original_content exists
+        $this->assertArrayHasKey('original_content', $result);
+
+        // Verify original content contains markdown that was stripped from cleaned content
+        $this->assertStringContainsString('```', $result['original_content']);
+        $this->assertStringContainsString('# Code Examples', $result['original_content']);
+
+        // Verify cleaned content has code blocks removed
+        $this->assertStringNotContainsString('```', $result['content']);
+    }
+
+    /**
+     * Test that original_content preserves markdown links
+     */
+    public function testOriginalContentPreservesLinks(): void
+    {
+        $content = $this->readTestFile('with-links.md');
+
+        $result = $this->DocumentProcessor->processContent($content, 'test.md', 'test-source');
+
+        // Verify original_content has link syntax
+        $this->assertStringContainsString('[this link](https://example.com)', $result['original_content']);
+        $this->assertStringContainsString('[CakePHP documentation](https://book.cakephp.org', $result['original_content']);
+
+        // Verify cleaned content has links stripped
+        $this->assertStringNotContainsString('[this link]', $result['content']);
+        $this->assertStringContainsString('this link', $result['content']); // But text remains
+    }
+
+    /**
+     * Test that original_content preserves list formatting
+     */
+    public function testOriginalContentPreservesLists(): void
+    {
+        $content = $this->readTestFile('with-lists.md');
+
+        $result = $this->DocumentProcessor->processContent($content, 'test.md', 'test-source');
+
+        // Verify original_content has list markers
+        $this->assertStringContainsString('- First item', $result['original_content']);
+        $this->assertStringContainsString('* Item 1', $result['original_content']);
+        $this->assertStringContainsString('1. First step', $result['original_content']);
+
+        // Verify cleaned content has markers stripped but content remains
+        $this->assertStringNotContainsString('- First item', $result['content']);
+        $this->assertStringContainsString('First item', $result['content']);
+    }
+
+    /**
+     * Test that original_content is different from cleaned content
+     */
+    public function testOriginalContentDiffersFromCleanedContent(): void
+    {
+        $content = $this->readTestFile('with-code.md');
+
+        $result = $this->DocumentProcessor->processContent($content, 'test.md', 'test-source');
+
+        // Both should exist
+        $this->assertArrayHasKey('content', $result);
+        $this->assertArrayHasKey('original_content', $result);
+
+        // They should not be the same
+        $this->assertNotEquals($result['content'], $result['original_content']);
+
+        // Original should be longer (has markdown formatting)
+        $this->assertGreaterThan(strlen($result['content']), strlen($result['original_content']));
+    }
 }

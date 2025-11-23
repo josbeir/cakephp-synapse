@@ -828,4 +828,74 @@ class DocumentationToolsTest extends TestCase
 
         $this->tools->contentResource('cakephp-5x::docs/missing.md');
     }
+
+    /**
+     * Test getDocument returns original markdown with formatting preserved
+     */
+    public function testGetDocumentReturnsOriginalMarkdownWithFormatting(): void
+    {
+        $documentData = [
+            'id' => 'cakephp-5x::docs/example.md',
+            'source' => 'cakephp-5x',
+            'path' => 'docs/example.md',
+            'title' => 'Example Document',
+            'content' => "# Example Document\n\nThis is **bold** and *italic* text.\n\n```php\necho \"Code block\";\n```\n\n- List item 1\n- List item 2\n\n[Link text](https://example.com)",
+            'metadata' => [],
+        ];
+
+        /** @phpstan-ignore-next-line */
+        $this->mockSearchEngine->expects($this->once())
+            ->method('getDocumentById')
+            ->with('cakephp-5x::docs/example.md')
+            ->willReturn($documentData);
+
+        /** @phpstan-ignore-next-line */
+        $this->mockService->expects($this->once())
+            ->method('getSearchEngine')
+            ->willReturn($this->mockSearchEngine);
+
+        $result = $this->tools->getDocument('cakephp-5x::docs/example.md');
+
+        // Verify original markdown formatting is preserved
+        $this->assertStringContainsString('**bold**', $result['content']);
+        $this->assertStringContainsString('*italic*', $result['content']);
+        $this->assertStringContainsString('```php', $result['content']);
+        $this->assertStringContainsString('- List item 1', $result['content']);
+        $this->assertStringContainsString('[Link text](https://example.com)', $result['content']);
+    }
+
+    /**
+     * Test contentResource returns original markdown with formatting preserved
+     */
+    public function testContentResourceReturnsOriginalMarkdownWithFormatting(): void
+    {
+        $documentData = [
+            'id' => 'cakephp-5x::docs/formatting.md',
+            'source' => 'cakephp-5x',
+            'path' => 'docs/formatting.md',
+            'title' => 'Formatting Example',
+            'content' => "# Formatting\n\n## Code Examples\n\n```php\n\$config = ['key' => 'value'];\n```\n\n## Lists\n\n1. First item\n2. Second item\n\n## Links\n\nSee [documentation](https://book.cakephp.org).",
+            'metadata' => [],
+        ];
+
+        /** @phpstan-ignore-next-line */
+        $this->mockSearchEngine->expects($this->once())
+            ->method('getDocumentById')
+            ->with('cakephp-5x::docs/formatting.md')
+            ->willReturn($documentData);
+
+        /** @phpstan-ignore-next-line */
+        $this->mockService->expects($this->once())
+            ->method('getSearchEngine')
+            ->willReturn($this->mockSearchEngine);
+
+        $result = $this->tools->contentResource('cakephp-5x::docs/formatting.md');
+
+        // Verify markdown formatting is preserved in resource
+        $content = $result->text;
+        $this->assertStringContainsString('```php', $content);
+        $this->assertStringContainsString('1. First item', $content);
+        $this->assertStringContainsString('[documentation](https://book.cakephp.org)', $content);
+        $this->assertStringContainsString('## Code Examples', $content);
+    }
 }

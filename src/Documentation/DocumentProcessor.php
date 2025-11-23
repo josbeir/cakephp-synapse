@@ -53,7 +53,7 @@ class DocumentProcessor
         // Extract headings
         $headings = $this->extractHeadings($contentWithoutFrontmatter);
 
-        // Clean content for indexing
+        // Clean content for indexing (used for FTS search)
         $cleanContent = $this->cleanContent($contentWithoutFrontmatter);
 
         // Generate unique ID
@@ -66,6 +66,7 @@ class DocumentProcessor
             'title' => $title,
             'headings' => $headings,
             'content' => $cleanContent,
+            'original_content' => $contentWithoutFrontmatter,
             'metadata' => array_merge(
                 $frontmatter['data'],
                 [

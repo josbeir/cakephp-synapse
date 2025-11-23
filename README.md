@@ -76,6 +76,13 @@ bin/cake plugin load --only-cli --optional Synapse
 
 The plugin will automatically register itself and discover MCP elements in your application.
 
+> [!TIP]
+> **After updating the plugin**, it's recommended to re-index the documentation to ensure all features work correctly:
+> ```bash
+> bin/cake synapse index -d  # Destroy old index
+> bin/cake synapse index     # Re-index documentation
+> ```
+
 ## Quick Start
 
 1. **Install the plugin** (see above)

@@ -39,7 +39,7 @@ class Application extends BaseApplication
         // Make sure we override he Mock adapter in our application context too.
         Configure::write('Synapse.documentation.git_adapter', MockGitAdapter::class);
 
-        // Override sources to empty array to prevent real repos from being used during tests
+        // // Override sources to empty array to prevent real repos from being used during tests
         Configure::write('Synapse.documentation.sources', []);
     }
 

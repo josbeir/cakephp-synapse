@@ -16,6 +16,41 @@ use SQLite3Result;
 class SearchEngine
 {
     /**
+     * Schema definition for all tables
+     *
+     * Defines the complete database schema including columns, types, and indexes.
+     * Used for both table creation and schema validation.
+     */
+    private const SCHEMA_DEFINITION = [
+        'documents_meta' => [
+            'columns' => [
+                'doc_id' => 'TEXT PRIMARY KEY',
+                'source' => 'TEXT NOT NULL',
+                'path' => 'TEXT NOT NULL',
+                'title' => 'TEXT NOT NULL',
+                'metadata' => 'TEXT',
+                'original_content' => 'TEXT',
+                'indexed_at' => 'INTEGER NOT NULL',
+            ],
+            'indexes' => [
+                'idx_documents_source' => 'source',
+            ],
+        ],
+        'documents_fts' => [
+            'type' => 'fts5',
+            'columns' => [
+                'doc_id' => 'UNINDEXED',
+                'source' => 'UNINDEXED',
+                'path' => 'UNINDEXED',
+                'title' => null,
+                'headings' => null,
+                'content' => null,
+            ],
+            'options' => "tokenize = 'porter unicode61'",
+        ],
+    ];
+
+    /**
      * SQLite database connection
      */
     private SQLite3 $db;
@@ -47,6 +82,9 @@ class SearchEngine
         if (!$this->isFts5Available()) {
             throw new RuntimeException('SQLite FTS5 extension is not available');
         }
+
+        // Initialize tables and schema (following CakePHP pattern)
+        $this->initialize();
     }
 
     /**
@@ -71,7 +109,12 @@ class SearchEngine
         }
 
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-            if (isset($row['compile_options']) && str_contains($row['compile_options'], 'FTS5')) {
+            if (
+                is_array($row) &&
+                isset($row['compile_options']) &&
+                is_string($row['compile_options']) &&
+                str_contains($row['compile_options'], 'ENABLE_FTS5')
+            ) {
                 return true;
             }
         }
@@ -82,7 +125,8 @@ class SearchEngine
     /**
      * Initialize the search index
      *
-     * Creates the FTS5 table and metadata table if they don't exist.
+     * Creates tables from schema definition if they don't exist.
+     * Validates existing schema and rebuilds if mismatch detected.
      */
     public function initialize(): void
     {
@@ -90,102 +134,160 @@ class SearchEngine
             return;
         }
 
-        // Create FTS5 virtual table for document content
-        $this->db->exec("
-            CREATE VIRTUAL TABLE IF NOT EXISTS documents_fts USING fts5(
-                doc_id UNINDEXED,
-                source UNINDEXED,
-                path UNINDEXED,
-                title,
-                headings,
-                content,
-                tokenize = 'porter unicode61'
-            )
-        ");
+        // Create tables if they don't exist
+        $this->createTables();
 
-        // Create metadata table for document info
-        $this->db->exec("
-            CREATE TABLE IF NOT EXISTS documents_meta (
-                doc_id TEXT PRIMARY KEY,
-                source TEXT NOT NULL,
-                path TEXT NOT NULL,
-                title TEXT NOT NULL,
-                metadata TEXT,
-                indexed_at INTEGER NOT NULL
-            )
-        ");
-
-        // Create index on source for filtering
-        $this->db->exec("
-            CREATE INDEX IF NOT EXISTS idx_documents_source ON documents_meta(source)
-        ");
+        // Validate schema matches expected definition
+        if (!$this->validateSchema()) {
+            // Schema mismatch - destroy and recreate
+            $this->destroy();
+            $this->createTables();
+        }
 
         $this->initialized = true;
     }
 
     /**
-     * Index a document
-     *
-     * @param array<string, mixed> $document Document data
+     * Create all database tables from schema definition
      */
-    public function indexDocument(array $document): void
+    private function createTables(): void
     {
-        $this->initialize();
-
-        $docId = $document['id'];
-        $source = $document['source'];
-        $path = $document['path'];
-        $title = $document['title'];
-        $headings = implode(' ', $document['headings'] ?? []);
-        $content = $document['content'];
-        $metadata = json_encode($document['metadata'] ?? []);
-
-        // Begin transaction
-        $this->db->exec('BEGIN');
-
-        try {
-            // Delete existing document if present
-            $this->deleteDocument($docId, false);
-
-            // Insert into FTS table
-            $stmt = $this->db->prepare("
-                INSERT INTO documents_fts (doc_id, source, path, title, headings, content)
-                VALUES (:doc_id, :source, :path, :title, :headings, :content)
-            ");
-            if ($stmt === false) {
-                throw new RuntimeException('Failed to prepare FTS insert statement');
+        foreach (self::SCHEMA_DEFINITION as $table => $definition) {
+            // @phpstan-ignore-next-line (type is always fts5 when isset, this is intentional)
+            if (isset($definition['type']) && $definition['type'] === 'fts5') { // @phpstan-ignore-line
+                $this->createFtsTable($table, $definition);
+            } else {
+                $this->createRegularTable($table, $definition);
             }
-
-            $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
-            $stmt->bindValue(':source', $source, SQLITE3_TEXT);
-            $stmt->bindValue(':path', $path, SQLITE3_TEXT);
-            $stmt->bindValue(':title', $title, SQLITE3_TEXT);
-            $stmt->bindValue(':headings', $headings, SQLITE3_TEXT);
-            $stmt->bindValue(':content', $content, SQLITE3_TEXT);
-            $stmt->execute();
-
-            // Insert into metadata table
-            $stmt = $this->db->prepare("
-                INSERT INTO documents_meta (doc_id, source, path, title, metadata, indexed_at)
-                VALUES (:doc_id, :source, :path, :title, :metadata, :indexed_at)
-            ");
-            if ($stmt === false) {
-                throw new RuntimeException('Failed to prepare metadata insert statement');
-            }
-
-            $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
-            $stmt->bindValue(':source', $source, SQLITE3_TEXT);
-            $stmt->bindValue(':path', $path, SQLITE3_TEXT);
-            $stmt->bindValue(':title', $title, SQLITE3_TEXT);
-            $stmt->bindValue(':metadata', $metadata, SQLITE3_TEXT);
-            $stmt->bindValue(':indexed_at', time(), SQLITE3_INTEGER);
-            $stmt->execute();
-
-            $this->db->exec('COMMIT');
-        } catch (Exception $exception) {
-            $this->db->exec('ROLLBACK');
-            throw $exception;
         }
+    }
+
+    /**
+     * Create a regular SQLite table
+     *
+     * @param string $table Table name
+     * @param array<string, mixed> $definition Table definition
+     */
+    private function createRegularTable(string $table, array $definition): void
+    {
+        // Build column definitions
+        $columnsSql = [];
+        foreach ($definition['columns'] as $name => $type) {
+            $columnsSql[] = sprintf('%s %s', $name, $type);
+        }
+
+        // Create table
+        $sql = sprintf(
+            'CREATE TABLE IF NOT EXISTS %s (%s)',
+            $table,
+            implode(', ', $columnsSql),
+        );
+
+        $this->db->exec($sql);
+
+        // Create indexes if defined
+        if (isset($definition['indexes'])) {
+            foreach ($definition['indexes'] as $indexName => $column) {
+                $this->db->exec(sprintf(
+                    'CREATE INDEX IF NOT EXISTS %s ON %s(%s)',
+                    $indexName,
+                    $table,
+                    $column,
+                ));
+            }
+        }
+    }
+
+    /**
+     * Create an FTS5 virtual table
+     *
+     * @param string $table Table name
+     * @param array<string, mixed> $definition Table definition
+     */
+    private function createFtsTable(string $table, array $definition): void
+    {
+        // Build column definitions
+        $columnsSql = [];
+        foreach ($definition['columns'] as $name => $modifier) {
+            if ($modifier === null) {
+                $columnsSql[] = $name;
+            } else {
+                $columnsSql[] = sprintf('%s %s', $name, $modifier);
+            }
+        }
+
+        // Create FTS5 virtual table
+        $options = $definition['options'] ?? '';
+
+        $sql = sprintf(
+            'CREATE VIRTUAL TABLE IF NOT EXISTS %s USING fts5(%s, %s)',
+            $table,
+            implode(', ', $columnsSql),
+            $options,
+        );
+
+        $this->db->exec($sql);
+    }
+
+    /**
+     * Validate that existing schema matches expected definition
+     */
+    private function validateSchema(): bool
+    {
+        foreach (self::SCHEMA_DEFINITION as $table => $definition) {
+            // Check if table exists
+            if (!$this->tableExists($table)) {
+                return false;
+            }
+
+            // Validate all expected columns exist
+            $actualColumns = $this->getTableColumns($table);
+            $expectedColumns = array_keys($definition['columns']);
+
+            foreach ($expectedColumns as $column) {
+                if (!in_array($column, $actualColumns, true)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if a table exists in the database
+     */
+    private function tableExists(string $table): bool
+    {
+        $result = $this->db->querySingle(
+            sprintf(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='%s'",
+                $table,
+            ),
+        );
+
+        return is_string($result);
+    }
+
+    /**
+     * Get list of column names for a table
+     *
+     * @return array<string>
+     */
+    private function getTableColumns(string $table): array
+    {
+        $result = $this->db->query(sprintf('PRAGMA table_info(%s)', $table));
+        $columns = [];
+
+        if ($result instanceof SQLite3Result) {
+            while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+                if (is_array($row) && isset($row['name'])) {
+                    $columns[] = (string)$row['name'];
+                }
+            }
+        }
+
+        return $columns;
     }
 
     /**
@@ -195,66 +297,11 @@ class SearchEngine
      */
     public function indexBatch(array $documents): void
     {
-        $this->initialize();
-
         $this->db->exec('BEGIN');
 
         try {
             foreach ($documents as $document) {
-                $source = $document['source'];
-                $path = $document['path'];
-                $docId = $document['id'] ?? sprintf('%s::%s', $source, $path);
-                $title = $document['title'];
-                $headings = implode(' ', $document['headings'] ?? []);
-                $content = $document['content'];
-                $metadata = json_encode($document['metadata'] ?? []);
-
-                // Delete existing document if present (without transaction)
-                $stmt = $this->db->prepare('DELETE FROM documents_fts WHERE doc_id = :doc_id');
-                if ($stmt !== false) {
-                    $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
-                    $stmt->execute();
-                }
-
-                $stmt = $this->db->prepare('DELETE FROM documents_meta WHERE doc_id = :doc_id');
-                if ($stmt !== false) {
-                    $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
-                    $stmt->execute();
-                }
-
-                // Insert into FTS table
-                $stmt = $this->db->prepare("
-                    INSERT INTO documents_fts (doc_id, source, path, title, headings, content)
-                    VALUES (:doc_id, :source, :path, :title, :headings, :content)
-                ");
-                if ($stmt === false) {
-                    throw new RuntimeException('Failed to prepare FTS insert statement');
-                }
-
-                $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
-                $stmt->bindValue(':source', $source, SQLITE3_TEXT);
-                $stmt->bindValue(':path', $path, SQLITE3_TEXT);
-                $stmt->bindValue(':title', $title, SQLITE3_TEXT);
-                $stmt->bindValue(':headings', $headings, SQLITE3_TEXT);
-                $stmt->bindValue(':content', $content, SQLITE3_TEXT);
-                $stmt->execute();
-
-                // Insert into metadata table
-                $stmt = $this->db->prepare("
-                    INSERT INTO documents_meta (doc_id, source, path, title, metadata, indexed_at)
-                    VALUES (:doc_id, :source, :path, :title, :metadata, :indexed_at)
-                ");
-                if ($stmt === false) {
-                    throw new RuntimeException('Failed to prepare metadata insert statement');
-                }
-
-                $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
-                $stmt->bindValue(':source', $source, SQLITE3_TEXT);
-                $stmt->bindValue(':path', $path, SQLITE3_TEXT);
-                $stmt->bindValue(':title', $title, SQLITE3_TEXT);
-                $stmt->bindValue(':metadata', $metadata, SQLITE3_TEXT);
-                $stmt->bindValue(':indexed_at', time(), SQLITE3_INTEGER);
-                $stmt->execute();
+                $this->indexDocument($document);
             }
 
             $this->db->exec('COMMIT');
@@ -262,6 +309,132 @@ class SearchEngine
             $this->db->exec('ROLLBACK');
             throw $exception;
         }
+    }
+
+    /**
+     * Index a single document
+     *
+     * This method handles the core indexing logic without transaction management.
+     * When called from indexBatch(), the transaction is managed by the batch method.
+     * When called directly, you may want to wrap it in your own transaction if needed.
+     *
+     * @param array<string, mixed> $document Document data
+     */
+    public function indexDocument(array $document): void
+    {
+        $docId = (string)($document['id'] ?? '');
+        $source = (string)($document['source'] ?? '');
+        $path = (string)($document['path'] ?? '');
+        $title = (string)($document['title'] ?? '');
+        $headings = implode(' ', $document['headings'] ?? []);
+        $content = (string)($document['content'] ?? '');
+        $originalContent = (string)($document['original_content'] ?? $content);
+        $metadata = json_encode($document['metadata'] ?? []) ?: '{}';
+
+        // Generate doc ID if not present
+        if ($docId === '') {
+            $docId = sprintf('%s::%s', $source, $path);
+        }
+
+        // Delete existing document if present
+        $this->deleteDocumentInternal($docId);
+
+        // Insert into FTS table (using cleaned content for search)
+        $this->insertIntoFtsTable($docId, $source, $path, $title, $headings, $content);
+
+        // Insert into metadata table (including original markdown content)
+        $this->insertIntoMetaTable($docId, $source, $path, $title, $metadata, $originalContent);
+    }
+
+    /**
+     * Delete a document without transaction management
+     *
+     * @param string $docId Document ID
+     */
+    private function deleteDocumentInternal(string $docId): void
+    {
+        $stmt = $this->db->prepare('DELETE FROM documents_fts WHERE doc_id = :doc_id');
+        if ($stmt !== false) {
+            $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
+            $stmt->execute();
+        }
+
+        $stmt = $this->db->prepare('DELETE FROM documents_meta WHERE doc_id = :doc_id');
+        if ($stmt !== false) {
+            $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
+            $stmt->execute();
+        }
+    }
+
+    /**
+     * Insert document into FTS table
+     *
+     * @param string $docId Document ID
+     * @param string $source Source
+     * @param string $path Path
+     * @param string $title Title
+     * @param string $headings Headings
+     * @param string $content Content
+     */
+    private function insertIntoFtsTable(
+        string $docId,
+        string $source,
+        string $path,
+        string $title,
+        string $headings,
+        string $content,
+    ): void {
+        $stmt = $this->db->prepare("
+            INSERT INTO documents_fts (doc_id, source, path, title, headings, content)
+            VALUES (:doc_id, :source, :path, :title, :headings, :content)
+        ");
+        if ($stmt === false) {
+            throw new RuntimeException('Failed to prepare FTS insert statement');
+        }
+
+        $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
+        $stmt->bindValue(':source', $source, SQLITE3_TEXT);
+        $stmt->bindValue(':path', $path, SQLITE3_TEXT);
+        $stmt->bindValue(':title', $title, SQLITE3_TEXT);
+        $stmt->bindValue(':headings', $headings, SQLITE3_TEXT);
+        $stmt->bindValue(':content', $content, SQLITE3_TEXT);
+        $stmt->execute();
+    }
+
+    /**
+     * Insert document into metadata table
+     *
+     * @param string $docId Document ID
+     * @param string $source Source
+     * @param string $path Path
+     * @param string $title Title
+     * @param string $metadata Metadata JSON
+     * @param string $originalContent Original markdown content
+     */
+    private function insertIntoMetaTable(
+        string $docId,
+        string $source,
+        string $path,
+        string $title,
+        string $metadata,
+        string $originalContent,
+    ): void {
+        $stmt = $this->db->prepare("
+            INSERT INTO documents_meta (doc_id, source, path, title, metadata, original_content, indexed_at)
+            VALUES (:doc_id, :source, :path, :title, :metadata, :original_content, :indexed_at)
+        ");
+        if ($stmt === false) {
+            throw new RuntimeException('Failed to prepare metadata insert statement');
+        }
+
+        $stmt->bindValue(':doc_id', $docId, SQLITE3_TEXT);
+        $stmt->bindValue(':source', $source, SQLITE3_TEXT);
+        $stmt->bindValue(':path', $path, SQLITE3_TEXT);
+        $stmt->bindValue(':title', $title, SQLITE3_TEXT);
+        $stmt->bindValue(':metadata', $metadata, SQLITE3_TEXT);
+        $stmt->bindValue(':original_content', $originalContent, SQLITE3_TEXT);
+        $stmt->bindValue(':indexed_at', time(), SQLITE3_INTEGER);
+        $stmt->execute();
     }
 
     /**
@@ -306,8 +479,6 @@ class SearchEngine
      */
     public function clear(): void
     {
-        $this->initialize();
-
         $this->db->exec('BEGIN');
         try {
             $this->db->exec('DELETE FROM documents_fts');
@@ -326,8 +497,6 @@ class SearchEngine
      */
     public function clearSource(string $source): void
     {
-        $this->initialize();
-
         $this->db->exec('BEGIN');
         try {
             $stmt = $this->db->prepare('DELETE FROM documents_fts WHERE source = :source');
@@ -362,8 +531,6 @@ class SearchEngine
      */
     public function search(string $query, array $options = []): array
     {
-        $this->initialize();
-
         // Validate query
         $query = trim($query);
         if ($query === '') {
@@ -409,17 +576,19 @@ class SearchEngine
             WHERE documents_fts MATCH :query
         ";
 
-        if (!empty($sources)) {
+        if (is_array($sources) && $sources !== []) {
             $placeholders = [];
-            foreach ($sources as $i => $source) {
-                $placeholders[] = ':source' . $i;
+            foreach (array_keys($sources) as $i) {
+                if (is_int($i) || is_string($i)) { // @phpstan-ignore-line
+                    $placeholders[] = ':source' . $i;
+                }
             }
 
-            $sql .= sprintf(' AND meta.source IN (%s)', implode(',', $placeholders));
+            $sql .= sprintf(' AND meta.source IN (%s)', implode(', ', $placeholders));
         }
 
         $sql .= "
-            ORDER BY score DESC
+            ORDER BY score ASC
             LIMIT :limit
         ";
 
@@ -429,11 +598,13 @@ class SearchEngine
         }
 
         $stmt->bindValue(':query', $query, SQLITE3_TEXT);
-        $stmt->bindValue(':limit', $limit, SQLITE3_INTEGER);
+        $stmt->bindValue(':limit', is_int($limit) ? $limit : 10, SQLITE3_INTEGER);
 
-        if (!empty($sources)) {
+        if (is_array($sources) && $sources !== []) {
             foreach ($sources as $i => $source) {
-                $stmt->bindValue(':source' . $i, $source, SQLITE3_TEXT);
+                if (is_string($source)) {
+                    $stmt->bindValue(':source' . $i, $source, SQLITE3_TEXT);
+                }
             }
         }
 
@@ -444,15 +615,24 @@ class SearchEngine
 
         $results = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $metadataArray = json_decode((string)$row['metadata'], true);
+
             $results[] = [
-                'id' => $row['doc_id'],
-                'source' => $row['source'],
-                'path' => $row['path'],
-                'title' => $row['title'],
-                'metadata' => json_decode($row['metadata'], true),
-                'score' => abs($row['score']),
-                'title_highlight' => $highlight ? ($row['title_highlight'] ?? $row['title']) : null,
-                'snippet' => $highlight ? ($row['snippet'] ?? '') : null,
+                'id' => (string)$row['doc_id'],
+                'source' => (string)$row['source'],
+                'path' => (string)$row['path'],
+                'title' => (string)$row['title'],
+                'metadata' => is_array($metadataArray) ? $metadataArray : [],
+                // Convert BM25 scores to absolute values for better intuitiveness
+                // BM25 returns negative scores (more negative = better match)
+                // Absolute values make "higher = better" which is more intuitive for users/LLMs
+                'score' => abs((float)$row['score']),
+                'title_highlight' => $highlight ? (string)($row['title_highlight'] ?? $row['title']) : null,
+                'snippet' => $highlight ? (string)($row['snippet'] ?? '') : null,
             ];
         }
 
@@ -464,14 +644,15 @@ class SearchEngine
      */
     public function getDocumentCount(): int
     {
-        $this->initialize();
-
         $result = $this->db->query('SELECT COUNT(*) as count FROM documents_meta');
-        if (!$result) {
+        if (!$result instanceof SQLite3Result) {
             return 0;
         }
 
         $row = $result->fetchArray(SQLITE3_ASSOC);
+        if (!is_array($row)) {
+            return 0;
+        }
 
         return (int)($row['count'] ?? 0);
     }
@@ -483,21 +664,21 @@ class SearchEngine
      */
     public function getDocumentCountBySource(): array
     {
-        $this->initialize();
-
         $result = $this->db->query('
             SELECT source, COUNT(*) as count
             FROM documents_meta
             GROUP BY source
         ');
 
-        if (!$result) {
+        if (!$result instanceof SQLite3Result) {
             return [];
         }
 
         $counts = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-            $counts[$row['source']] = (int)$row['count'];
+            if (is_array($row) && isset($row['source'])) {
+                $counts[(string)$row['source']] = (int)$row['count'];
+            }
         }
 
         return $counts;
@@ -511,19 +692,16 @@ class SearchEngine
      */
     public function getDocumentById(string $docId): ?array
     {
-        $this->initialize();
-
         $stmt = $this->db->prepare("
             SELECT
-                fts.doc_id,
-                fts.source,
-                fts.path,
-                fts.title,
-                fts.content,
+                meta.doc_id,
+                meta.source,
+                meta.path,
+                meta.title,
+                meta.original_content,
                 meta.metadata
-            FROM documents_fts fts
-            JOIN documents_meta meta ON fts.doc_id = meta.doc_id
-            WHERE fts.doc_id = :doc_id
+            FROM documents_meta meta
+            WHERE meta.doc_id = :doc_id
         ");
 
         if ($stmt === false) {
@@ -543,13 +721,16 @@ class SearchEngine
             return null;
         }
 
+        // Return original markdown content (not cleaned content)
+        $metadataArray = json_decode((string)$row['metadata'], true);
+
         return [
-            'id' => $row['doc_id'],
-            'source' => $row['source'],
-            'path' => $row['path'],
-            'title' => $row['title'],
-            'content' => $row['content'],
-            'metadata' => json_decode($row['metadata'], true),
+            'id' => (string)$row['doc_id'],
+            'source' => (string)$row['source'],
+            'path' => (string)$row['path'],
+            'title' => (string)$row['title'],
+            'content' => (string)($row['original_content'] ?? ''),
+            'metadata' => is_array($metadataArray) ? $metadataArray : [],
         ];
     }
 
@@ -558,8 +739,6 @@ class SearchEngine
      */
     public function optimize(): void
     {
-        $this->initialize();
-
         $this->db->exec("INSERT INTO documents_fts(documents_fts) VALUES('optimize')");
     }
 

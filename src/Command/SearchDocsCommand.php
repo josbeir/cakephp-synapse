@@ -209,21 +209,26 @@ class SearchDocsCommand extends Command
 
             // Store snippet for display after table
             if (!$noSnippet && $snippet !== '') {
-                $snippets[$rank] = ['title' => $title, 'snippet' => $snippet];
+                $snippets[$rank] = ['title' => $title, 'snippet' => $snippet, 'score' => $rankScore];
             }
         }
 
         // Display results table
         $io->helper('Table')->output($tableData);
 
-        // Display snippets if enabled
+        // Display snippets if enabled (in reverse order so best result is last/most visible)
         if (!$noSnippet && $snippets !== []) {
             $io->out('');
             $io->out('<info>Snippets:</info>');
             $io->out('');
 
-            foreach ($snippets as $rank => $data) {
-                $io->out(sprintf('<info>[%d]</info> <question>%s</question>', $rank, $data['title']));
+            foreach (array_reverse($snippets, true) as $rank => $data) {
+                $io->out(sprintf(
+                    '<info>[%d]</info> <question>%s</question> <comment>(Score: %.2f)</comment>',
+                    $rank,
+                    $data['title'],
+                    $data['score'],
+                ));
                 $io->hr();
 
                 // Clean up HTML markers and format snippet
@@ -299,12 +304,18 @@ class SearchDocsCommand extends Command
         $io->out('<info>All Snippets:</info>');
         $io->out('');
 
-        foreach ($results as $i => $result) {
+        foreach (array_reverse($results, true) as $i => $result) {
             $rank = $i + 1;
             $title = $result['title'] ?? 'Untitled';
             $snippet = $result['snippet'] ?? '';
+            $score = $result['score'] ?? 0;
 
-            $io->out(sprintf('<info>[%d]</info> <question>%s</question>', $rank, $title));
+            $io->out(sprintf(
+                '<info>[%d]</info> <question>%s</question> <comment>(Score: %.2f)</comment>',
+                $rank,
+                $title,
+                $score,
+            ));
             $io->hr();
 
             if ($snippet !== '') {
@@ -428,6 +439,9 @@ class SearchDocsCommand extends Command
     /**
      * View full document content
      *
+     * Displays the original markdown content with full formatting preserved
+     * (code blocks, links, lists, etc.), not the cleaned content used for search.
+     *
      * @param array<string, mixed> $result Search result
      * @param \Cake\Console\ConsoleIo $io Console I/O
      */
@@ -442,6 +456,7 @@ class SearchDocsCommand extends Command
         }
 
         try {
+            // Get document with original markdown content
             $document = $this->service->getSearchEngine()->getDocumentById($documentId);
 
             if ($document === null) {

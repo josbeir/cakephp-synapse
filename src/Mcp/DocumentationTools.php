@@ -36,6 +36,9 @@ class DocumentationTools
      * BM25 ranking and optional highlighting. Returns relevant documentation
      * snippets with context.
      *
+     * Results are sorted by relevance (best matches first). Each result includes
+     * a 'score' field - higher scores indicate better relevance.
+     *
      * @param string $query The search query
      * @param int $limit Maximum number of results to return (default: 10, max: 50)
      * @param bool $fuzzy Enable fuzzy/prefix matching for typo tolerance (default: false)
@@ -44,7 +47,8 @@ class DocumentationTools
      */
     #[McpTool(
         name: 'search_docs',
-        description: 'Search CakePHP documentation using full-text search with relevance ranking',
+        description: 'Search CakePHP documentation using full-text search with relevance ranking. ' .
+            'Results are sorted by relevance (best first) with scores where higher = more relevant.',
     )]
     public function searchDocs(
         string $query,
@@ -124,6 +128,9 @@ class DocumentationTools
      * Retrieves the complete markdown content of a documentation file.
      * Use this after searching to read the full document.
      *
+     * Returns original markdown with full formatting (code blocks, links, lists, etc.)
+     * not the cleaned content used for search indexing.
+     *
      * @param string $docId Document ID in format 'source::path' (e.g., 'cakephp-5x::docs/en/controllers.md')
      * @return array{content: string, title: string, source: string, path: string, id: string, metadata: array<string, mixed>} Document content and metadata
      */
@@ -139,7 +146,7 @@ class DocumentationTools
                 throw new ToolCallException('Document ID cannot be empty');
             }
 
-            // Get document from search engine database
+            // Get document from search engine database (returns original markdown content)
             $searchEngine = $this->searchService->getSearchEngine();
             $document = $searchEngine->getDocumentById($docId);
 
@@ -220,6 +227,8 @@ class DocumentationTools
      * The URI template allows retrieving full document content by ID:
      * docs://content/{docId}
      *
+     * Returns original markdown with full formatting preserved.
+     *
      * Example URIs:
      * - docs://content/cakephp-5x::docs/en/controllers.md
      * - docs://content/cakephp-5x::docs/en/orm/query-builder.md
@@ -240,7 +249,7 @@ class DocumentationTools
                 throw new ToolCallException('Document ID cannot be empty');
             }
 
-            // Get document from search engine database
+            // Get document from search engine database (returns original markdown content)
             $searchEngine = $this->searchService->getSearchEngine();
             $document = $searchEngine->getDocumentById($docId);
 

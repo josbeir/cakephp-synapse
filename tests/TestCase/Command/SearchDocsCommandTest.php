@@ -381,7 +381,7 @@ class SearchDocsCommandTest extends TestCase
         }
 
         $this->assertExitSuccess();
-        $this->assertOutputContains('1.');
+        $this->assertOutputContains('[1]');
     }
 
     /**
