@@ -104,18 +104,27 @@ class ServerBuilder
     }
 
     /**
-     * Add plugin built-in tools directory to scan dirs
+     * Add plugin built-in tools and prompts directories to scan dirs
      *
      * @return $this
      */
     public function withPluginTools()
     {
+        $scanDirs = [
+            'Tools',
+            'Prompts',
+            'Resources',
+        ];
+
         $pluginSrcPath = dirname(__DIR__);
         $pluginSrcPath = str_replace(ROOT, '', $pluginSrcPath);
         $pluginSrcPath = ltrim($pluginSrcPath, DIRECTORY_SEPARATOR);
 
-        if (!in_array($pluginSrcPath, $this->scanDirs, true)) {
-            $this->scanDirs[] = $pluginSrcPath;
+        foreach ($scanDirs as $dir) {
+            $path = $pluginSrcPath . DIRECTORY_SEPARATOR . $dir;
+            if (!in_array($path, $this->scanDirs, true)) {
+                $this->scanDirs[] = $path;
+            }
         }
 
         return $this;

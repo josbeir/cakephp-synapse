@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Synapse\Test\TestCase\Mcp;
+namespace Synapse\Test\TestCase\Tools;
 
 use Cake\Log\Engine\ArrayLog;
 use Cake\Log\Log;
 use Cake\TestSuite\TestCase;
 use stdClass;
-use Synapse\Mcp\TinkerTools;
+use Synapse\Tools\TinkerTools;
 
 /**
  * TinkerTools Test Case

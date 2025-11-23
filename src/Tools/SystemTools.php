@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Synapse\Mcp;
+namespace Synapse\Tools;
 
 use Cake\Core\Configure;
 use Mcp\Capability\Attribute\McpTool;

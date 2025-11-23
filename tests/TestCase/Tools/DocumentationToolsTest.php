@@ -1,28 +1,34 @@
 <?php
 declare(strict_types=1);
 
-namespace Synapse\Test\TestCase\Mcp;
+namespace Synapse\Test\TestCase\Tools;
 
 use Cake\TestSuite\TestCase;
 use Mcp\Exception\ToolCallException;
-use Mcp\Schema\Content\TextResourceContents;
+use PHPUnit\Framework\MockObject\MockObject;
 use RuntimeException;
 use Synapse\Documentation\DocumentSearchService;
 use Synapse\Documentation\SearchEngine;
-use Synapse\Mcp\DocumentationTools;
+use Synapse\Tools\DocumentationTools;
 
 /**
  * DocumentationTools Test Case
  *
- * Tests for documentation search tools and resources.
+ * Tests for documentation search tools.
  */
 class DocumentationToolsTest extends TestCase
 {
     private DocumentationTools $tools;
 
-    private DocumentSearchService $mockService;
+    /**
+     * @var \Synapse\Documentation\DocumentSearchService&\PHPUnit\Framework\MockObject\MockObject
+     */
+    private MockObject $mockService;
 
-    private SearchEngine $mockSearchEngine;
+    /**
+     * @var \Synapse\Documentation\SearchEngine&\PHPUnit\Framework\MockObject\MockObject
+     */
+    private MockObject $mockSearchEngine;
 
     /**
      * setUp method
@@ -31,17 +37,11 @@ class DocumentationToolsTest extends TestCase
     {
         parent::setUp();
 
-        // Create a mock search service
-        /** @var DocumentSearchService&\PHPUnit\Framework\MockObject\MockObject $mockService */
-        $mockService = $this->createMock(DocumentSearchService::class);
-        $this->mockService = $mockService;
-
-        /** @var SearchEngine&\PHPUnit\Framework\MockObject\MockObject $mockSearchEngine */
-        $mockSearchEngine = $this->getMockBuilder(SearchEngine::class)
+        $this->mockService = $this->createMock(DocumentSearchService::class);
+        $this->mockSearchEngine = $this->getMockBuilder(SearchEngine::class)
             ->disableOriginalConstructor()
             ->onlyMethods(['getDocumentById', '__destruct'])
             ->getMock();
-        $this->mockSearchEngine = $mockSearchEngine;
 
         $this->tools = new DocumentationTools($this->mockService);
     }
@@ -80,7 +80,6 @@ class DocumentationToolsTest extends TestCase
             ],
         ];
 
-        /** @phpstan-ignore-next-line */
         $this->mockService->expects($this->once())
             ->method('search')
             ->with(
@@ -111,7 +110,6 @@ class DocumentationToolsTest extends TestCase
      */
     public function testSearchDocsWithCustomLimit(): void
     {
-        /** @phpstan-ignore-next-line */
         $this->mockService->expects($this->once())
             ->method('search')
             ->with(
@@ -132,7 +130,6 @@ class DocumentationToolsTest extends TestCase
      */
     public function testSearchDocsWithFuzzySearch(): void
     {
-        /** @phpstan-ignore-next-line */
         $this->mockService->expects($this->once())
             ->method('search')
             ->with(
@@ -156,7 +153,6 @@ class DocumentationToolsTest extends TestCase
         $sourcesString = 'cakephp-5x,cakephp-4x';
         $sourcesArray = ['cakephp-5x', 'cakephp-4x'];
 
-        /** @phpstan-ignore-next-line */
         $this->mockService->expects($this->once())
             ->method('search')
             ->with(
@@ -178,7 +174,6 @@ class DocumentationToolsTest extends TestCase
     public function testSearchDocsValidatesLimitBounds(): void
     {
         // Test minimum limit (below 1 should become 1)
-        /** @phpstan-ignore-next-line */
         $this->mockService->expects($this->once())
             ->method('search')
             ->with(
@@ -199,7 +194,6 @@ class DocumentationToolsTest extends TestCase
     public function testSearchDocsValidatesMaximumLimit(): void
     {
         // Test maximum limit (above 50 should become 50)
-        /** @phpstan-ignore-next-line */
         $this->mockService->expects($this->once())
             ->method('search')
             ->with(
@@ -241,7 +235,6 @@ class DocumentationToolsTest extends TestCase
      */
     public function testSearchDocsHandlesServiceExceptions(): void
     {
-        /** @phpstan-ignore-next-line */
         $this->mockService->expects($this->once())
             ->method('search')
             ->willThrowException(new RuntimeException('Database error'));
@@ -257,7 +250,6 @@ class DocumentationToolsTest extends TestCase
      */
     public function testSearchDocsWithEmptyResults(): void
     {
-        /** @phpstan-ignore-next-line */
         $this->mockService->expects($this->once())
             ->method('search')
             ->willReturn([]);
@@ -282,7 +274,6 @@ class DocumentationToolsTest extends TestCase
             'sources' => ['cakephp-5x', 'cakephp-4x'],
         ];
 
-        /** @phpstan-ignore-next-line */
         $this->mockService->expects($this->once())
             ->method('getStatistics')
             ->willReturn($expectedStats);
@@ -300,7 +291,6 @@ class DocumentationToolsTest extends TestCase
      */
     public function testGetStatsHandlesServiceExceptions(): void
     {
-        /** @phpstan-ignore-next-line */
         $this->mockService->expects($this->once())
             ->method('getStatistics')
             ->willThrowException(new RuntimeException('Database error'));
@@ -309,301 +299,6 @@ class DocumentationToolsTest extends TestCase
         $this->expectExceptionMessage('Failed to get documentation statistics');
 
         $this->tools->getStats();
-    }
-
-    /**
-     * Test searchResource with basic query
-     */
-    public function testSearchResourceBasicQuery(): void
-    {
-        $expectedResults = [
-            [
-                'title' => 'Caching',
-                'path' => 'caching.md',
-                'source' => 'cakephp-5x',
-                'snippet' => 'CakePHP provides a flexible caching...',
-                'score' => 3.2,
-            ],
-        ];
-
-        /** @phpstan-ignore-next-line */
-        $this->mockService->expects($this->once())
-            ->method('search')
-            ->with(
-                'caching',
-                [
-                    'limit' => 10,
-                    'highlight' => true,
-                ],
-            )
-            ->willReturn($expectedResults);
-
-        $result = $this->tools->searchResource('caching');
-
-        $this->assertInstanceOf(TextResourceContents::class, $result);
-        $this->assertEquals('docs://search/caching', $result->uri);
-        $this->assertEquals('text/markdown', $result->mimeType);
-        $this->assertStringContainsString('# Documentation Search: caching', $result->text);
-        $this->assertStringContainsString('Found 1 result(s)', $result->text);
-        $this->assertStringContainsString('## 1. Caching', $result->text);
-    }
-
-    /**
-     * Test searchResource with multiple results
-     */
-    public function testSearchResourceWithMultipleResults(): void
-    {
-        $expectedResults = [
-            [
-                'title' => 'First Result',
-                'path' => 'first.md',
-                'source' => 'cakephp-5x',
-                'snippet' => 'First snippet...',
-                'score' => 5.0,
-            ],
-            [
-                'title' => 'Second Result',
-                'path' => 'second.md',
-                'source' => 'cakephp-5x',
-                'snippet' => 'Second snippet...',
-                'score' => 4.5,
-            ],
-            [
-                'title' => 'Third Result',
-                'path' => 'third.md',
-                'source' => 'cakephp-5x',
-                'snippet' => 'Third snippet...',
-                'score' => 4.0,
-            ],
-        ];
-
-        /** @phpstan-ignore-next-line */
-        $this->mockService->expects($this->once())
-            ->method('search')
-            ->willReturn($expectedResults);
-
-        $result = $this->tools->searchResource('test query');
-        $content = $result;
-
-        $this->assertStringContainsString('Found 3 result(s)', $content->text);
-        $this->assertStringContainsString('## 1. First Result', $content->text);
-        $this->assertStringContainsString('## 2. Second Result', $content->text);
-        $this->assertStringContainsString('## 3. Third Result', $content->text);
-        $this->assertStringContainsString('**Relevance:** 5.00', $content->text);
-        $this->assertStringContainsString('**Relevance:** 4.50', $content->text);
-        $this->assertStringContainsString('**Relevance:** 4.00', $content->text);
-    }
-
-    /**
-     * Test searchResource with empty results
-     */
-    public function testSearchResourceWithEmptyResults(): void
-    {
-        /** @phpstan-ignore-next-line */
-        $this->mockService->expects($this->once())
-            ->method('search')
-            ->willReturn([]);
-
-        $result = $this->tools->searchResource('nonexistent');
-        $content = $result;
-
-        $this->assertStringContainsString('# Documentation Search: nonexistent', $content->text);
-        $this->assertStringContainsString('No results found', $content->text);
-    }
-
-    /**
-     * Test searchResource with empty query throws exception
-     */
-    public function testSearchResourceWithEmptyQueryThrowsException(): void
-    {
-        $this->expectException(ToolCallException::class);
-        $this->expectExceptionMessage('Search query cannot be empty');
-
-        $this->tools->searchResource('');
-    }
-
-    /**
-     * Test searchResource with whitespace-only query throws exception
-     */
-    public function testSearchResourceWithWhitespaceQueryThrowsException(): void
-    {
-        $this->expectException(ToolCallException::class);
-        $this->expectExceptionMessage('Search query cannot be empty');
-
-        $this->tools->searchResource('   ');
-    }
-
-    /**
-     * Test searchResource handles service exceptions
-     */
-    public function testSearchResourceHandlesServiceExceptions(): void
-    {
-        /** @phpstan-ignore-next-line */
-        $this->mockService->expects($this->once())
-            ->method('search')
-            ->willThrowException(new RuntimeException('Database error'));
-
-        $this->expectException(ToolCallException::class);
-        $this->expectExceptionMessage('Failed to read documentation resource');
-
-        $this->tools->searchResource('query');
-    }
-
-    /**
-     * Test searchResource formats URI correctly
-     */
-    public function testSearchResourceFormatsUriCorrectly(): void
-    {
-        /** @phpstan-ignore-next-line */
-        $this->mockService->expects($this->once())
-            ->method('search')
-            ->willReturn([]);
-
-        $result = $this->tools->searchResource('test query with spaces');
-        $content = $result;
-
-        $this->assertEquals('docs://search/test+query+with+spaces', $content->uri);
-    }
-
-    /**
-     * Test searchResource includes all result fields
-     */
-    public function testSearchResourceIncludesAllResultFields(): void
-    {
-        $expectedResults = [
-            [
-                'title' => 'Complete Result',
-                'path' => 'docs/complete.md',
-                'source' => 'cakephp-5x',
-                'snippet' => 'This is a complete snippet with all fields.',
-                'score' => 7.25,
-            ],
-        ];
-
-        /** @phpstan-ignore-next-line */
-        $this->mockService->expects($this->once())
-            ->method('search')
-            ->willReturn($expectedResults);
-
-        $result = $this->tools->searchResource('complete');
-        $content = $result;
-
-        $this->assertStringContainsString('## 1. Complete Result', $content->text);
-        $this->assertStringContainsString('**Source:** cakephp-5x', $content->text);
-        $this->assertStringContainsString('**Path:** `docs/complete.md`', $content->text);
-        $this->assertStringContainsString('**Relevance:** 7.25', $content->text);
-        $this->assertStringContainsString('**Snippet:**', $content->text);
-        $this->assertStringContainsString('This is a complete snippet with all fields.', $content->text);
-    }
-
-    /**
-     * Test searchResource handles missing optional fields
-     */
-    public function testSearchResourceHandlesMissingOptionalFields(): void
-    {
-        $expectedResults = [
-            [
-                'title' => 'Minimal Result',
-            ],
-        ];
-
-        /** @phpstan-ignore-next-line */
-        $this->mockService->expects($this->once())
-            ->method('search')
-            ->willReturn($expectedResults);
-
-        $result = $this->tools->searchResource('minimal');
-        $content = $result;
-
-        $this->assertStringContainsString('## 1. Minimal Result', $content->text);
-        $this->assertStringContainsString('**Source:**', $content->text);
-        $this->assertStringContainsString('**Relevance:** 0.00', $content->text);
-    }
-
-    /**
-     * Test searchResource handles untitled documents
-     */
-    public function testSearchResourceHandlesUntitledDocuments(): void
-    {
-        $expectedResults = [
-            [
-                'path' => 'untitled.md',
-                'source' => 'cakephp-5x',
-            ],
-        ];
-
-        /** @phpstan-ignore-next-line */
-        $this->mockService->expects($this->once())
-            ->method('search')
-            ->willReturn($expectedResults);
-
-        $result = $this->tools->searchResource('query');
-        $content = $result;
-
-        $this->assertStringContainsString('## 1. Untitled', $content->text);
-    }
-
-    /**
-     * Test searchResource formats snippets with blockquotes
-     */
-    public function testSearchResourceFormatsSnippetsWithBlockquotes(): void
-    {
-        $expectedResults = [
-            [
-                'title' => 'Result',
-                'path' => 'result.md',
-                'source' => 'cakephp-5x',
-                'snippet' => "Line 1\nLine 2\nLine 3",
-                'score' => 1.0,
-            ],
-        ];
-
-        /** @phpstan-ignore-next-line */
-        $this->mockService->expects($this->once())
-            ->method('search')
-            ->willReturn($expectedResults);
-
-        $result = $this->tools->searchResource('query');
-        $content = $result;
-
-        $this->assertStringContainsString('> Line 1', $content->text);
-        $this->assertStringContainsString('> Line 2', $content->text);
-        $this->assertStringContainsString('> Line 3', $content->text);
-    }
-
-    /**
-     * Test searchResource includes separators between results
-     */
-    public function testSearchResourceIncludesSeparatorsBetweenResults(): void
-    {
-        $expectedResults = [
-            [
-                'title' => 'First',
-                'path' => 'first.md',
-                'source' => 'cakephp-5x',
-                'snippet' => 'First snippet',
-                'score' => 1.0,
-            ],
-            [
-                'title' => 'Second',
-                'path' => 'second.md',
-                'source' => 'cakephp-5x',
-                'snippet' => 'Second snippet',
-                'score' => 0.9,
-            ],
-        ];
-
-        /** @phpstan-ignore-next-line */
-        $this->mockService->expects($this->once())
-            ->method('search')
-            ->willReturn($expectedResults);
-
-        $result = $this->tools->searchResource('query');
-        $content = $result;
-
-        // Should have separator between results
-        $this->assertStringContainsString('---', $content->text);
-        $this->assertGreaterThan(1, substr_count($content->text, '---'));
     }
 
     /**
@@ -652,13 +347,11 @@ class DocumentationToolsTest extends TestCase
             'metadata' => ['version' => '5.x'],
         ];
 
-        /** @phpstan-ignore-next-line */
         $this->mockSearchEngine->expects($this->once())
             ->method('getDocumentById')
             ->with('cakephp-5x::docs/getting-started.md')
             ->willReturn($documentData);
 
-        /** @phpstan-ignore-next-line */
         $this->mockService->expects($this->once())
             ->method('getSearchEngine')
             ->willReturn($this->mockSearchEngine);
@@ -686,10 +379,8 @@ class DocumentationToolsTest extends TestCase
             'metadata' => [],
         ];
 
-        /** @phpstan-ignore-next-line */
         $this->mockSearchEngine->method('getDocumentById')->willReturn($documentData);
 
-        /** @phpstan-ignore-next-line */
         $this->mockService->method('getSearchEngine')->willReturn($this->mockSearchEngine);
 
         $result = $this->tools->getDocument('cakephp-5x::docs/auth.md');
@@ -711,10 +402,8 @@ class DocumentationToolsTest extends TestCase
             'metadata' => ['author' => 'CakePHP Team', 'version' => '5.x'],
         ];
 
-        /** @phpstan-ignore-next-line */
         $this->mockSearchEngine->method('getDocumentById')->willReturn($documentData);
 
-        /** @phpstan-ignore-next-line */
         $this->mockService->method('getSearchEngine')->willReturn($this->mockSearchEngine);
 
         $result = $this->tools->getDocument('cakephp-5x::docs/database-basics.md');
@@ -740,10 +429,8 @@ class DocumentationToolsTest extends TestCase
      */
     public function testGetDocumentThrowsExceptionWhenNotFound(): void
     {
-        /** @phpstan-ignore-next-line */
         $this->mockSearchEngine->method('getDocumentById')->willReturn(null);
 
-        /** @phpstan-ignore-next-line */
         $this->mockService->method('getSearchEngine')->willReturn($this->mockSearchEngine);
 
         $this->expectException(ToolCallException::class);
@@ -757,7 +444,6 @@ class DocumentationToolsTest extends TestCase
      */
     public function testGetDocumentHandlesSearchEngineErrors(): void
     {
-        /** @phpstan-ignore-next-line */
         $this->mockService->expects($this->once())
             ->method('getSearchEngine')
             ->willThrowException(new RuntimeException('Database error'));
@@ -766,67 +452,6 @@ class DocumentationToolsTest extends TestCase
         $this->expectExceptionMessage('Failed to get document');
 
         $this->tools->getDocument('cakephp-5x::docs/test.md');
-    }
-
-    /**
-     * Test contentResource retrieves full content
-     */
-    public function testContentResourceRetrievesFullContent(): void
-    {
-        $documentData = [
-            'id' => 'cakephp-5x::docs/controllers.md',
-            'source' => 'cakephp-5x',
-            'path' => 'docs/controllers.md',
-            'title' => 'Controllers',
-            'content' => "# Controllers\n\nLearn about CakePHP controllers.",
-            'metadata' => [],
-        ];
-
-        /** @phpstan-ignore-next-line */
-        $this->mockSearchEngine->expects($this->once())
-            ->method('getDocumentById')
-            ->with('cakephp-5x::docs/controllers.md')
-            ->willReturn($documentData);
-
-        /** @phpstan-ignore-next-line */
-        $this->mockService->expects($this->once())
-            ->method('getSearchEngine')
-            ->willReturn($this->mockSearchEngine);
-
-        $result = $this->tools->contentResource('cakephp-5x::docs/controllers.md');
-
-        $this->assertInstanceOf(TextResourceContents::class, $result);
-        $this->assertEquals('docs://content/cakephp-5x::docs/controllers.md', $result->uri);
-        $this->assertEquals('text/markdown', $result->mimeType);
-        $this->assertEquals($documentData['content'], $result->text);
-    }
-
-    /**
-     * Test contentResource throws exception for empty document ID
-     */
-    public function testContentResourceThrowsExceptionForEmptyDocId(): void
-    {
-        $this->expectException(ToolCallException::class);
-        $this->expectExceptionMessage('Document ID cannot be empty');
-
-        $this->tools->contentResource('');
-    }
-
-    /**
-     * Test contentResource throws exception for nonexistent document
-     */
-    public function testContentResourceThrowsExceptionForNonexistentDocument(): void
-    {
-        /** @phpstan-ignore-next-line */
-        $this->mockSearchEngine->method('getDocumentById')->willReturn(null);
-
-        /** @phpstan-ignore-next-line */
-        $this->mockService->method('getSearchEngine')->willReturn($this->mockSearchEngine);
-
-        $this->expectException(ToolCallException::class);
-        $this->expectExceptionMessage('Document not found');
-
-        $this->tools->contentResource('cakephp-5x::docs/missing.md');
     }
 
     /**
@@ -843,13 +468,11 @@ class DocumentationToolsTest extends TestCase
             'metadata' => [],
         ];
 
-        /** @phpstan-ignore-next-line */
         $this->mockSearchEngine->expects($this->once())
             ->method('getDocumentById')
             ->with('cakephp-5x::docs/example.md')
             ->willReturn($documentData);
 
-        /** @phpstan-ignore-next-line */
         $this->mockService->expects($this->once())
             ->method('getSearchEngine')
             ->willReturn($this->mockSearchEngine);
@@ -862,40 +485,5 @@ class DocumentationToolsTest extends TestCase
         $this->assertStringContainsString('```php', $result['content']);
         $this->assertStringContainsString('- List item 1', $result['content']);
         $this->assertStringContainsString('[Link text](https://example.com)', $result['content']);
-    }
-
-    /**
-     * Test contentResource returns original markdown with formatting preserved
-     */
-    public function testContentResourceReturnsOriginalMarkdownWithFormatting(): void
-    {
-        $documentData = [
-            'id' => 'cakephp-5x::docs/formatting.md',
-            'source' => 'cakephp-5x',
-            'path' => 'docs/formatting.md',
-            'title' => 'Formatting Example',
-            'content' => "# Formatting\n\n## Code Examples\n\n```php\n\$config = ['key' => 'value'];\n```\n\n## Lists\n\n1. First item\n2. Second item\n\n## Links\n\nSee [documentation](https://book.cakephp.org).",
-            'metadata' => [],
-        ];
-
-        /** @phpstan-ignore-next-line */
-        $this->mockSearchEngine->expects($this->once())
-            ->method('getDocumentById')
-            ->with('cakephp-5x::docs/formatting.md')
-            ->willReturn($documentData);
-
-        /** @phpstan-ignore-next-line */
-        $this->mockService->expects($this->once())
-            ->method('getSearchEngine')
-            ->willReturn($this->mockSearchEngine);
-
-        $result = $this->tools->contentResource('cakephp-5x::docs/formatting.md');
-
-        // Verify markdown formatting is preserved in resource
-        $content = $result->text;
-        $this->assertStringContainsString('```php', $content);
-        $this->assertStringContainsString('1. First item', $content);
-        $this->assertStringContainsString('[documentation](https://book.cakephp.org)', $content);
-        $this->assertStringContainsString('## Code Examples', $content);
     }
 }

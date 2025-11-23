@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Synapse\Mcp;
+namespace Synapse\Tools;
 
 use Cake\Http\ServerRequest;
 use Cake\Routing\Exception\MissingRouteException;

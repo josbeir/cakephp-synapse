@@ -116,11 +116,17 @@ class ServerBuilderTest extends TestCase
         $scanDirs = $builder->getScanDirs();
         $this->assertGreaterThan(1, count($scanDirs));
 
-        // Plugin src path should be in scan dirs
-        $pluginPath = dirname(dirname(dirname(__DIR__))) . '/src';
-        $pluginPath = ltrim($pluginPath, DIRECTORY_SEPARATOR);
+        // Plugin Tools, Prompts, and Resources paths should be in scan dirs
+        $pluginSrcPath = dirname(dirname(dirname(__DIR__))) . '/src';
+        $pluginSrcPath = ltrim($pluginSrcPath, DIRECTORY_SEPARATOR);
 
-        $this->assertContains($pluginPath, $scanDirs);
+        $toolsPath = $pluginSrcPath . DIRECTORY_SEPARATOR . 'Tools';
+        $promptsPath = $pluginSrcPath . DIRECTORY_SEPARATOR . 'Prompts';
+        $resourcesPath = $pluginSrcPath . DIRECTORY_SEPARATOR . 'Resources';
+
+        $this->assertContains($toolsPath, $scanDirs);
+        $this->assertContains($promptsPath, $scanDirs);
+        $this->assertContains($resourcesPath, $scanDirs);
     }
 
     /**
@@ -134,12 +140,20 @@ class ServerBuilderTest extends TestCase
         $builder->withPluginTools();
 
         $scanDirs = $builder->getScanDirs();
-        $pluginPath = dirname(dirname(dirname(__DIR__))) . '/src';
-        $pluginPath = ltrim($pluginPath, DIRECTORY_SEPARATOR);
+        $pluginSrcPath = dirname(dirname(dirname(__DIR__))) . '/src';
+        $pluginSrcPath = ltrim($pluginSrcPath, DIRECTORY_SEPARATOR);
 
-        // Count occurrences of plugin path
-        $count = count(array_filter($scanDirs, fn(string $dir): bool => $dir === $pluginPath));
-        $this->assertEquals(1, $count);
+        $toolsPath = $pluginSrcPath . DIRECTORY_SEPARATOR . 'Tools';
+        $promptsPath = $pluginSrcPath . DIRECTORY_SEPARATOR . 'Prompts';
+        $resourcesPath = $pluginSrcPath . DIRECTORY_SEPARATOR . 'Resources';
+
+        // Count occurrences of each path - should be 1 each
+        $toolsCount = count(array_filter($scanDirs, fn(string $dir): bool => $dir === $toolsPath));
+        $promptsCount = count(array_filter($scanDirs, fn(string $dir): bool => $dir === $promptsPath));
+        $resourcesCount = count(array_filter($scanDirs, fn(string $dir): bool => $dir === $resourcesPath));
+        $this->assertEquals(1, $toolsCount);
+        $this->assertEquals(1, $promptsCount);
+        $this->assertEquals(1, $resourcesCount);
     }
 
     /**
@@ -261,10 +275,16 @@ class ServerBuilderTest extends TestCase
 
         $this->assertInstanceOf(Server::class, $server);
 
-        // Verify plugin directory is in scan dirs
-        $pluginPath = dirname(dirname(dirname(__DIR__))) . '/src';
-        $pluginPath = ltrim($pluginPath, DIRECTORY_SEPARATOR);
-        $this->assertContains($pluginPath, $builder->getScanDirs());
+        // Verify Tools, Prompts, and Resources directories are in scan dirs
+        $pluginSrcPath = dirname(dirname(dirname(__DIR__))) . '/src';
+        $pluginSrcPath = ltrim($pluginSrcPath, DIRECTORY_SEPARATOR);
+
+        $toolsPath = $pluginSrcPath . DIRECTORY_SEPARATOR . 'Tools';
+        $promptsPath = $pluginSrcPath . DIRECTORY_SEPARATOR . 'Prompts';
+        $resourcesPath = $pluginSrcPath . DIRECTORY_SEPARATOR . 'Resources';
+        $this->assertContains($toolsPath, $builder->getScanDirs());
+        $this->assertContains($promptsPath, $builder->getScanDirs());
+        $this->assertContains($resourcesPath, $builder->getScanDirs());
     }
 
     /**

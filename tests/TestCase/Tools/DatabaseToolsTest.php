@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Synapse\Test\TestCase\Mcp;
+namespace Synapse\Test\TestCase\Tools;
 
 use Cake\TestSuite\TestCase;
 use Mcp\Exception\ToolCallException;
-use Synapse\Mcp\DatabaseTools;
+use Synapse\Tools\DatabaseTools;
 
 /**
  * DatabaseTools Test Case

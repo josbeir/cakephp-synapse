@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Synapse\Test\TestCase\Mcp;
+namespace Synapse\Test\TestCase\Tools;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
-use Synapse\Mcp\SystemTools;
+use Synapse\Tools\SystemTools;
 
 /**
  * SystemTools Test Case

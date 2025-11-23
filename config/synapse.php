@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 
-use Cake\Log\Engine\ConsoleLog;
 use Synapse\Documentation\Git\GitAdapter;
 
 /**
@@ -165,6 +164,95 @@ return [
                  * Whether to highlight matched terms in search results.
                  */
                 'highlight' => true,
+            ],
+        ],
+
+        /**
+         * Prompt Configuration
+         *
+         * Configure behavior of MCP prompts.
+         */
+        'prompts' => [
+            /**
+             * CakePHP Version
+             *
+             * The CakePHP version to reference in prompt responses.
+             * This allows targeting specific version documentation and conventions.
+             *
+             * Examples: '5.x', '5.2', '4.5', '4.x'
+             */
+            'cakephp_version' => env('MCP_CAKEPHP_VERSION', '5.x'),
+
+            /**
+             * PHP Version
+             *
+             * The PHP version to reference in prompt responses for type hints,
+             * features, and best practices recommendations.
+             *
+             * Examples: '8.2', '8.3', '8.4'
+             */
+            'php_version' => env('MCP_PHP_VERSION', '8.2+'),
+
+            /**
+             * Quality Assurance Tools Configuration
+             *
+             * Configure which quality assurance tools are enabled and their settings.
+             * These settings are used by the quality-assurance prompt to provide
+             * relevant guidelines and best practices.
+             */
+            'quality_tools' => [
+                /**
+                 * PHPCS (PHP CodeSniffer)
+                 *
+                 * Static analysis tool for detecting violations of coding standards.
+                 */
+                'phpcs' => [
+                    'enabled' => true,
+                    'standard' => 'cakephp', // 'cakephp', 'PSR12', or custom path
+                    'extensions' => ['php'],
+                ],
+
+                /**
+                 * PHPStan
+                 *
+                 * Static analysis tool for finding bugs in PHP code.
+                 */
+                'phpstan' => [
+                    'enabled' => true,
+                    'level' => 8, // 0-9 or 'max'
+                    'baseline' => false,
+                ],
+
+                /**
+                 * PHPUnit
+                 *
+                 * Testing framework for PHP.
+                 */
+                'phpunit' => [
+                    'enabled' => true,
+                    'coverage' => true,
+                    'coverage_threshold' => 80,
+                ],
+
+                /**
+                 * Rector
+                 *
+                 * Tool for automated refactoring and code modernization.
+                 */
+                'rector' => [
+                    'enabled' => false,
+                    'set' => 'cakephp', // 'cakephp', 'php82', 'php83', etc.
+                ],
+
+                /**
+                 * Psalm
+                 *
+                 * Alternative static analysis tool (can be used instead of or alongside PHPStan).
+                 */
+                'psalm' => [
+                    'enabled' => false,
+                    'level' => 3, // 1-8 (1 is strictest)
+                ],
             ],
         ],
     ],

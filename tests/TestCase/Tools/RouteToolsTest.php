@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Synapse\Test\TestCase\Mcp;
+namespace Synapse\Test\TestCase\Tools;
 
 use Cake\Routing\Route\DashedRoute;
 use Cake\Routing\RouteBuilder;
 use Cake\Routing\Router;
 use Cake\TestSuite\TestCase;
 use Mcp\Exception\ToolCallException;
-use Synapse\Mcp\RouteTools;
+use Synapse\Tools\RouteTools;
 
 /**
  * RouteTools Test Case
