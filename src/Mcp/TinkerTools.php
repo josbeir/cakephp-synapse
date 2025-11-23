@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Synapse\Mcp;
 
+use Cake\Log\LogTrait;
+use Cake\ORM\Locator\LocatorAwareTrait;
 use Mcp\Capability\Attribute\McpTool;
 use Throwable;
 
@@ -13,12 +15,16 @@ use Throwable;
  */
 class TinkerTools
 {
+    use LocatorAwareTrait;
+    use LogTrait;
+
     /**
      * Execute PHP code in the application context.
      *
      * Similar to bin/cake console, this allows execution of arbitrary PHP code
      * with access to the full CakePHP application context including models,
-     * configuration, and helpers.
+     * configuration, and helpers. The $this context is available within the
+     * executed code, providing access to fetchTable(), log(), and other trait methods.
      *
      * @param string $code PHP code to execute (without opening <?php tags)
      * @param int $timeout Maximum execution time in seconds (default: 30, max: 180)

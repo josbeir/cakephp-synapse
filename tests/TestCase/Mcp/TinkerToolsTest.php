@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Synapse\Test\TestCase\Mcp;
 
+use Cake\Log\Engine\ArrayLog;
+use Cake\Log\Log;
 use Cake\TestSuite\TestCase;
 use stdClass;
 use Synapse\Mcp\TinkerTools;
@@ -14,6 +16,10 @@ use Synapse\Mcp\TinkerTools;
  */
 class TinkerToolsTest extends TestCase
 {
+    protected array $fixtures = [
+        'plugin.Synapse.Users',
+    ];
+
     private TinkerTools $tinkerTools;
 
     /**
@@ -266,5 +272,82 @@ class TinkerToolsTest extends TestCase
     public function testTinkerToolsClassExists(): void
     {
         $this->assertInstanceOf(TinkerTools::class, $this->tinkerTools);
+    }
+
+    /**
+     * Test fetchTable is accessible in eval context
+     */
+    public function testFetchTableInEvalContext(): void
+    {
+        $code = '
+            $table = $this->fetchTable("Users");
+            return $table::class;
+        ';
+        $result = $this->tinkerTools->execute($code);
+
+        $this->assertTrue($result['success']);
+        $this->assertStringContainsString('Table', $result['result']);
+    }
+
+    /**
+     * Test can query using ORM in eval context
+     */
+    public function testQueryUsingOrmInEvalContext(): void
+    {
+        $code = '
+            $table = $this->fetchTable("Users");
+            return $table->find()->count();
+        ';
+        $result = $this->tinkerTools->execute($code);
+
+        $this->assertTrue($result['success']);
+        $this->assertIsInt($result['result']);
+        $this->assertEquals('int', $result['type']);
+    }
+
+    /**
+     * Test log method is accessible in eval context
+     */
+    public function testLogInEvalContext(): void
+    {
+        // Configure test logger
+        Log::drop('test_tinker');
+        Log::setConfig('test_tinker', [
+            'className' => 'Array',
+            'levels' => ['debug', 'info'],
+        ]);
+
+        $code = '
+            $this->log("Test log message", "debug");
+            return "logged";
+        ';
+        $result = $this->tinkerTools->execute($code);
+
+        $this->assertTrue($result['success']);
+        $this->assertEquals('logged', $result['result']);
+
+        // Verify log was written
+        $logger = Log::engine('test_tinker');
+        $this->assertInstanceOf(ArrayLog::class, $logger);
+        $messages = $logger->read();
+        $this->assertStringContainsString('Test log message', implode("\n", $messages));
+
+        // Cleanup
+        Log::drop('test_tinker');
+    }
+
+    /**
+     * Test getTableLocator is accessible in eval context
+     */
+    public function testGetTableLocatorInEvalContext(): void
+    {
+        $code = '
+            $locator = $this->getTableLocator();
+            return $locator::class;
+        ';
+        $result = $this->tinkerTools->execute($code);
+
+        $this->assertTrue($result['success']);
+        $this->assertStringContainsString('TableLocator', $result['result']);
     }
 }
