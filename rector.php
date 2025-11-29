@@ -18,10 +18,6 @@ return RectorConfig::configure()
         DisallowedEmptyRuleFixerRector::class,
         SimplifyIfElseToTernaryRector::class,
         ReturnTypeFromStrictFluentReturnRector::class,
-        // $context variable is used inside eval() - static analysis can't see this
-        RemoveUnusedVariableAssignRector::class => [
-            __DIR__ . '/src/Command/TinkerEvalCommand.php',
-        ],
     ])
     ->withImportNames(
         importNames: true,

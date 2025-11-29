@@ -41,7 +41,7 @@ class TinkerTools
             'Use for debugging, testing code snippets, and exploring the application. ' .
             'DO NOT create/modify data without explicit user approval. ' .
             'Prefer feature tests and existing commands over custom code. ' .
-            'Use $context->fetchTable() and $context->log() for ORM and logging access.',
+            'Use $this->fetchTable() and $this->log() for ORM and logging access.',
     )]
     public function execute(string $code, int $timeout = 30): array
     {

@@ -223,17 +223,13 @@ class TinkerToolsTest extends TestCase
         $this->assertInstanceOf(TinkerTools::class, $this->tinkerTools);
     }
 
-    // =========================================================================
-    // Context Access Tests
-    // =========================================================================
-
     /**
      * Test fetchTable is accessible via $context
      */
     public function testFetchTableViaContext(): void
     {
         $code = '
-            $table = $context->fetchTable("Users");
+            $table = $this->fetchTable("Users");
             return $table::class;
         ';
         $result = $this->tinkerTools->execute($code);
@@ -251,7 +247,7 @@ class TinkerToolsTest extends TestCase
     public function testGetTableLocatorViaContext(): void
     {
         $code = '
-            $locator = $context->getTableLocator();
+            $locator = $this->getTableLocator();
             return $locator::class;
         ';
         $result = $this->tinkerTools->execute($code);

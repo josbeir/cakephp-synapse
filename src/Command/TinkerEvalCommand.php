@@ -7,7 +7,6 @@ use Cake\Command\Command;
 use Cake\Console\Arguments;
 use Cake\Console\ConsoleIo;
 use Cake\Console\ConsoleOptionParser;
-use Synapse\Tools\TinkerContext;
 use Throwable;
 
 /**
@@ -59,7 +58,7 @@ class TinkerEvalCommand extends Command
     /**
      * Execute the command
      *
-     * Reads PHP code from stdin, executes it with access to a TinkerContext,
+     * Reads PHP code from stdin, executes it
      * and outputs results as JSON to stdout.
      *
      * @param \Cake\Console\Arguments $args Command arguments
@@ -94,19 +93,11 @@ class TinkerEvalCommand extends Command
         // Strip PHP tags from code
         $code = str_replace(['<?php', '<?', '?>'], '', $code);
 
-        // Create the context object that provides fetchTable(), log(), etc.
-        // Note: $context is used inside eval() - see rector.php for skip rule
-        // phpcs:ignore SlevomatCodingStandard.Variables.UnusedVariable.UnusedVariable
-        $context = new TinkerContext();
-
         // Capture output
         ob_start();
 
         try {
-            // Execute code with $context available
-            // The $context variable is explicitly made available to the eval'd code
             $result = eval($code);
-
             $output = ob_get_contents();
 
             $response = [

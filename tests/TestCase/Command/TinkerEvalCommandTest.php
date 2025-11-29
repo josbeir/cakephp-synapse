@@ -164,7 +164,7 @@ class TinkerEvalCommandTest extends TestCase
 
         $this->assertIsResource($process);
 
-        fwrite($pipes[0], '$table = $context->fetchTable("Users"); return $table::class;');
+        fwrite($pipes[0], '$table = $this->fetchTable("Users"); return $table::class;');
         fclose($pipes[0]);
 
         $stdout = stream_get_contents($pipes[1]);
