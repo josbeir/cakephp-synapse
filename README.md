@@ -19,9 +19,9 @@ Expose your CakePHP application functionality via the Model Context Protocol (MC
   - [Installing the Plugin](#installing-the-plugin)
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
-- [Creating MCP Tools](#creating-mcp-tools)
 - [Built-in Tools](#built-in-tools)
 - [Built-in Prompts](#built-in-prompts)
+  - [Creating Custom Tools, Resources, and Prompts](#creating-custom-tools-resources-and-prompts)
 - [CLI usage](#cli-usage)
 - [Running the Server](#running-the-server)
   - [Command Options](#command-options)
@@ -123,66 +123,7 @@ Or run when using `DDEV` instance
 
 Various configuration options are available for Synapse. Refer to `config/synapse.php` in this plugin for details on available settings and customization.
 
-## Creating MCP Tools
 
-Create custom tools by adding the `#[McpTool]` attribute to public methods:
-
-```php
-<?php
-namespace App\Mcp;
-
-use Mcp\Capability\Attribute\McpTool;
-
-class MyTools
-{
-    #[McpTool(
-        name: 'get_user',
-        description: 'Fetch a user by ID'
-    )]
-    public function getUser(int $id): array
-    {
-        $usersTable = $this->fetchTable('Users');
-        $user = $usersTable->get($id);
-
-        return [
-            'id' => $user->id,
-            'email' => $user->email,
-            'name' => $user->name,
-        ];
-    }
-
-    #[McpTool(name: 'list_users')]
-    public function listUsers(int $limit = 10): array
-    {
-        $usersTable = $this->fetchTable('Users');
-        $users = $usersTable->find()
-            ->limit($limit)
-            ->toArray();
-
-        return [
-            'total' => count($users),
-            'users' => $users,
-        ];
-    }
-}
-```
-
-The plugin will automatically discover these tools and make them available to MCP clients.
-
-### Tool Parameters
-
-Tools support typed parameters with automatic validation:
-
-```php
-#[McpTool(name: 'search_articles')]
-public function searchArticles(
-    string $query,
-    int $limit = 20,
-    bool $publishedOnly = true
-): array {
-    // Implementation
-}
-```
 
 ## Built-in Tools
 
@@ -206,6 +147,8 @@ Synapse includes several built-in tools and resources for common operations:
 | Documentation | `docs_stats` | View index statistics and available sources |
 | Documentation | `docs://search/{query}` | Search CakePHP documentation and return formatted results |
 | Documentation | `docs://content/{documentId}` | Retrieve full document content by document ID (format: `source::path`) |
+| Commands | `list_commands` | List all available CakePHP console commands with optional filtering and sorting |
+| Commands | `get_command_info` | Get detailed information about a specific console command (options, arguments, help) |
 
 > [!WARNING]
 > The `tinker` tool executes arbitrary code in your application. Use responsibly and avoid modifying data without explicit approval.
@@ -248,10 +191,11 @@ Synapse includes pre-defined prompt workflows that guide LLMs through common Cak
 - **Consistency** - Standardized approaches to common problems
 - **Discovery** - See available workflows without remembering tool combinations
 
-### Configuring prompts
+### Configuring Prompts
 
 Prompts can reference a specific CakePHP version and use various quality tools. Configure both in `config/synapse.php`:
 
+```php
 return [
     'Synapse' => [
         'prompts' => [
@@ -272,6 +216,43 @@ return [
         ],
     ],
 ];
+```
+
+### Creating Custom Tools, Resources, and Prompts
+
+You can extend Synapse with your own tools, resources, and prompts using PHP attributes. Synapse automatically discovers classes in your `src/` directory using MCP attributes.
+
+**Tools** expose functions that AI assistants can call. Create them with `#[McpTool]`:
+
+```php
+<?php
+namespace App\Mcp;
+
+use Mcp\Capability\Attribute\McpTool;
+
+class MyTools
+{
+    #[McpTool(name: 'get_user', description: 'Fetch a user by ID')]
+    public function getUser(int $id): array
+    {
+        $usersTable = $this->fetchTable('Users');
+        $user = $usersTable->get($id);
+
+        return [
+            'id' => $user->id,
+            'email' => $user->email,
+            'name' => $user->name,
+        ];
+    }
+}
+```
+
+**Resources** expose data sources. Create them with `#[McpResourceTemplate]`.
+
+**Prompts** guide LLMs through workflows. Create them with `#[McpPrompt]`.
+
+For detailed documentation on all MCP capabilities, attributes, and implementation patterns, see the [MCP PHP SDK documentation](https://github.com/modelcontextprotocol/php-sdk).
+
 
 ## CLI usage
 
