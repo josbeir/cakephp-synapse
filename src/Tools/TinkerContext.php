@@ -22,5 +22,6 @@ use Cake\ORM\Locator\LocatorAwareTrait;
 class TinkerContext
 {
     use LocatorAwareTrait;
+
     use LogTrait;
 }
