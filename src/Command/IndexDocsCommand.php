@@ -26,6 +26,14 @@ class IndexDocsCommand extends Command
     }
 
     /**
+     * @inheritDoc
+     */
+    public static function getDescription(): string
+    {
+        return 'Index documentation for full-text search';
+    }
+
+    /**
      * Configure command options
      *
      * @param \Cake\Console\ConsoleOptionParser $parser Option parser
