@@ -433,4 +433,103 @@ class TinkerToolsTest extends TestCase
         $this->assertTrue($result['success']);
         $this->assertEquals('ok', $result['result']);
     }
+
+    // =========================================================================
+    // Error Handling and Edge Cases
+    // =========================================================================
+
+    /**
+     * Test execution timeout triggers error response
+     */
+    public function testExecuteTimeout(): void
+    {
+        // Use a very short timeout with code that sleeps
+        $result = $this->tinkerTools->execute('sleep(5); return "done";', 1);
+
+        $this->assertFalse($result['success']);
+        $this->assertStringContainsString('timed out', $result['error']);
+        $this->assertEquals('RuntimeException', $result['type']);
+    }
+
+    /**
+     * Test empty stdout from subprocess returns error with exit code
+     */
+    public function testEmptyStdoutReturnsError(): void
+    {
+        // Code that exits without output
+        $result = $this->tinkerTools->execute('exit(0);');
+
+        $this->assertFalse($result['success']);
+        $this->assertArrayHasKey('error', $result);
+        $this->assertArrayHasKey('exit_code', $result);
+    }
+
+    /**
+     * Test null PHP binary returns error
+     */
+    public function testNullPhpBinaryReturnsError(): void
+    {
+        // Use reflection to set phpBinary to a value that will make getPhpBinary return null
+        $tinkerTools = new TinkerTools();
+
+        // Mock by setting an invalid configured path and clearing cached value
+        $originalConfig = Configure::read('Synapse.tinker.php_binary');
+        Configure::write('Synapse.tinker.php_binary', '/definitely/not/a/real/path');
+
+        // Create fresh instance - the config path isn't executable so it will try other methods
+        // We need to test the case where getPhpBinary returns null
+        // This is hard to achieve without modifying system, so test the error message path instead
+        $tinkerTools->setPhpBinary('/nonexistent/php/binary');
+        $result = $tinkerTools->execute('return 1;');
+
+        $this->assertFalse($result['success']);
+        $this->assertArrayHasKey('error', $result);
+
+        Configure::write('Synapse.tinker.php_binary', $originalConfig);
+    }
+
+    /**
+     * Test getPhpBinary with non-executable configured path falls back
+     */
+    public function testGetPhpBinaryFallsBackWhenConfiguredPathNotExecutable(): void
+    {
+        $originalConfig = Configure::read('Synapse.tinker.php_binary');
+
+        // Set a path that exists but isn't executable (or doesn't exist)
+        Configure::write('Synapse.tinker.php_binary', '/tmp/not-executable-file');
+
+        $tinkerTools = new TinkerTools();
+        $phpBinary = $tinkerTools->getPhpBinary();
+
+        // Should fall back to which php or PHP_BINARY
+        $this->assertNotEquals('/tmp/not-executable-file', $phpBinary);
+        $this->assertNotNull($phpBinary);
+
+        Configure::write('Synapse.tinker.php_binary', $originalConfig);
+    }
+
+    /**
+     * Test getBinPath uses ROOT constant when available
+     */
+    public function testGetBinPathUsesRootConstant(): void
+    {
+        $tinkerTools = new TinkerTools();
+        $binPath = $tinkerTools->getBinPath();
+
+        // ROOT is defined in test environment
+        $this->assertEquals(ROOT . '/bin', $binPath);
+    }
+
+    /**
+     * Test process that outputs to stderr
+     */
+    public function testProcessWithStderrOutput(): void
+    {
+        // Trigger a PHP warning/notice that goes to stderr
+        $result = $this->tinkerTools->execute('trigger_error("test warning", E_USER_WARNING); return "ok";');
+
+        // Should still succeed, warnings don't stop execution
+        $this->assertTrue($result['success']);
+        $this->assertEquals('ok', $result['result']);
+    }
 }

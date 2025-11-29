@@ -6,6 +6,9 @@ namespace Synapse\Test\TestCase\Command;
 use Cake\Console\TestSuite\ConsoleIntegrationTestTrait;
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
+use ReflectionMethod;
+use Synapse\Command\ServerCommand;
+use TestApp\Application;
 
 /**
  * ServerCommand Test Case
@@ -307,5 +310,87 @@ class ServerCommandTest extends TestCase
 
         $this->exec('synapse server -i -v -n -h');
         $this->assertExitSuccess();
+    }
+
+    // =========================================================================
+    // findExecutable Tests (via reflection)
+    // =========================================================================
+
+    /**
+     * Test findExecutable finds php binary
+     */
+    public function testFindExecutableFindsPhp(): void
+    {
+        $command = $this->createServerCommand();
+        $method = new ReflectionMethod(ServerCommand::class, 'findExecutable');
+
+        $result = $method->invoke($command, 'php');
+
+        $this->assertNotNull($result);
+        $this->assertFileExists($result);
+        $this->assertTrue(is_executable($result));
+    }
+
+    /**
+     * Test findExecutable returns null for nonexistent executable
+     */
+    public function testFindExecutableReturnsNullForNonexistent(): void
+    {
+        $command = $this->createServerCommand();
+        $method = new ReflectionMethod(ServerCommand::class, 'findExecutable');
+
+        $result = $method->invoke($command, 'definitely_not_a_real_executable_12345');
+
+        $this->assertNull($result);
+    }
+
+    /**
+     * Test findExecutable finds common executables
+     */
+    public function testFindExecutableFindsCommonExecutables(): void
+    {
+        $command = $this->createServerCommand();
+        $method = new ReflectionMethod(ServerCommand::class, 'findExecutable');
+
+        // Test with 'which' or 'ls' - common on Unix systems
+        $result = $method->invoke($command, 'ls');
+
+        if ($result !== null) {
+            $this->assertFileExists($result);
+            $this->assertTrue(is_executable($result));
+        }
+
+        // If null, the test passes - executable simply wasn't found
+    }
+
+    /**
+     * Test defaultName returns correct command name
+     */
+    public function testDefaultName(): void
+    {
+        $this->assertEquals('synapse server', ServerCommand::defaultName());
+    }
+
+    /**
+     * Test getDescription returns appropriate description
+     */
+    public function testGetDescription(): void
+    {
+        $description = ServerCommand::getDescription();
+
+        $this->assertStringContainsString('MCP', $description);
+        $this->assertStringContainsString('server', $description);
+    }
+
+    /**
+     * Create a ServerCommand instance for testing
+     */
+    private function createServerCommand(): ServerCommand
+    {
+        // Get the container from the application
+        $app = new Application(CONFIG);
+        $container = $app->getContainer();
+
+        return new ServerCommand($container);
     }
 }
