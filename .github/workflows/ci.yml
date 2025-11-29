@@ -42,8 +42,8 @@ jobs:
 
       - name: Run PHPUnit
         run: |
-          if [[ ${{ matrix.php-version }} == '8.4' ]]; then
-            vendor/bin/phpunit --coverage-clover=coverage.xml
+          if [[ ${{ matrix.php-version }} == '8.5' ]]; then
+            vendor/bin/phpunit --coverage-clover=coverage.xml --log-junit junit.xml
           else
             vendor/bin/phpunit
           fi
@@ -53,8 +53,14 @@ jobs:
         run: vendor/bin/validate-prefer-lowest -m
 
       - name: Upload coverage reports to Codecov
-        if: success() && matrix.php-version == '8.4'
+        if: success() && matrix.php-version == '8.5'
         uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
@@ -69,7 +75,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.4
+          php-version: 8.5
           extensions: ${{ env.PHP_EXTENSIONS }}
 
       - name: Install dependencies
