@@ -33,6 +33,14 @@ class ServerCommand extends Command
     }
 
     /**
+     * @inheritDoc
+     */
+    public static function getDescription(): string
+    {
+        return 'Start the MCP (Model Context Protocol) server';
+    }
+
+    /**
      * Constructor
      *
      * @param \Cake\Core\ContainerInterface $container CakePHP DI container

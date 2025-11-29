@@ -168,6 +168,43 @@ return [
         ],
 
         /**
+         * Tinker Configuration
+         *
+         * Configure the tinker tool for executing PHP code.
+         */
+        'tinker' => [
+            /**
+             * PHP Binary Path
+             *
+             * Path to the PHP executable used for subprocess execution.
+             * When null, auto-detection is used in this order:
+             * 1. `which php` command
+             * 2. PHP_BINARY constant
+             *
+             * Examples:
+             * - null (auto-detect, recommended)
+             * - '/usr/bin/php'
+             * - '/usr/local/bin/php'
+             * - '/opt/homebrew/bin/php'
+             */
+            'php_binary' => env('MCP_TINKER_PHP_BINARY', null),
+
+            /**
+             * Bin Path
+             *
+             * Path to the CakePHP bin directory containing the cake console.
+             * When null, auto-detection is used in this order:
+             * 1. ROOT constant + /bin
+             * 2. Current working directory + /bin
+             *
+             * Examples:
+             * - null (auto-detect, recommended)
+             * - '/var/www/myapp/bin'
+             */
+            'bin_path' => env('MCP_TINKER_BIN_PATH', null),
+        ],
+
+        /**
          * Prompt Configuration
          *
          * Configure behavior of MCP prompts.

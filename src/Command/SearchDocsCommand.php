@@ -28,6 +28,14 @@ class SearchDocsCommand extends Command
     }
 
     /**
+     * @inheritDoc
+     */
+    public static function getDescription(): string
+    {
+        return 'Search CakePHP documentation';
+    }
+
+    /**
      * Configure command options
      *
      * @param \Cake\Console\ConsoleOptionParser $parser Option parser
