@@ -48,11 +48,12 @@ The Model Context Protocol is an open protocol that enables seamless integration
 
 ## Features
 
-- 🚀 **Easy Integration**: Add MCP capabilities to your CakePHP app in minutes
-- 🔍 **Auto-Discovery**: Automatically discovers MCP elements using PHP 8 attributes
-- 🛠️ **Built-in Tools**: Pre-built tools for system info, database inspection, and route management
-- 📚 **Documentation Search**: Full-text search powered by SQLite FTS5 with BM25 ranking (indexes CakePHP's official markdown documentation)
-- 📦 **Extensible**: Create custom tools using simple PHP attributes
+- 🚀 **Rapid Integration**: Enable MCP support in your CakePHP app with minimal setup
+- 🔍 **Attribute-Based Discovery**: Finds MCP tools, resources, and prompts using PHP 8+ attributes and class scanning
+- 🛠️ **Built-in Tools**: Includes tools for system info, database schema exploration, route inspection, code execution, and more
+- 📚 **Advanced Documentation Search**: Full-text search with fuzzy matching and relevance ranking, powered by SQLite FTS5 (indexes official CakePHP markdown docs)
+- 🧩 **Customizable & Extensible**: Easily define your own tools, resources, and prompts using attributes and configuration
+- ⚡ **Prompt Workflows**: Built-in prompt flows for common development tasks, code review, debugging, and feature building
 
 ## Installation
 
@@ -305,7 +306,10 @@ bin/cake synapse search "authentication" --non-interactive
 
 ## Running the Server
 
-Start the MCP server using the CLI command:
+> [!NOTE]
+> In most cases, you do **not** need to run the MCP server manually. The server is typically started automatically by your IDE or MCP-enabled client (such as Claude Desktop, VSCode, Zed, etc.) when you configure it to use your CakePHP app. The client will launch the server using the appropriate command (e.g., `bin/cake synapse server`) and handle the connection for you.
+
+If you want to run the MCP server manually for testing or debugging purposes, you can use the following CLI commands:
 
 ```bash
 # Start with default settings (stdio transport)
