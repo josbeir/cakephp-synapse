@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace Synapse\Documentation\Git;
 
+use Exception;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use RuntimeException;
 
 /**
@@ -107,26 +110,30 @@ class Repository
             return [];
         }
 
-        $command = sprintf(
-            'find %s -type f -name "*.md" 2>/dev/null',
-            escapeshellarg($searchPath),
-        );
-
-        $output = [];
-        exec($command, $output);
-
         $files = [];
         $pathPrefix = $this->path . DS;
         $pathPrefixLen = strlen($pathPrefix);
 
-        foreach ($output as $file) {
-            // Convert absolute path to relative path from repo root
-            if (str_starts_with($file, $pathPrefix)) {
-                $relativePath = substr($file, $pathPrefixLen);
-                // Normalize directory separators
-                $relativePath = str_replace(DS, '/', $relativePath);
-                $files[] = $relativePath;
+        try {
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator(
+                    $searchPath,
+                    RecursiveDirectoryIterator::SKIP_DOTS,
+                ),
+            );
+
+            foreach ($iterator as $file) {
+                if ($file->isFile() && $file->getExtension() === 'md') {
+                    $absolutePath = $file->getPathname();
+                    if (str_starts_with($absolutePath, $pathPrefix)) {
+                        $relativePath = substr($absolutePath, $pathPrefixLen);
+                        $relativePath = str_replace(DS, '/', $relativePath);
+                        $files[] = $relativePath;
+                    }
+                }
             }
+        } catch (Exception $e) {
+            return [];
         }
 
         return $files;
