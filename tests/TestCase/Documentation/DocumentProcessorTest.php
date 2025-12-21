@@ -50,7 +50,8 @@ class DocumentProcessorTest extends TestCase
         $content = file_get_contents($this->docsPath . $filename);
         $this->assertNotFalse($content, sprintf('Test file %s not found', $filename));
 
-        return $content;
+        // Normalize line endings for cross-platform consistency
+        return str_replace("\r\n", "\n", $content);
     }
 
     /**

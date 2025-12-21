@@ -198,7 +198,8 @@ class TinkerTools
         }
 
         // Try `which php` command (most reliable for finding the active PHP)
-        $whichResult = shell_exec('which php 2>/dev/null');
+        $nullDevice = DIRECTORY_SEPARATOR === '\\' ? 'NUL' : '/dev/null';
+        $whichResult = shell_exec('which php 2>' . $nullDevice);
         if (is_string($whichResult) && trim($whichResult) !== '') {
             $which = trim($whichResult);
             if (is_executable($which)) {

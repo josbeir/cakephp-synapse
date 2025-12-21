@@ -227,19 +227,23 @@ class ServerCommand extends Command
      */
     private function findExecutable(string $name): ?string
     {
-        // Try which command first (Unix/Linux/macOS)
-        $which = trim((string)shell_exec(sprintf('which %s 2>/dev/null', escapeshellarg($name))));
-        if ($which !== '' && is_executable($which)) {
-            return $which;
-        }
+        $nullDevice = DIRECTORY_SEPARATOR === '\\' ? 'NUL' : '/dev/null';
 
-        // Try where command (Windows)
-        $where = trim((string)shell_exec(sprintf('where %s 2>nul', escapeshellarg($name))));
-        if ($where !== '') {
-            $paths = explode("\n", $where);
-            $firstPath = trim($paths[0]);
-            if ($firstPath !== '' && is_executable($firstPath)) {
-                return $firstPath;
+        if (DIRECTORY_SEPARATOR === '\\') {
+            // Windows: use where command
+            $where = trim((string)shell_exec(sprintf(sprintf('where %%s 2>%s', $nullDevice), escapeshellarg($name))));
+            if ($where !== '') {
+                $paths = explode("\n", $where);
+                $firstPath = trim($paths[0]);
+                if ($firstPath !== '' && is_executable($firstPath)) {
+                    return $firstPath;
+                }
+            }
+        } else {
+            // Unix/Linux/macOS: use which command
+            $which = trim((string)shell_exec(sprintf(sprintf('which %%s 2>%s', $nullDevice), escapeshellarg($name))));
+            if ($which !== '' && is_executable($which)) {
+                return $which;
             }
         }
 

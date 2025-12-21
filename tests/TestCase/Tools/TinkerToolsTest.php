@@ -409,11 +409,12 @@ class TinkerToolsTest extends TestCase
         $result = $this->tinkerTools->execute('return 1;');
 
         $this->assertFalse($result['success']);
-        // Error can be our message or shell's "No such file or directory"
+        // Error can be our message or shell's error (varies by platform)
         $this->assertTrue(
             str_contains($result['error'], 'PHP binary') ||
             str_contains($result['error'], 'No such file or directory') ||
-            str_contains($result['error'], 'not found'),
+            str_contains($result['error'], 'not found') ||
+            str_contains($result['error'], 'cannot find the path'),
             'Expected error about missing PHP binary, got: ' . $result['error'],
         );
     }
@@ -443,6 +444,10 @@ class TinkerToolsTest extends TestCase
      */
     public function testExecuteTimeout(): void
     {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $this->markTestSkipped('Process timeout behavior differs on Windows');
+        }
+
         // Use a very short timeout with code that sleeps
         $result = $this->tinkerTools->execute('sleep(5); return "done";', 1);
 

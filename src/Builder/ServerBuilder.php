@@ -119,9 +119,11 @@ class ServerBuilder
         $pluginSrcPath = dirname(__DIR__);
         $pluginSrcPath = str_replace(ROOT, '', $pluginSrcPath);
         $pluginSrcPath = ltrim($pluginSrcPath, DIRECTORY_SEPARATOR);
+        // Normalize to forward slashes for consistency across platforms
+        $pluginSrcPath = str_replace(DIRECTORY_SEPARATOR, '/', $pluginSrcPath);
 
         foreach ($scanDirs as $dir) {
-            $path = $pluginSrcPath . DIRECTORY_SEPARATOR . $dir;
+            $path = $pluginSrcPath . '/' . $dir;
             if (!in_array($path, $this->scanDirs, true)) {
                 $this->scanDirs[] = $path;
             }
