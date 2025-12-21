@@ -23,6 +23,11 @@ use Synapse\Tools\CommandTools;
 class SynapsePlugin extends BasePlugin
 {
     /**
+     * Plugin version
+     */
+    public const VERSION = '0.1.12';
+
+    /**
      * Plugin name
      */
     protected ?string $name = 'Synapse';

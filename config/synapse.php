@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use Synapse\Documentation\Git\GitAdapter;
+use Synapse\SynapsePlugin;
 
 /**
  * Synapse Plugin Configuration
@@ -17,7 +18,7 @@ return [
          */
         'serverInfo' => [
             'name' => env('MCP_SERVER_NAME', 'Adaptic MCP Server'),
-            'version' => env('MCP_SERVER_VERSION', '1.0.0'),
+            'version' => env('MCP_SERVER_VERSION', SynapsePlugin::VERSION),
         ],
 
         /**

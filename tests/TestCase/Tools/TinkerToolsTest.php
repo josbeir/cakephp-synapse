@@ -537,4 +537,41 @@ class TinkerToolsTest extends TestCase
         $this->assertTrue($result['success']);
         $this->assertEquals('ok', $result['result']);
     }
+
+    /**
+     * Test getPhpBinary uses configured path when set and executable
+     */
+    public function testGetPhpBinaryUsesConfiguredPathWhenSet(): void
+    {
+        $originalConfig = Configure::read('Synapse.tinker.php_binary');
+
+        // Configure to use PHP_BINARY (which we know is executable)
+        Configure::write('Synapse.tinker.php_binary', PHP_BINARY);
+
+        $tinkerTools = new TinkerTools();
+        $phpBinary = $tinkerTools->getPhpBinary();
+
+        $this->assertEquals(PHP_BINARY, $phpBinary);
+
+        Configure::write('Synapse.tinker.php_binary', $originalConfig);
+    }
+
+    /**
+     * Test getPhpBinary returns valid executable when no config set
+     */
+    public function testGetPhpBinaryReturnsExecutableWhenNoConfig(): void
+    {
+        $originalConfig = Configure::read('Synapse.tinker.php_binary');
+        Configure::write('Synapse.tinker.php_binary');
+
+        $tinkerTools = new TinkerTools();
+        $phpBinary = $tinkerTools->getPhpBinary();
+
+        // Should return a valid executable path
+        $this->assertNotNull($phpBinary);
+        $this->assertFileExists($phpBinary);
+        $this->assertTrue(is_executable($phpBinary));
+
+        Configure::write('Synapse.tinker.php_binary', $originalConfig);
+    }
 }

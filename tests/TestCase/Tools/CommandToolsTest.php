@@ -368,4 +368,27 @@ class CommandToolsTest extends TestCase
         $this->assertEquals(0, $result['total']);
         $this->assertEmpty($result['commands']);
     }
+
+    /**
+     * Test getCommandInfo throws exception for non-existent command
+     */
+    public function testGetCommandInfoThrowsForNonExistentCommand(): void
+    {
+        $this->expectException(ToolCallException::class);
+        $this->expectExceptionMessage("Command 'nonexistent_command_xyz' not found");
+
+        $this->commandTools->getCommandInfo('nonexistent_command_xyz');
+    }
+
+    /**
+     * Test getCommandInfo includes namespace information
+     */
+    public function testGetCommandInfoIncludesNamespaceInfo(): void
+    {
+        $result = $this->commandTools->getCommandInfo('test_command');
+
+        $this->assertArrayHasKey('namespace', $result);
+        $this->assertIsString($result['namespace']);
+        $this->assertStringContainsString('TestApp', $result['namespace']);
+    }
 }

@@ -9,6 +9,7 @@ use Mcp\Schema\Enum\ProtocolVersion;
 use Mcp\Server;
 use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\CacheInterface;
+use Synapse\SynapsePlugin;
 use Throwable;
 
 /**
@@ -59,7 +60,7 @@ class ServerBuilder
         // Set defaults from config or use sensible defaults
         $this->serverInfo = $config['serverInfo'] ?? [
             'name' => 'Adaptic MCP Server',
-            'version' => '1.0.0',
+            'version' => SynapsePlugin::VERSION,
         ];
 
         $discovery = $config['discovery'] ?? [];

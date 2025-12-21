@@ -11,6 +11,7 @@ use Mcp\Server;
 use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\CacheInterface;
 use Synapse\Builder\ServerBuilder;
+use Synapse\SynapsePlugin;
 
 /**
  * ServerBuilder Test Case
@@ -40,7 +41,7 @@ class ServerBuilderTest extends TestCase
         $this->assertEquals('2024-11-05', $builder->getProtocolVersion());
         $this->assertEquals(ServerBuilder::DEFAULT_CACHE_ENGINE, $builder->getCacheEngine());
         $this->assertEquals('Adaptic MCP Server', $builder->getServerInfo()['name']);
-        $this->assertEquals('1.0.0', $builder->getServerInfo()['version']);
+        $this->assertEquals(SynapsePlugin::VERSION, $builder->getServerInfo()['version']);
         $this->assertEquals(ROOT, $builder->getBasePath());
     }
 
@@ -414,7 +415,7 @@ class ServerBuilderTest extends TestCase
         $serverInfo = $builder->getServerInfo();
 
         $this->assertEquals('Adaptic MCP Server', $serverInfo['name']);
-        $this->assertEquals('1.0.0', $serverInfo['version']);
+        $this->assertEquals(SynapsePlugin::VERSION, $serverInfo['version']);
     }
 
     /**
