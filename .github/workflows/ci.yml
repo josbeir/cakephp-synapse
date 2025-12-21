@@ -7,17 +7,19 @@ on:
     branches: [ main ]
 
 env:
-  PHP_EXTENSIONS: intl
+  PHP_EXTENSIONS: intl, sqlite3, fileinfo, pdo_sqlite
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest]
         php-version: [8.2, 8.3, 8.4, 8.5]
         prefer-lowest: ['']
         include:
           - php-version: '8.2'
+            os: ubuntu-latest
             prefer-lowest: 'prefer-lowest'
 
     steps:
@@ -32,6 +34,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
+        shell: bash
         run: |
           if ${{ matrix.prefer-lowest == 'prefer-lowest' }}; then
             composer update --prefer-lowest --prefer-stable
@@ -41,8 +44,9 @@ jobs:
           fi
 
       - name: Run PHPUnit
+        shell: bash
         run: |
-          if [[ ${{ matrix.php-version }} == '8.5' ]]; then
+          if [[ ${{ matrix.php-version }} == '8.5' && ${{ matrix.os }} == 'ubuntu-latest' ]]; then
             vendor/bin/phpunit --coverage-clover=coverage.xml --log-junit junit.xml
           else
             vendor/bin/phpunit
@@ -53,7 +57,7 @@ jobs:
         run: vendor/bin/validate-prefer-lowest -m
 
       - name: Upload coverage reports to Codecov
-        if: success() && matrix.php-version == '8.5'
+        if: success() && matrix.php-version == '8.5' && matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
