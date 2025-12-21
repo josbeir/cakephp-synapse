@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 namespace Synapse\Documentation\Git;
 
-use Exception;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RuntimeException;
+use UnexpectedValueException;
 
 /**
  * Represents a git repository for documentation
@@ -106,7 +106,7 @@ class Repository
             $searchPath .= DS . str_replace('/', DS, $this->root);
         }
 
-        if (!is_dir($searchPath)) {
+        if (!is_dir($searchPath) || !is_readable($searchPath)) {
             return [];
         }
 
@@ -132,8 +132,10 @@ class Repository
                     }
                 }
             }
-        } catch (Exception $e) {
-            return [];
+        } catch (UnexpectedValueException $unexpectedValueException) {
+            // Permission denied or unreadable subdirectory encountered
+            // Return files collected so far to allow partial indexing
+            return $files;
         }
 
         return $files;
