@@ -537,4 +537,35 @@ class RepositoryTest extends TestCase
         $repository->pull();
         $this->assertEquals(3, $this->gitAdapter->getPullCount($repoPath));
     }
+
+    /**
+     * Test getMarkdownFiles normalizes path separators to forward slashes
+     *
+     * Verifies that the RecursiveDirectoryIterator implementation returns
+     * paths with forward slashes regardless of the operating system.
+     */
+    public function testGetMarkdownFilesNormalizesPathSeparators(): void
+    {
+        $repoPath = $this->testDir . 'test-repo';
+        mkdir($repoPath . DS . '.git', 0755, true);
+        mkdir($repoPath . DS . 'docs' . DS . 'guides' . DS . 'advanced', 0755, true);
+
+        file_put_contents($repoPath . DS . 'docs' . DS . 'guides' . DS . 'advanced' . DS . 'tips.md', '# Tips');
+
+        $repository = new Repository(
+            url: 'https://github.com/test/repo.git',
+            branch: 'main',
+            path: $repoPath,
+            gitAdapter: $this->gitAdapter,
+        );
+
+        $files = $repository->getMarkdownFiles();
+
+        // All paths should use forward slashes, never backslashes
+        foreach ($files as $file) {
+            $this->assertStringNotContainsString('\\', $file, 'Path should not contain backslashes: ' . $file);
+        }
+
+        $this->assertContains('docs/guides/advanced/tips.md', $files);
+    }
 }
