@@ -449,7 +449,7 @@ class ServerBuilderTest extends TestCase
     public function testSetContainer(): void
     {
         $builder = new ServerBuilder();
-        $container = $this->getMockBuilder(ContainerInterface::class)->getMock();
+        $container = $this->createStub(ContainerInterface::class);
 
         $result = $builder->setContainer($container);
 
@@ -476,7 +476,7 @@ class ServerBuilderTest extends TestCase
      */
     public function testSetLogger(): void
     {
-        $logger = $this->getMockBuilder(LoggerInterface::class)->getMock();
+        $logger = $this->createStub(LoggerInterface::class);
         $builder = new ServerBuilder();
 
         $result = $builder->setLogger($logger);
@@ -500,7 +500,7 @@ class ServerBuilderTest extends TestCase
      */
     public function testSetLoggerWithNull(): void
     {
-        $logger = $this->getMockBuilder(LoggerInterface::class)->getMock();
+        $logger = $this->createStub(LoggerInterface::class);
         $builder = new ServerBuilder();
 
         $builder->setLogger($logger);
@@ -515,7 +515,7 @@ class ServerBuilderTest extends TestCase
      */
     public function testBuildWithLogger(): void
     {
-        $logger = $this->getMockBuilder(LoggerInterface::class)->getMock();
+        $logger = $this->createStub(LoggerInterface::class);
         $config = Configure::read('Synapse');
 
         $builder = (new ServerBuilder($config))->setLogger($logger);

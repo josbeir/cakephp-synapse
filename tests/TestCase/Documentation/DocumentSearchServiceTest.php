@@ -132,7 +132,7 @@ class DocumentSearchServiceTest extends TestCase
      */
     public function testConstructorWithCustomRepositoryManager(): void
     {
-        $mockManager = $this->createMock(RepositoryManager::class);
+        $mockManager = $this->createStub(RepositoryManager::class);
 
         $service = new DocumentSearchService(
             databasePath: $this->testDbPath,
@@ -147,7 +147,7 @@ class DocumentSearchServiceTest extends TestCase
      */
     public function testConstructorWithCustomDocumentProcessor(): void
     {
-        $mockProcessor = $this->createMock(DocumentProcessor::class);
+        $mockProcessor = $this->createStub(DocumentProcessor::class);
 
         $service = new DocumentSearchService(
             databasePath: $this->testDbPath,

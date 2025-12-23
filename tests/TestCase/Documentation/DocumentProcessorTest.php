@@ -255,7 +255,7 @@ class DocumentProcessorTest extends TestCase
      */
     public function testProcessWithNonExistentFile(): void
     {
-        $repository = $this->createMock(Repository::class);
+        $repository = $this->createStub(Repository::class);
         $repository->method('readFile')->willReturn(null);
 
         $result = $this->DocumentProcessor->process($repository, 'non-existent.md', 'test-source');
@@ -269,7 +269,7 @@ class DocumentProcessorTest extends TestCase
     public function testProcessWithValidFile(): void
     {
         $content = $this->readTestFile('simple.md');
-        $repository = $this->createMock(Repository::class);
+        $repository = $this->createStub(Repository::class);
         $repository->method('readFile')->willReturn($content);
 
         $result = $this->DocumentProcessor->process($repository, 'simple.md', 'test-source');
@@ -284,7 +284,7 @@ class DocumentProcessorTest extends TestCase
      */
     public function testProcessBatch(): void
     {
-        $repository = $this->createMock(Repository::class);
+        $repository = $this->createStub(Repository::class);
         $repository->method('readFile')->willReturnMap([
             ['simple.md', $this->readTestFile('simple.md')],
             ['with-frontmatter.md', $this->readTestFile('with-frontmatter.md')],
@@ -307,7 +307,7 @@ class DocumentProcessorTest extends TestCase
      */
     public function testProcessBatchEmpty(): void
     {
-        $repository = $this->createMock(Repository::class);
+        $repository = $this->createStub(Repository::class);
         $results = $this->DocumentProcessor->processBatch($repository, [], 'test-source');
 
         $this->assertEmpty($results);

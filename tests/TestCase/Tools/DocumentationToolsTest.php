@@ -18,17 +18,12 @@ use Synapse\Tools\DocumentationTools;
  */
 class DocumentationToolsTest extends TestCase
 {
-    private DocumentationTools $tools;
+    private ?DocumentationTools $tools = null;
 
     /**
      * @var \Synapse\Documentation\DocumentSearchService&\PHPUnit\Framework\MockObject\MockObject
      */
-    private MockObject $mockService;
-
-    /**
-     * @var \Synapse\Documentation\SearchEngine&\PHPUnit\Framework\MockObject\MockObject
-     */
-    private MockObject $mockSearchEngine;
+    private ?MockObject $mockService = null;
 
     /**
      * setUp method
@@ -36,14 +31,37 @@ class DocumentationToolsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+    }
 
+    /**
+     * Create mock service and tools for tests that need them
+     */
+    private function createMockServiceAndTools(): void
+    {
         $this->mockService = $this->createMock(DocumentSearchService::class);
-        $this->mockSearchEngine = $this->getMockBuilder(SearchEngine::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['getDocumentById', '__destruct'])
-            ->getMock();
-
         $this->tools = new DocumentationTools($this->mockService);
+    }
+
+    /**
+     * Get the mock service (with assertion for PHPStan)
+     *
+     * @return \Synapse\Documentation\DocumentSearchService&\PHPUnit\Framework\MockObject\MockObject
+     */
+    private function getMockService(): MockObject
+    {
+        $this->assertNotNull($this->mockService);
+
+        return $this->mockService;
+    }
+
+    /**
+     * Get the tools instance (with assertion for PHPStan)
+     */
+    private function getTools(): DocumentationTools
+    {
+        $this->assertNotNull($this->tools);
+
+        return $this->tools;
     }
 
     /**
@@ -51,9 +69,8 @@ class DocumentationToolsTest extends TestCase
      */
     protected function tearDown(): void
     {
-        unset($this->tools);
-        unset($this->mockService);
-        unset($this->mockSearchEngine);
+        $this->tools = null;
+        $this->mockService = null;
 
         parent::tearDown();
     }
@@ -63,6 +80,8 @@ class DocumentationToolsTest extends TestCase
      */
     public function testSearchDocsBasicQuery(): void
     {
+        $this->createMockServiceAndTools();
+
         $expectedResults = [
             [
                 'title' => 'Authentication',
@@ -80,7 +99,7 @@ class DocumentationToolsTest extends TestCase
             ],
         ];
 
-        $this->mockService->expects($this->once())
+        $this->getMockService()->expects($this->once())
             ->method('search')
             ->with(
                 'authentication',
@@ -91,7 +110,7 @@ class DocumentationToolsTest extends TestCase
             )
             ->willReturn($expectedResults);
 
-        $result = $this->tools->searchDocs('authentication');
+        $result = $this->getTools()->searchDocs('authentication');
 
         $this->assertArrayHasKey('results', $result);
         $this->assertArrayHasKey('total', $result);
@@ -110,7 +129,9 @@ class DocumentationToolsTest extends TestCase
      */
     public function testSearchDocsWithCustomLimit(): void
     {
-        $this->mockService->expects($this->once())
+        $this->createMockServiceAndTools();
+
+        $this->getMockService()->expects($this->once())
             ->method('search')
             ->with(
                 'query',
@@ -120,7 +141,7 @@ class DocumentationToolsTest extends TestCase
             )
             ->willReturn([]);
 
-        $result = $this->tools->searchDocs('query', limit: 5);
+        $result = $this->getTools()->searchDocs('query', limit: 5);
 
         $this->assertEquals(5, $result['options']['limit']);
     }
@@ -130,7 +151,9 @@ class DocumentationToolsTest extends TestCase
      */
     public function testSearchDocsWithFuzzySearch(): void
     {
-        $this->mockService->expects($this->once())
+        $this->createMockServiceAndTools();
+
+        $this->getMockService()->expects($this->once())
             ->method('search')
             ->with(
                 'query',
@@ -140,7 +163,7 @@ class DocumentationToolsTest extends TestCase
             )
             ->willReturn([]);
 
-        $result = $this->tools->searchDocs('query', fuzzy: true);
+        $result = $this->getTools()->searchDocs('query', fuzzy: true);
 
         $this->assertTrue($result['options']['fuzzy']);
     }
@@ -150,10 +173,12 @@ class DocumentationToolsTest extends TestCase
      */
     public function testSearchDocsWithSourceFilter(): void
     {
+        $this->createMockServiceAndTools();
+
         $sourcesString = 'cakephp-5x,cakephp-4x';
         $sourcesArray = ['cakephp-5x', 'cakephp-4x'];
 
-        $this->mockService->expects($this->once())
+        $this->getMockService()->expects($this->once())
             ->method('search')
             ->with(
                 'query',
@@ -163,7 +188,7 @@ class DocumentationToolsTest extends TestCase
             )
             ->willReturn([]);
 
-        $result = $this->tools->searchDocs('query', sources: $sourcesString);
+        $result = $this->getTools()->searchDocs('query', sources: $sourcesString);
 
         $this->assertEquals($sourcesString, $result['options']['sources']);
     }
@@ -173,8 +198,10 @@ class DocumentationToolsTest extends TestCase
      */
     public function testSearchDocsValidatesLimitBounds(): void
     {
+        $this->createMockServiceAndTools();
+
         // Test minimum limit (below 1 should become 1)
-        $this->mockService->expects($this->once())
+        $this->getMockService()->expects($this->once())
             ->method('search')
             ->with(
                 'query',
@@ -184,7 +211,7 @@ class DocumentationToolsTest extends TestCase
             )
             ->willReturn([]);
 
-        $result = $this->tools->searchDocs('query', limit: -5);
+        $result = $this->getTools()->searchDocs('query', limit: -5);
         $this->assertEquals(1, $result['options']['limit']);
     }
 
@@ -193,8 +220,10 @@ class DocumentationToolsTest extends TestCase
      */
     public function testSearchDocsValidatesMaximumLimit(): void
     {
+        $this->createMockServiceAndTools();
+
         // Test maximum limit (above 50 should become 50)
-        $this->mockService->expects($this->once())
+        $this->getMockService()->expects($this->once())
             ->method('search')
             ->with(
                 'query',
@@ -204,7 +233,7 @@ class DocumentationToolsTest extends TestCase
             )
             ->willReturn([]);
 
-        $result = $this->tools->searchDocs('query', limit: 100);
+        $result = $this->getTools()->searchDocs('query', limit: 100);
         $this->assertEquals(50, $result['options']['limit']);
     }
 
@@ -213,10 +242,14 @@ class DocumentationToolsTest extends TestCase
      */
     public function testSearchDocsWithEmptyQueryThrowsException(): void
     {
+        // Use stubs instead of mocks - no expectations needed
+        $stubService = $this->createStub(DocumentSearchService::class);
+        $tools = new DocumentationTools($stubService);
+
         $this->expectException(ToolCallException::class);
         $this->expectExceptionMessage('Search query cannot be empty');
 
-        $this->tools->searchDocs('');
+        $tools->searchDocs('');
     }
 
     /**
@@ -224,10 +257,14 @@ class DocumentationToolsTest extends TestCase
      */
     public function testSearchDocsWithWhitespaceQueryThrowsException(): void
     {
+        // Use stubs instead of mocks - no expectations needed
+        $stubService = $this->createStub(DocumentSearchService::class);
+        $tools = new DocumentationTools($stubService);
+
         $this->expectException(ToolCallException::class);
         $this->expectExceptionMessage('Search query cannot be empty');
 
-        $this->tools->searchDocs('   ');
+        $tools->searchDocs('   ');
     }
 
     /**
@@ -235,14 +272,16 @@ class DocumentationToolsTest extends TestCase
      */
     public function testSearchDocsHandlesServiceExceptions(): void
     {
-        $this->mockService->expects($this->once())
+        $this->createMockServiceAndTools();
+
+        $this->getMockService()->expects($this->once())
             ->method('search')
             ->willThrowException(new RuntimeException('Database error'));
 
         $this->expectException(ToolCallException::class);
         $this->expectExceptionMessage('Failed to search documentation');
 
-        $this->tools->searchDocs('query');
+        $this->getTools()->searchDocs('query');
     }
 
     /**
@@ -250,11 +289,13 @@ class DocumentationToolsTest extends TestCase
      */
     public function testSearchDocsWithEmptyResults(): void
     {
-        $this->mockService->expects($this->once())
+        $this->createMockServiceAndTools();
+
+        $this->getMockService()->expects($this->once())
             ->method('search')
             ->willReturn([]);
 
-        $result = $this->tools->searchDocs('nonexistent');
+        $result = $this->getTools()->searchDocs('nonexistent');
 
         $this->assertEmpty($result['results']);
         $this->assertEquals(0, $result['total']);
@@ -265,6 +306,8 @@ class DocumentationToolsTest extends TestCase
      */
     public function testGetStats(): void
     {
+        $this->createMockServiceAndTools();
+
         $expectedStats = [
             'total_documents' => 150,
             'documents_by_source' => [
@@ -274,11 +317,11 @@ class DocumentationToolsTest extends TestCase
             'sources' => ['cakephp-5x', 'cakephp-4x'],
         ];
 
-        $this->mockService->expects($this->once())
+        $this->getMockService()->expects($this->once())
             ->method('getStatistics')
             ->willReturn($expectedStats);
 
-        $result = $this->tools->getStats();
+        $result = $this->getTools()->getStats();
 
         $this->assertEquals($expectedStats, $result);
         $this->assertArrayHasKey('total_documents', $result);
@@ -291,14 +334,16 @@ class DocumentationToolsTest extends TestCase
      */
     public function testGetStatsHandlesServiceExceptions(): void
     {
-        $this->mockService->expects($this->once())
+        $this->createMockServiceAndTools();
+
+        $this->getMockService()->expects($this->once())
             ->method('getStatistics')
             ->willThrowException(new RuntimeException('Database error'));
 
         $this->expectException(ToolCallException::class);
         $this->expectExceptionMessage('Failed to get documentation statistics');
 
-        $this->tools->getStats();
+        $this->getTools()->getStats();
     }
 
     /**
@@ -306,6 +351,7 @@ class DocumentationToolsTest extends TestCase
      */
     public function testConstructorWithNoServiceCreatesDefaultService(): void
     {
+        // No mocks needed for this test
         $tools = new DocumentationTools();
 
         // Should not throw exception and should be usable
@@ -319,8 +365,6 @@ class DocumentationToolsTest extends TestCase
     {
         /** @var DocumentSearchService&\PHPUnit\Framework\MockObject\MockObject $customService */
         $customService = $this->createMock(DocumentSearchService::class);
-        $tools = new DocumentationTools($customService);
-
         $customService->expects($this->once())
             ->method('getStatistics')
             ->willReturn([
@@ -328,6 +372,8 @@ class DocumentationToolsTest extends TestCase
                 'documents_by_source' => [],
                 'sources' => [],
             ]);
+
+        $tools = new DocumentationTools($customService);
 
         $result = $tools->getStats();
         $this->assertEquals(42, $result['total_documents']);
@@ -338,6 +384,8 @@ class DocumentationToolsTest extends TestCase
      */
     public function testGetDocumentRetrievesFullContent(): void
     {
+        $this->createMockServiceAndTools();
+
         $documentData = [
             'id' => 'cakephp-5x::docs/getting-started.md',
             'source' => 'cakephp-5x',
@@ -347,16 +395,17 @@ class DocumentationToolsTest extends TestCase
             'metadata' => ['version' => '5.x'],
         ];
 
-        $this->mockSearchEngine->expects($this->once())
+        $mockSearchEngine = $this->createMock(SearchEngine::class);
+        $mockSearchEngine->expects($this->once())
             ->method('getDocumentById')
             ->with('cakephp-5x::docs/getting-started.md')
             ->willReturn($documentData);
 
-        $this->mockService->expects($this->once())
+        $this->getMockService()->expects($this->once())
             ->method('getSearchEngine')
-            ->willReturn($this->mockSearchEngine);
+            ->willReturn($mockSearchEngine);
 
-        $result = $this->tools->getDocument('cakephp-5x::docs/getting-started.md');
+        $result = $this->getTools()->getDocument('cakephp-5x::docs/getting-started.md');
 
         $this->assertEquals($documentData['content'], $result['content']);
         $this->assertEquals('Getting Started', $result['title']);
@@ -379,11 +428,15 @@ class DocumentationToolsTest extends TestCase
             'metadata' => [],
         ];
 
-        $this->mockSearchEngine->method('getDocumentById')->willReturn($documentData);
+        // Use stubs instead of mocks - no expectations needed
+        $stubSearchEngine = $this->createStub(SearchEngine::class);
+        $stubSearchEngine->method('getDocumentById')->willReturn($documentData);
 
-        $this->mockService->method('getSearchEngine')->willReturn($this->mockSearchEngine);
+        $stubService = $this->createStub(DocumentSearchService::class);
+        $stubService->method('getSearchEngine')->willReturn($stubSearchEngine);
+        $tools = new DocumentationTools($stubService);
 
-        $result = $this->tools->getDocument('cakephp-5x::docs/auth.md');
+        $result = $tools->getDocument('cakephp-5x::docs/auth.md');
 
         $this->assertEquals('Authentication & Authorization', $result['title']);
     }
@@ -402,11 +455,15 @@ class DocumentationToolsTest extends TestCase
             'metadata' => ['author' => 'CakePHP Team', 'version' => '5.x'],
         ];
 
-        $this->mockSearchEngine->method('getDocumentById')->willReturn($documentData);
+        // Use stubs instead of mocks - no expectations needed
+        $stubSearchEngine = $this->createStub(SearchEngine::class);
+        $stubSearchEngine->method('getDocumentById')->willReturn($documentData);
 
-        $this->mockService->method('getSearchEngine')->willReturn($this->mockSearchEngine);
+        $stubService = $this->createStub(DocumentSearchService::class);
+        $stubService->method('getSearchEngine')->willReturn($stubSearchEngine);
+        $tools = new DocumentationTools($stubService);
 
-        $result = $this->tools->getDocument('cakephp-5x::docs/database-basics.md');
+        $result = $tools->getDocument('cakephp-5x::docs/database-basics.md');
 
         $this->assertEquals('Database Basics', $result['title']);
         $this->assertArrayHasKey('metadata', $result);
@@ -418,10 +475,14 @@ class DocumentationToolsTest extends TestCase
      */
     public function testGetDocumentThrowsExceptionForEmptyDocId(): void
     {
+        // Use stubs instead of mocks - no expectations needed
+        $stubService = $this->createStub(DocumentSearchService::class);
+        $tools = new DocumentationTools($stubService);
+
         $this->expectException(ToolCallException::class);
         $this->expectExceptionMessage('Document ID cannot be empty');
 
-        $this->tools->getDocument('');
+        $tools->getDocument('');
     }
 
     /**
@@ -429,14 +490,18 @@ class DocumentationToolsTest extends TestCase
      */
     public function testGetDocumentThrowsExceptionWhenNotFound(): void
     {
-        $this->mockSearchEngine->method('getDocumentById')->willReturn(null);
+        // Use stubs instead of mocks - no expectations needed
+        $stubSearchEngine = $this->createStub(SearchEngine::class);
+        $stubSearchEngine->method('getDocumentById')->willReturn(null);
 
-        $this->mockService->method('getSearchEngine')->willReturn($this->mockSearchEngine);
+        $stubService = $this->createStub(DocumentSearchService::class);
+        $stubService->method('getSearchEngine')->willReturn($stubSearchEngine);
+        $tools = new DocumentationTools($stubService);
 
         $this->expectException(ToolCallException::class);
         $this->expectExceptionMessage('Document not found');
 
-        $this->tools->getDocument('cakephp-5x::docs/nonexistent.md');
+        $tools->getDocument('cakephp-5x::docs/nonexistent.md');
     }
 
     /**
@@ -444,14 +509,16 @@ class DocumentationToolsTest extends TestCase
      */
     public function testGetDocumentHandlesSearchEngineErrors(): void
     {
-        $this->mockService->expects($this->once())
+        $this->createMockServiceAndTools();
+
+        $this->getMockService()->expects($this->once())
             ->method('getSearchEngine')
             ->willThrowException(new RuntimeException('Database error'));
 
         $this->expectException(ToolCallException::class);
         $this->expectExceptionMessage('Failed to get document');
 
-        $this->tools->getDocument('cakephp-5x::docs/test.md');
+        $this->getTools()->getDocument('cakephp-5x::docs/test.md');
     }
 
     /**
@@ -459,6 +526,8 @@ class DocumentationToolsTest extends TestCase
      */
     public function testGetDocumentReturnsOriginalMarkdownWithFormatting(): void
     {
+        $this->createMockServiceAndTools();
+
         $documentData = [
             'id' => 'cakephp-5x::docs/example.md',
             'source' => 'cakephp-5x',
@@ -468,16 +537,17 @@ class DocumentationToolsTest extends TestCase
             'metadata' => [],
         ];
 
-        $this->mockSearchEngine->expects($this->once())
+        $mockSearchEngine = $this->createMock(SearchEngine::class);
+        $mockSearchEngine->expects($this->once())
             ->method('getDocumentById')
             ->with('cakephp-5x::docs/example.md')
             ->willReturn($documentData);
 
-        $this->mockService->expects($this->once())
+        $this->getMockService()->expects($this->once())
             ->method('getSearchEngine')
-            ->willReturn($this->mockSearchEngine);
+            ->willReturn($mockSearchEngine);
 
-        $result = $this->tools->getDocument('cakephp-5x::docs/example.md');
+        $result = $this->getTools()->getDocument('cakephp-5x::docs/example.md');
 
         // Verify original markdown formatting is preserved
         $this->assertStringContainsString('**bold**', $result['content']);

@@ -19,27 +19,53 @@ use Synapse\Resources\DocumentationResources;
  */
 class DocumentationResourcesTest extends TestCase
 {
-    private DocumentationResources $resources;
+    private ?DocumentationResources $resources = null;
 
     /**
      * @var \Synapse\Documentation\DocumentSearchService&\PHPUnit\Framework\MockObject\MockObject
      */
-    private MockObject $mockService;
-
-    private MockObject $mockSearchEngine;
+    private ?MockObject $mockService = null;
 
     protected function setUp(): void
     {
         parent::setUp();
+    }
 
+    /**
+     * Create mock service and resources for tests that need them
+     */
+    private function createMockServiceAndResources(): void
+    {
         $this->mockService = $this->createMock(DocumentSearchService::class);
-        $this->mockSearchEngine = $this->createMock(SearchEngine::class);
         $this->resources = new DocumentationResources($this->mockService);
+    }
+
+    /**
+     * Get the mock service (with assertion for PHPStan)
+     *
+     * @return \Synapse\Documentation\DocumentSearchService&\PHPUnit\Framework\MockObject\MockObject
+     */
+    private function getMockService(): MockObject
+    {
+        $this->assertNotNull($this->mockService);
+
+        return $this->mockService;
+    }
+
+    /**
+     * Get the resources instance (with assertion for PHPStan)
+     */
+    private function getResources(): DocumentationResources
+    {
+        $this->assertNotNull($this->resources);
+
+        return $this->resources;
     }
 
     protected function tearDown(): void
     {
-        unset($this->resources, $this->mockService, $this->mockSearchEngine);
+        $this->resources = null;
+        $this->mockService = null;
         parent::tearDown();
     }
 
@@ -48,6 +74,8 @@ class DocumentationResourcesTest extends TestCase
      */
     public function testSearchResourceBasicQuery(): void
     {
+        $this->createMockServiceAndResources();
+
         $expectedResults = [
             [
                 'title' => 'Caching',
@@ -58,7 +86,7 @@ class DocumentationResourcesTest extends TestCase
             ],
         ];
 
-        $this->mockService->expects($this->once())
+        $this->getMockService()->expects($this->once())
             ->method('search')
             ->with(
                 'caching',
@@ -69,7 +97,7 @@ class DocumentationResourcesTest extends TestCase
             )
             ->willReturn($expectedResults);
 
-        $result = $this->resources->searchResource('caching');
+        $result = $this->getResources()->searchResource('caching');
 
         $this->assertInstanceOf(TextResourceContents::class, $result);
         $this->assertEquals('docs://search/caching', $result->uri);
@@ -84,6 +112,8 @@ class DocumentationResourcesTest extends TestCase
      */
     public function testSearchResourceWithMultipleResults(): void
     {
+        $this->createMockServiceAndResources();
+
         $expectedResults = [
             [
                 'title' => 'First Result',
@@ -108,11 +138,11 @@ class DocumentationResourcesTest extends TestCase
             ],
         ];
 
-        $this->mockService->expects($this->once())
+        $this->getMockService()->expects($this->once())
             ->method('search')
             ->willReturn($expectedResults);
 
-        $result = $this->resources->searchResource('test query');
+        $result = $this->getResources()->searchResource('test query');
         $content = $result;
 
         $this->assertStringContainsString('Found 3 result(s)', $content->text);
@@ -129,11 +159,13 @@ class DocumentationResourcesTest extends TestCase
      */
     public function testSearchResourceWithEmptyResults(): void
     {
-        $this->mockService->expects($this->once())
+        $this->createMockServiceAndResources();
+
+        $this->getMockService()->expects($this->once())
             ->method('search')
             ->willReturn([]);
 
-        $result = $this->resources->searchResource('nonexistent');
+        $result = $this->getResources()->searchResource('nonexistent');
         $content = $result;
 
         $this->assertStringContainsString('# Documentation Search: nonexistent', $content->text);
@@ -145,10 +177,14 @@ class DocumentationResourcesTest extends TestCase
      */
     public function testSearchResourceWithEmptyQueryThrowsException(): void
     {
+        // Use stubs instead of mocks - no expectations needed
+        $stubService = $this->createStub(DocumentSearchService::class);
+        $resources = new DocumentationResources($stubService);
+
         $this->expectException(ToolCallException::class);
         $this->expectExceptionMessage('Search query cannot be empty');
 
-        $this->resources->searchResource('');
+        $resources->searchResource('');
     }
 
     /**
@@ -156,10 +192,14 @@ class DocumentationResourcesTest extends TestCase
      */
     public function testSearchResourceWithWhitespaceQueryThrowsException(): void
     {
+        // Use stubs instead of mocks - no expectations needed
+        $stubService = $this->createStub(DocumentSearchService::class);
+        $resources = new DocumentationResources($stubService);
+
         $this->expectException(ToolCallException::class);
         $this->expectExceptionMessage('Search query cannot be empty');
 
-        $this->resources->searchResource('   ');
+        $resources->searchResource('   ');
     }
 
     /**
@@ -167,14 +207,16 @@ class DocumentationResourcesTest extends TestCase
      */
     public function testSearchResourceHandlesServiceExceptions(): void
     {
-        $this->mockService->expects($this->once())
+        $this->createMockServiceAndResources();
+
+        $this->getMockService()->expects($this->once())
             ->method('search')
             ->willThrowException(new RuntimeException('Database error'));
 
         $this->expectException(ToolCallException::class);
         $this->expectExceptionMessage('Failed to read documentation resource');
 
-        $this->resources->searchResource('query');
+        $this->getResources()->searchResource('query');
     }
 
     /**
@@ -182,11 +224,13 @@ class DocumentationResourcesTest extends TestCase
      */
     public function testSearchResourceFormatsUriCorrectly(): void
     {
-        $this->mockService->expects($this->once())
+        $this->createMockServiceAndResources();
+
+        $this->getMockService()->expects($this->once())
             ->method('search')
             ->willReturn([]);
 
-        $result = $this->resources->searchResource('test query with spaces');
+        $result = $this->getResources()->searchResource('test query with spaces');
         $content = $result;
 
         $this->assertEquals('docs://search/test+query+with+spaces', $content->uri);
@@ -197,6 +241,8 @@ class DocumentationResourcesTest extends TestCase
      */
     public function testSearchResourceIncludesAllResultFields(): void
     {
+        $this->createMockServiceAndResources();
+
         $expectedResults = [
             [
                 'title' => 'Complete Result',
@@ -207,11 +253,11 @@ class DocumentationResourcesTest extends TestCase
             ],
         ];
 
-        $this->mockService->expects($this->once())
+        $this->getMockService()->expects($this->once())
             ->method('search')
             ->willReturn($expectedResults);
 
-        $result = $this->resources->searchResource('complete');
+        $result = $this->getResources()->searchResource('complete');
         $content = $result;
 
         $this->assertStringContainsString('## 1. Complete Result', $content->text);
@@ -227,17 +273,19 @@ class DocumentationResourcesTest extends TestCase
      */
     public function testSearchResourceHandlesMissingOptionalFields(): void
     {
+        $this->createMockServiceAndResources();
+
         $expectedResults = [
             [
                 'title' => 'Minimal Result',
             ],
         ];
 
-        $this->mockService->expects($this->once())
+        $this->getMockService()->expects($this->once())
             ->method('search')
             ->willReturn($expectedResults);
 
-        $result = $this->resources->searchResource('minimal');
+        $result = $this->getResources()->searchResource('minimal');
         $content = $result;
 
         $this->assertStringContainsString('## 1. Minimal Result', $content->text);
@@ -250,6 +298,8 @@ class DocumentationResourcesTest extends TestCase
      */
     public function testSearchResourceHandlesUntitledDocuments(): void
     {
+        $this->createMockServiceAndResources();
+
         $expectedResults = [
             [
                 'path' => 'untitled.md',
@@ -257,11 +307,11 @@ class DocumentationResourcesTest extends TestCase
             ],
         ];
 
-        $this->mockService->expects($this->once())
+        $this->getMockService()->expects($this->once())
             ->method('search')
             ->willReturn($expectedResults);
 
-        $result = $this->resources->searchResource('query');
+        $result = $this->getResources()->searchResource('query');
         $content = $result;
 
         $this->assertStringContainsString('## 1. Untitled', $content->text);
@@ -272,6 +322,8 @@ class DocumentationResourcesTest extends TestCase
      */
     public function testSearchResourceFormatsSnippetsWithBlockquotes(): void
     {
+        $this->createMockServiceAndResources();
+
         $expectedResults = [
             [
                 'title' => 'Result',
@@ -282,11 +334,11 @@ class DocumentationResourcesTest extends TestCase
             ],
         ];
 
-        $this->mockService->expects($this->once())
+        $this->getMockService()->expects($this->once())
             ->method('search')
             ->willReturn($expectedResults);
 
-        $result = $this->resources->searchResource('query');
+        $result = $this->getResources()->searchResource('query');
         $content = $result;
 
         $this->assertStringContainsString('> Line 1', $content->text);
@@ -299,6 +351,8 @@ class DocumentationResourcesTest extends TestCase
      */
     public function testSearchResourceIncludesSeparatorsBetweenResults(): void
     {
+        $this->createMockServiceAndResources();
+
         $expectedResults = [
             [
                 'title' => 'First',
@@ -316,11 +370,11 @@ class DocumentationResourcesTest extends TestCase
             ],
         ];
 
-        $this->mockService->expects($this->once())
+        $this->getMockService()->expects($this->once())
             ->method('search')
             ->willReturn($expectedResults);
 
-        $result = $this->resources->searchResource('query');
+        $result = $this->getResources()->searchResource('query');
         $content = $result->text;
 
         $separatorCount = substr_count($content, "---\n\n");
@@ -332,6 +386,8 @@ class DocumentationResourcesTest extends TestCase
      */
     public function testContentResourceRetrievesFullContent(): void
     {
+        $this->createMockServiceAndResources();
+
         $documentData = [
             'id' => 'cakephp-5x::docs/controllers.md',
             'source' => 'cakephp-5x',
@@ -341,16 +397,17 @@ class DocumentationResourcesTest extends TestCase
             'metadata' => [],
         ];
 
-        $this->mockSearchEngine->expects($this->once())
+        $mockSearchEngine = $this->createMock(SearchEngine::class);
+        $mockSearchEngine->expects($this->once())
             ->method('getDocumentById')
             ->with('cakephp-5x::docs/controllers.md')
             ->willReturn($documentData);
 
-        $this->mockService->expects($this->once())
+        $this->getMockService()->expects($this->once())
             ->method('getSearchEngine')
-            ->willReturn($this->mockSearchEngine);
+            ->willReturn($mockSearchEngine);
 
-        $result = $this->resources->contentResource('cakephp-5x::docs/controllers.md');
+        $result = $this->getResources()->contentResource('cakephp-5x::docs/controllers.md');
 
         $this->assertInstanceOf(TextResourceContents::class, $result);
         $this->assertEquals('docs://content/cakephp-5x::docs/controllers.md', $result->uri);
@@ -363,10 +420,14 @@ class DocumentationResourcesTest extends TestCase
      */
     public function testContentResourceThrowsExceptionForEmptyDocId(): void
     {
+        // Use stubs instead of mocks - no expectations needed
+        $stubService = $this->createStub(DocumentSearchService::class);
+        $resources = new DocumentationResources($stubService);
+
         $this->expectException(ToolCallException::class);
         $this->expectExceptionMessage('Document ID cannot be empty');
 
-        $this->resources->contentResource('');
+        $resources->contentResource('');
     }
 
     /**
@@ -374,14 +435,17 @@ class DocumentationResourcesTest extends TestCase
      */
     public function testContentResourceThrowsExceptionForNonexistentDocument(): void
     {
-        $this->mockSearchEngine->method('getDocumentById')->willReturn(null);
-
-        $this->mockService->method('getSearchEngine')->willReturn($this->mockSearchEngine);
+        // Use stubs instead of mocks - no expectations needed
+        $stubService = $this->createStub(DocumentSearchService::class);
+        $stubSearchEngine = $this->createStub(SearchEngine::class);
+        $stubSearchEngine->method('getDocumentById')->willReturn(null);
+        $stubService->method('getSearchEngine')->willReturn($stubSearchEngine);
+        $resources = new DocumentationResources($stubService);
 
         $this->expectException(ToolCallException::class);
         $this->expectExceptionMessage('Document not found');
 
-        $this->resources->contentResource('cakephp-5x::docs/missing.md');
+        $resources->contentResource('cakephp-5x::docs/missing.md');
     }
 
     /**
@@ -389,6 +453,8 @@ class DocumentationResourcesTest extends TestCase
      */
     public function testContentResourceReturnsOriginalMarkdownWithFormatting(): void
     {
+        $this->createMockServiceAndResources();
+
         $documentData = [
             'id' => 'cakephp-5x::docs/formatting.md',
             'source' => 'cakephp-5x',
@@ -398,16 +464,17 @@ class DocumentationResourcesTest extends TestCase
             'metadata' => [],
         ];
 
-        $this->mockSearchEngine->expects($this->once())
+        $mockSearchEngine = $this->createMock(SearchEngine::class);
+        $mockSearchEngine->expects($this->once())
             ->method('getDocumentById')
             ->with('cakephp-5x::docs/formatting.md')
             ->willReturn($documentData);
 
-        $this->mockService->expects($this->once())
+        $this->getMockService()->expects($this->once())
             ->method('getSearchEngine')
-            ->willReturn($this->mockSearchEngine);
+            ->willReturn($mockSearchEngine);
 
-        $result = $this->resources->contentResource('cakephp-5x::docs/formatting.md');
+        $result = $this->getResources()->contentResource('cakephp-5x::docs/formatting.md');
 
         // Verify markdown formatting is preserved in resource
         $content = $result->text;
