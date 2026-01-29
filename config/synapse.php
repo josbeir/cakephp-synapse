@@ -125,7 +125,7 @@ return [
             'sources' => [
                 'cakephp-5x' => [
                     'enabled' => true,
-                    'repository' => 'https://github.com/cakephp/docs-md.git',
+                    'repository' => 'https://github.com/cakephp/docs.git',
                     'branch' => '5.x',
                     'root' => 'docs/en', // Root directory within repo to index
                     'metadata' => [
