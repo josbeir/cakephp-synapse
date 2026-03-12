@@ -94,7 +94,7 @@ class DocumentationTools
             ];
         } catch (Exception $exception) {
             $message = sprintf('Failed to search documentation: %s', $exception->getMessage());
-            throw new ToolCallException($message);
+            throw new ToolCallException($message, $exception->getCode(), $exception);
         }
     }
 
@@ -116,7 +116,7 @@ class DocumentationTools
             return $this->searchService->getStatistics();
         } catch (Exception $exception) {
             $message = sprintf('Failed to get documentation statistics: %s', $exception->getMessage());
-            throw new ToolCallException($message);
+            throw new ToolCallException($message, $exception->getCode(), $exception);
         }
     }
 
@@ -164,7 +164,7 @@ class DocumentationTools
             throw $exception;
         } catch (Exception $exception) {
             $message = sprintf('Failed to get document: %s', $exception->getMessage());
-            throw new ToolCallException($message);
+            throw new ToolCallException($message, $exception->getCode(), $exception);
         }
     }
 }
