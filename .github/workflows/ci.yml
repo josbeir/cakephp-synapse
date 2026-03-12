@@ -17,6 +17,13 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         php-version: [8.2, 8.3, 8.4, 8.5]
         prefer-lowest: ['']
+        exclude:
+          - os: windows-latest
+            php-version: 8.3
+          - os: windows-latest
+            php-version: 8.4
+          - os: windows-latest
+            php-version: 8.5
         include:
           - php-version: '8.2'
             os: ubuntu-latest
