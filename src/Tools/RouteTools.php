@@ -174,10 +174,10 @@ class RouteTools
             ];
         } catch (MissingRouteException $e) {
             $message = sprintf("No route matches URL '%s' with method '%s': %s", $url, $method, $e->getMessage());
-            throw new ToolCallException($message);
+            throw new ToolCallException($message, $e->getCode(), $e);
         } catch (Exception $e) {
             $message = sprintf("Error parsing URL '%s': %s", $url, $e->getMessage());
-            throw new ToolCallException($message);
+            throw new ToolCallException($message, $e->getCode(), $e);
         }
     }
 

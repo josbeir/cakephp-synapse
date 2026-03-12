@@ -59,7 +59,7 @@ class DatabaseTools
                 ];
             } catch (Exception $e) {
                 $message = sprintf("Failed to get connection info for '%s': %s", $name, $e->getMessage());
-                throw new ToolCallException($message);
+                throw new ToolCallException($message, $e->getCode(), $e);
             }
         }
 
@@ -113,7 +113,7 @@ class DatabaseTools
             ];
         } catch (Exception $exception) {
             $message = sprintf("Failed to read schema for connection '%s': %s", $connection, $exception->getMessage());
-            throw new ToolCallException($message);
+            throw new ToolCallException($message, $exception->getCode(), $exception);
         }
     }
 

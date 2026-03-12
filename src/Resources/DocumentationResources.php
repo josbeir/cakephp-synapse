@@ -72,7 +72,7 @@ class DocumentationResources
             );
         } catch (Exception $exception) {
             $message = sprintf('Failed to read documentation resource: %s', $exception->getMessage());
-            throw new ToolCallException($message);
+            throw new ToolCallException($message, $exception->getCode(), $exception);
         }
     }
 
@@ -124,7 +124,7 @@ class DocumentationResources
             throw $exception;
         } catch (Exception $exception) {
             $message = sprintf('Failed to read documentation resource: %s', $exception->getMessage());
-            throw new ToolCallException($message);
+            throw new ToolCallException($message, $exception->getCode(), $exception);
         }
     }
 
