@@ -68,8 +68,12 @@ class SubprocessRunner
             fclose($pipes[0]);
             unset($pipes[0]); // prevent double-close in finally
 
-            stream_set_blocking($pipes[1], false);
-            stream_set_blocking($pipes[2], false);
+            // Note: stream_set_blocking() is unreliable for proc_open pipes on
+            // Windows — fread() on a non-blocking pipe still blocks there.
+            // We therefore poll only via proc_get_status() and read stdout/stderr
+            // in one shot once the process has exited (or been terminated).
+            // Output is capped to the OS pipe buffer (~64 KB on Linux); this is
+            // intentional and acceptable for the commands this class executes.
 
             $startTime = time();
 
@@ -82,8 +86,8 @@ class SubprocessRunner
                     // some PHP/OS combinations (notably PHP 8.2 on Linux), making a
                     // subsequent proc_close() return -1.  Reading it here is reliable.
                     $exitCode = $status['exitcode'];
-                    $stdout .= stream_get_contents($pipes[1]);
-                    $stderr .= stream_get_contents($pipes[2]);
+                    $stdout .= stream_get_contents($pipes[1]) ?: '';
+                    $stderr .= stream_get_contents($pipes[2]) ?: '';
                     break;
                 }
 
@@ -93,10 +97,7 @@ class SubprocessRunner
                     break;
                 }
 
-                $stdout .= fread($pipes[1], 8192) ?: '';
-                $stderr .= fread($pipes[2], 8192) ?: '';
-
-                usleep(10000); // 10 ms
+                usleep(10000); // 10 ms polling
             }
         } finally {
             // Always clean up pipes and the process handle regardless of how we exited.
