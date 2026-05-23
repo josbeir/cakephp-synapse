@@ -104,7 +104,7 @@ class Repository
         }
 
         $finder = new Finder();
-        $finder->files()->name('*.md')->in($searchPath);
+        $finder->files()->name('*.md')->ignoreUnreadableDirs()->in($searchPath);
 
         $files = [];
         foreach ($finder as $file) {
