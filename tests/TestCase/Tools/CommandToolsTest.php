@@ -514,6 +514,8 @@ class CommandToolsTest extends TestCase
      * Integration test: actually shell out to a real Synapse command with --help.
      *
      * Uses synapse search_docs which is registered by SynapsePlugin in the test app.
+     * Exit code is not asserted: CakePHP <=5.2 exits 1 for --help, newer versions exit 0.
+     * The test verifies the subprocess mechanism works, not CakePHP's --help behaviour.
      */
     public function testRunCommandIntegration(): void
     {
@@ -523,9 +525,10 @@ class CommandToolsTest extends TestCase
         $tools = new CommandTools($collection);
         $result = $tools->runCommand('synapse search_docs', '--help');
 
-        // --help exits 0 in CakePHP before calling execute()
-        $this->assertSame(0, $result['exit_code']);
-        $this->assertTrue($result['success']);
+        // Verify the shell-out succeeded: not a proc_open failure (exit_code -1)
+        // and the command produced some output.
+        $this->assertNotSame(-1, $result['exit_code']);
+        $this->assertNotEmpty($result['output']);
         $this->assertSame('synapse search_docs', $result['command']);
         $this->assertStringContainsString('--help', $result['args']);
     }
