@@ -71,22 +71,12 @@ class LogTools
     )]
     public function readLog(string $file, int $lines = 100, ?string $level = null): array
     {
+        $lines = max(1, min(5000, $lines));
         $path = $this->resolveLogPath($file);
 
-        $rawLines = file($path, FILE_IGNORE_NEW_LINES);
-        if ($rawLines === false) {
-            throw new ToolCallException(sprintf("Could not read log file '%s'.", $file));
-        }
-
-        // Filter by level first, then take the tail
-        if ($level !== null) {
-            $rawLines = array_values(
-                array_filter($rawLines, fn(string $line): bool => stripos($line, $level) !== false),
-            );
-        }
-
-        $lines = max(1, $lines);
-        $tail = array_slice($rawLines, -$lines);
+        $tail = $level !== null
+            ? $this->readTailFiltered($path, $lines, $level, $file)
+            : $this->readTail($path, $lines, $file);
 
         $content = implode("\n", $tail);
         if ($content !== '') {
@@ -98,6 +88,99 @@ class LogTools
             'lines' => count($tail),
             'content' => $content,
         ];
+    }
+
+    /**
+     * Read the last N lines from a file using a reverse-seek strategy.
+     *
+     * Reads backwards in 8 KB chunks so only the tail portion of the file
+     * is loaded into memory, regardless of total file size.
+     *
+     * @param string $path Absolute file path
+     * @param int $lines Number of lines to return
+     * @param string $file Original user-supplied name (for error messages)
+     * @return array<int, string> Lines from the tail of the file
+     * @throws \Mcp\Exception\ToolCallException When the file cannot be opened
+     */
+    private function readTail(string $path, int $lines, string $file): array
+    {
+        $handle = fopen($path, 'rb');
+        if ($handle === false) {
+            throw new ToolCallException(sprintf("Could not read log file '%s'.", $file));
+        }
+
+        try {
+            fseek($handle, 0, SEEK_END);
+            $fileSize = ftell($handle);
+            if (!is_int($fileSize) || $fileSize === 0) {
+                return [];
+            }
+
+            $buffer = '';
+            $pos = $fileSize;
+            $chunkSize = 8192;
+            $linesFound = 0;
+
+            while ($pos > 0 && $linesFound <= $lines) {
+                $readSize = min($chunkSize, $pos);
+                $pos -= $readSize;
+                fseek($handle, $pos);
+                $chunk = fread($handle, $readSize);
+                if ($chunk === false) {
+                    break;
+                }
+
+                $buffer = $chunk . $buffer;
+                $linesFound += substr_count($chunk, "\n");
+            }
+        } finally {
+            fclose($handle);
+        }
+
+        $result = explode("\n", $buffer);
+        if (end($result) === '') {
+            array_pop($result);
+        }
+
+        return array_slice($result, -$lines);
+    }
+
+    /**
+     * Read lines from a file that match a level string, returning the last N matches.
+     *
+     * Processes the file line by line using a fixed-size rolling buffer so that
+     * memory use is bounded to $lines matching entries regardless of file size.
+     *
+     * @param string $path Absolute file path
+     * @param int $lines Maximum number of matching lines to return
+     * @param string $level Level string to filter on (case-insensitive)
+     * @param string $file Original user-supplied name (for error messages)
+     * @return array<int, string> Matching lines from the tail of the file
+     * @throws \Mcp\Exception\ToolCallException When the file cannot be opened
+     */
+    private function readTailFiltered(string $path, int $lines, string $level, string $file): array
+    {
+        $handle = fopen($path, 'rb');
+        if ($handle === false) {
+            throw new ToolCallException(sprintf("Could not read log file '%s'.", $file));
+        }
+
+        $matching = [];
+        try {
+            while (($line = fgets($handle)) !== false) {
+                $line = rtrim($line, "\n\r");
+                if (stripos($line, $level) !== false) {
+                    $matching[] = $line;
+                    if (count($matching) > $lines) {
+                        array_shift($matching);
+                    }
+                }
+            }
+        } finally {
+            fclose($handle);
+        }
+
+        return $matching;
     }
 
     // -------------------------------------------------------------------------

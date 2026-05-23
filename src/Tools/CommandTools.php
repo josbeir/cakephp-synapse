@@ -219,7 +219,11 @@ class CommandTools
         $commandStr = escapeshellarg($phpBinary) . ' bin/cake.php ' . implode(' ', $nameParts);
 
         if (trim($args) !== '') {
-            $commandStr .= ' ' . $args;
+            // Escape each argument token individually to prevent shell injection.
+            // Users who need a single argument with embedded spaces should pass it
+            // as one token without whitespace separating it from other args.
+            $argTokens = preg_split('/\s+/', trim($args), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            $commandStr .= ' ' . implode(' ', array_map('escapeshellarg', $argTokens));
         }
 
         $cwd = dirname($this->runner->getBinPath());

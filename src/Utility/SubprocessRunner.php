@@ -149,7 +149,7 @@ class SubprocessRunner
 
         $configured = Configure::read('Synapse.tinker.php_binary');
         if ($configured !== null && is_string($configured) && is_executable($configured)) {
-            return $configured;
+            return $this->phpBinary = $configured;
         }
 
         $nullDevice = DIRECTORY_SEPARATOR === '\\' ? 'NUL' : '/dev/null';
@@ -157,12 +157,12 @@ class SubprocessRunner
         if (is_string($whichResult) && trim($whichResult) !== '') {
             $which = trim($whichResult);
             if (is_executable($which)) {
-                return $which;
+                return $this->phpBinary = $which;
             }
         }
 
         if (is_executable(PHP_BINARY)) {
-            return PHP_BINARY;
+            return $this->phpBinary = PHP_BINARY;
         }
 
         return null;
@@ -187,14 +187,14 @@ class SubprocessRunner
 
         $configured = Configure::read('Synapse.tinker.bin_path');
         if ($configured !== null && is_string($configured)) {
-            return $configured;
+            return $this->binPath = $configured;
         }
 
         if (defined('ROOT')) {
-            return ROOT . '/bin';
+            return $this->binPath = ROOT . '/bin';
         }
 
-        return getcwd() . '/bin';
+        return $this->binPath = getcwd() . '/bin';
     }
 
     /**
