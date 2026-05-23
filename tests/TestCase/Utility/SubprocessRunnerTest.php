@@ -37,6 +37,14 @@ class SubprocessRunnerTest extends TestCase
         $this->assertTrue(is_executable($binary), sprintf("PHP binary '%s' must be executable", $binary));
     }
 
+    public function testGetPhpBinaryReturnsSameValueOnRepeatedCalls(): void
+    {
+        $first = $this->runner->getPhpBinary();
+        $second = $this->runner->getPhpBinary();
+
+        $this->assertSame($first, $second);
+    }
+
     public function testSetPhpBinaryOverridesAutoDetection(): void
     {
         $this->runner->setPhpBinary('/custom/php');
@@ -63,6 +71,14 @@ class SubprocessRunnerTest extends TestCase
     {
         $binPath = $this->runner->getBinPath();
         $this->assertStringEndsWith('bin', $binPath);
+    }
+
+    public function testGetBinPathReturnsSameValueOnRepeatedCalls(): void
+    {
+        $first = $this->runner->getBinPath();
+        $second = $this->runner->getBinPath();
+
+        $this->assertSame($first, $second);
     }
 
     public function testSetBinPathOverrides(): void

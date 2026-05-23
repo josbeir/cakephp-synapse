@@ -487,6 +487,36 @@ class CommandToolsTest extends TestCase
     }
 
     /**
+     * Test runCommand escapes shell metacharacters in args.
+     *
+     * A raw semicolon in $args must not create a second shell command.
+     * After the fix each token is wrapped in escapeshellarg(), so
+     * "; echo INJECTED" becomes individual single-quoted tokens and the
+     * literal sequence "; echo INJECTED" never appears in the command string.
+     */
+    public function testRunCommandArgsShellMetacharactersAreEscaped(): void
+    {
+        $capturedCommand = null;
+
+        $runner = $this->createStub(SubprocessRunner::class);
+        $runner->method('getPhpBinary')->willReturn(PHP_BINARY);
+        $runner->method('getBinPath')->willReturn('/fake/bin');
+        $runner->method('run')
+            ->willReturnCallback(function (string $cmd) use (&$capturedCommand): array {
+                $capturedCommand = $cmd;
+
+                return ['success' => true, 'output' => '', 'stderr' => '', 'exit_code' => 0];
+            });
+
+        $tools = new CommandTools($this->commandCollection, $runner);
+        $tools->runCommand('test_command', '--opt; echo INJECTED');
+
+        $this->assertNotNull($capturedCommand);
+        // The raw shell sequence must not appear in the built command
+        $this->assertStringNotContainsString('; echo INJECTED', $capturedCommand);
+    }
+
+    /**
      * Test runCommand clamps timeout to valid range.
      */
     public function testRunCommandClampsTimeout(): void

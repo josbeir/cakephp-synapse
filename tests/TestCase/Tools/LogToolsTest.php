@@ -243,4 +243,45 @@ class LogToolsTest extends TestCase
 
         $this->assertSame(3, $result['lines']);
     }
+
+    /**
+     * Test log_read with an empty file returns zero lines and empty content.
+     */
+    public function testLogReadEmptyFileReturnsZeroLines(): void
+    {
+        $this->writeLog('empty.log', '');
+
+        $result = $this->logTools->readLog('empty.log');
+
+        $this->assertSame(0, $result['lines']);
+        $this->assertSame('', $result['content']);
+    }
+
+    /**
+     * Test log_read clamps a lines value of 0 up to 1.
+     */
+    public function testLogReadLineLimitClampedToMinimum(): void
+    {
+        $this->writeLog('clamp.log', "line1\nline2\nline3\n");
+
+        $result = $this->logTools->readLog('clamp.log', 0);
+
+        $this->assertSame(1, $result['lines']);
+    }
+
+    /**
+     * Test log_read with a level filter respects the lines limit (rolling buffer).
+     *
+     * When there are more matching lines than the requested limit, only the
+     * last N matching lines should be returned.
+     */
+    public function testLogReadFilteredTailRespectsLimit(): void
+    {
+        $content = implode("\n", array_fill(0, 10, 'ERROR: something bad')) . "\n";
+        $this->writeLog('filtered.log', $content);
+
+        $result = $this->logTools->readLog('filtered.log', 3, 'ERROR');
+
+        $this->assertSame(3, $result['lines']);
+    }
 }
