@@ -56,7 +56,7 @@ jobs:
           if [[ ${{ matrix.php-version }} == '8.5' && ${{ matrix.os }} == 'ubuntu-latest' ]]; then
             vendor/bin/phpunit --coverage-clover=coverage.xml --log-junit junit.xml
           else
-            vendor/bin/phpunit
+            vendor/bin/phpunit --log-junit junit.xml
           fi
 
       - name: Validate prefer-lowest
