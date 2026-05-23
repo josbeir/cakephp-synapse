@@ -9,8 +9,10 @@ use Cake\Event\Event;
 use Cake\Event\EventManager;
 use Cake\TestSuite\TestCase;
 use Mcp\Exception\ToolCallException;
+use Synapse\Command\SearchDocsCommand;
 use Synapse\SynapsePlugin;
 use Synapse\Tools\CommandTools;
+use Synapse\Utility\SubprocessRunner;
 use TestApp\Command\AnotherTestCommand;
 use TestApp\Command\TestCommand;
 
@@ -390,5 +392,141 @@ class CommandToolsTest extends TestCase
         $this->assertArrayHasKey('namespace', $result);
         $this->assertIsString($result['namespace']);
         $this->assertStringContainsString('TestApp', $result['namespace']);
+    }
+
+    // =========================================================================
+    // runCommand Tests
+    // =========================================================================
+
+    /**
+     * Test runCommand throws for unknown command.
+     */
+    public function testRunCommandThrowsForUnknownCommand(): void
+    {
+        $this->expectException(ToolCallException::class);
+
+        $this->commandTools->runCommand('nonexistent_xyz');
+    }
+
+    /**
+     * Test runCommand returns expected result structure.
+     */
+    public function testRunCommandReturnsExpectedStructure(): void
+    {
+        $runner = $this->createStub(SubprocessRunner::class);
+        $runner->method('getPhpBinary')->willReturn(PHP_BINARY);
+        $runner->method('getBinPath')->willReturn('/fake/bin');
+        $runner->method('run')->willReturn([
+            'success' => true,
+            'output' => 'command output',
+            'stderr' => '',
+            'exit_code' => 0,
+        ]);
+
+        $tools = new CommandTools($this->commandCollection, $runner);
+        $result = $tools->runCommand('test_command');
+
+        $this->assertArrayHasKey('command', $result);
+        $this->assertArrayHasKey('args', $result);
+        $this->assertArrayHasKey('success', $result);
+        $this->assertArrayHasKey('output', $result);
+        $this->assertArrayHasKey('stderr', $result);
+        $this->assertArrayHasKey('exit_code', $result);
+        $this->assertSame('test_command', $result['command']);
+        $this->assertSame('command output', $result['output']);
+        $this->assertTrue($result['success']);
+    }
+
+    /**
+     * Test runCommand propagates non-zero exit code as success=false.
+     */
+    public function testRunCommandNonZeroExitCodeIsNotSuccess(): void
+    {
+        $runner = $this->createStub(SubprocessRunner::class);
+        $runner->method('getPhpBinary')->willReturn(PHP_BINARY);
+        $runner->method('getBinPath')->willReturn('/fake/bin');
+        $runner->method('run')->willReturn([
+            'success' => false,
+            'output' => '',
+            'stderr' => 'something went wrong',
+            'exit_code' => 1,
+        ]);
+
+        $tools = new CommandTools($this->commandCollection, $runner);
+        $result = $tools->runCommand('test_command');
+
+        $this->assertFalse($result['success']);
+        $this->assertSame(1, $result['exit_code']);
+        $this->assertSame('something went wrong', $result['stderr']);
+    }
+
+    /**
+     * Test runCommand passes args string to runner.
+     */
+    public function testRunCommandPassesArgsToRunner(): void
+    {
+        $capturedCommand = null;
+
+        $runner = $this->createStub(SubprocessRunner::class);
+        $runner->method('getPhpBinary')->willReturn(PHP_BINARY);
+        $runner->method('getBinPath')->willReturn('/fake/bin');
+        $runner->method('run')
+            ->willReturnCallback(function (string $cmd) use (&$capturedCommand): array {
+                $capturedCommand = $cmd;
+
+                return ['success' => true, 'output' => '', 'stderr' => '', 'exit_code' => 0];
+            });
+
+        $tools = new CommandTools($this->commandCollection, $runner);
+        $tools->runCommand('test_command', '--verbose --format=json');
+
+        $this->assertNotNull($capturedCommand);
+        $this->assertStringContainsString('test_command', $capturedCommand);
+        $this->assertStringContainsString('--verbose', $capturedCommand);
+        $this->assertStringContainsString('--format=json', $capturedCommand);
+    }
+
+    /**
+     * Test runCommand clamps timeout to valid range.
+     */
+    public function testRunCommandClampsTimeout(): void
+    {
+        $capturedTimeout = null;
+
+        $runner = $this->createStub(SubprocessRunner::class);
+        $runner->method('getPhpBinary')->willReturn(PHP_BINARY);
+        $runner->method('getBinPath')->willReturn('/fake/bin');
+        $runner->method('run')
+            ->willReturnCallback(function (string $cmd, ?string $stdin, int $timeout) use (&$capturedTimeout): array {
+                $capturedTimeout = $timeout;
+
+                return ['success' => true, 'output' => '', 'stderr' => '', 'exit_code' => 0];
+            });
+
+        $tools = new CommandTools($this->commandCollection, $runner);
+        $tools->runCommand('test_command', '', 99999);
+
+        $this->assertLessThanOrEqual(300, $capturedTimeout);
+        $this->assertGreaterThanOrEqual(1, $capturedTimeout);
+    }
+
+    /**
+     * Integration test: actually shell out to a real Synapse command with --help.
+     *
+     * Uses synapse search_docs which is registered by SynapsePlugin in the test app.
+     */
+    public function testRunCommandIntegration(): void
+    {
+        $collection = new CommandCollection();
+        $collection->add('synapse search_docs', SearchDocsCommand::class);
+
+        $tools = new CommandTools($collection);
+        $result = $tools->runCommand('synapse search_docs', '--help');
+
+        // --help exits 0 in CakePHP before calling execute()
+        $this->assertSame(0, $result['exit_code']);
+        $this->assertTrue($result['success']);
+        $this->assertSame('synapse search_docs', $result['command']);
+        $this->assertStringContainsString('--help', $result['args']);
     }
 }
