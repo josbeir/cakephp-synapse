@@ -525,10 +525,11 @@ class CommandToolsTest extends TestCase
         $tools = new CommandTools($collection);
         $result = $tools->runCommand('synapse search_docs', '--help');
 
-        // Verify the shell-out succeeded: not a proc_open failure (exit_code -1)
-        // and the command produced some output.
+        // Verify the shell-out succeeded: not a proc_open failure (exit_code -1).
+        // Output channel varies by CakePHP version: <=5.2 writes help to stderr,
+        // newer versions write to stdout — check combined output.
         $this->assertNotSame(-1, $result['exit_code']);
-        $this->assertNotEmpty($result['output']);
+        $this->assertNotEmpty($result['output'] . $result['stderr']);
         $this->assertSame('synapse search_docs', $result['command']);
         $this->assertStringContainsString('--help', $result['args']);
     }
