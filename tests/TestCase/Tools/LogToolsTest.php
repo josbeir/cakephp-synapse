@@ -17,7 +17,9 @@ class LogToolsTest extends TestCase
 {
     private LogTools $logTools;
 
-    /** @var array<string> paths to clean up after each test */
+    /**
+     * @var array<string> paths to clean up after each test
+     */
     private array $createdFiles = [];
 
     protected function setUp(): void

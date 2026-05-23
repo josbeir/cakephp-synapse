@@ -5,6 +5,7 @@ namespace Synapse\Tools;
 
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Exception\ToolCallException;
+use Symfony\Component\Finder\Finder;
 
 /**
  * Log Tools
@@ -21,7 +22,9 @@ class LogTools
      */
     #[McpTool(
         name: 'log_list',
-        description: 'List all available log files in the application logs directory.',
+        description: 'List all available log files in the application logs directory. ' .
+            'Returns an empty array when no .log files exist or when the application uses ' .
+            'non-filesystem logging (database, syslog, etc.).',
     )]
     public function listLogs(): array
     {
@@ -31,19 +34,19 @@ class LogTools
             return [];
         }
 
-        $files = glob($logsDir . '*.log');
-        if ($files === false) {
-            return [];
-        }
+        $finder = (new Finder())
+            ->files()
+            ->name('*.log')
+            ->depth(0)
+            ->in($logsDir);
 
         $result = [];
-        foreach ($files as $path) {
-            $stat = stat($path);
+        foreach ($finder as $file) {
             $result[] = [
-                'name' => basename($path),
-                'size' => $stat !== false ? (int)$stat['size'] : 0,
-                'modified' => $stat !== false ? date('c', (int)$stat['mtime']) : '',
-                'path' => $path,
+                'name' => $file->getFilename(),
+                'size' => $file->getSize(),
+                'modified' => date('c', $file->getMTime()),
+                'path' => $file->getRealPath(),
             ];
         }
 

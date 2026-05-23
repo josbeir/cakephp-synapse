@@ -53,6 +53,12 @@ class SubprocessRunner
             ];
         }
 
+        // Capture outside try so finally can reference them.
+        $exitCode = -1;
+        $timedOut = false;
+        $stdout = '';
+        $stderr = '';
+
         try {
             // Write stdin then close so the process sees EOF.
             if ($stdin !== null) {
@@ -60,18 +66,22 @@ class SubprocessRunner
             }
 
             fclose($pipes[0]);
+            unset($pipes[0]); // prevent double-close in finally
 
             stream_set_blocking($pipes[1], false);
             stream_set_blocking($pipes[2], false);
 
-            $stdout = '';
-            $stderr = '';
             $startTime = time();
 
             while (true) {
                 $status = proc_get_status($process);
 
                 if (!$status['running']) {
+                    // Capture exit code on the FIRST call where running = false.
+                    // proc_get_status() internally reaps the zombie via waitpid() on
+                    // some PHP/OS combinations (notably PHP 8.2 on Linux), making a
+                    // subsequent proc_close() return -1.  Reading it here is reliable.
+                    $exitCode = $status['exitcode'];
                     $stdout .= stream_get_contents($pipes[1]);
                     $stderr .= stream_get_contents($pipes[2]);
                     break;
@@ -79,14 +89,8 @@ class SubprocessRunner
 
                 if (time() - $startTime > $timeout) {
                     proc_terminate($process, 9);
-
-                    return [
-                        'success' => false,
-                        'output' => $stdout,
-                        'stderr' => $stderr,
-                        'exit_code' => -1,
-                        'timed_out' => true,
-                    ];
+                    $timedOut = true;
+                    break;
                 }
 
                 $stdout .= fread($pipes[1], 8192) ?: '';
@@ -94,20 +98,8 @@ class SubprocessRunner
 
                 usleep(10000); // 10 ms
             }
-
-            fclose($pipes[1]);
-            fclose($pipes[2]);
-
-            $exitCode = proc_close($process);
-
-            return [
-                'success' => $exitCode === 0,
-                'output' => $stdout,
-                'stderr' => $stderr,
-                'exit_code' => $exitCode,
-            ];
         } finally {
-            // Ensure pipes and process are always cleaned up.
+            // Always clean up pipes and the process handle regardless of how we exited.
             foreach ($pipes as $pipe) {
                 if (is_resource($pipe)) {
                     fclose($pipe);
@@ -115,9 +107,26 @@ class SubprocessRunner
             }
 
             if (is_resource($process)) {
-                proc_close($process);
+                proc_close($process); // cleanup only — exit code already captured above
             }
         }
+
+        if ($timedOut) {
+            return [
+                'success' => false,
+                'output' => $stdout,
+                'stderr' => $stderr,
+                'exit_code' => -1,
+                'timed_out' => true,
+            ];
+        }
+
+        return [
+            'success' => $exitCode === 0,
+            'output' => $stdout,
+            'stderr' => $stderr,
+            'exit_code' => $exitCode,
+        ];
     }
 
     /**
