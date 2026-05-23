@@ -50,7 +50,7 @@ The Model Context Protocol is an open protocol that enables seamless integration
 
 - 🚀 **Rapid Integration**: Enable MCP support in your CakePHP app with minimal setup
 - 🔍 **Attribute-Based Discovery**: Finds MCP tools, resources, and prompts using PHP 8+ attributes and class scanning
-- 🛠️ **Built-in Tools**: Includes tools for system info, database schema exploration, route inspection, code execution, and more
+- 🛠️ **Built-in Tools**: Includes tools for system info, database schema exploration, route inspection, code execution, log inspection, cache management, ORM introspection, and more
 - 📚 **Advanced Documentation Search**: Full-text search with fuzzy matching and relevance ranking, powered by SQLite FTS5 (indexes official CakePHP markdown docs)
 - 🧩 **Customizable & Extensible**: Easily define your own tools, resources, and prompts using attributes and configuration
 - ⚡ **Prompt Workflows**: Built-in prompt flows for common development tasks, code review, debugging, and feature building
@@ -150,6 +150,16 @@ Synapse includes several built-in tools and resources for common operations:
 | Documentation | `docs://content/{documentId}` | Retrieve full document content by document ID (format: `source::path`) |
 | Commands | `list_commands` | List all available CakePHP console commands with optional filtering and sorting |
 | Commands | `get_command_info` | Get detailed information about a specific console command (options, arguments, help) |
+| Commands | `run_command` | Run a registered CakePHP console command in a subprocess with configurable timeout |
+| Logs | `log_list` | List all log files in the application logs directory with size and modification time |
+| Logs | `log_read` | Read the last N lines from a log file, optionally filtered by log level (error, warning, info, debug, …) |
+| Cache | `cache_configs` | List all configured CakePHP cache configurations with engine information |
+| Cache | `cache_read` | Read a value from a cache configuration by key |
+| Cache | `cache_write` | Write a string value to a cache configuration |
+| Cache | `cache_delete` | Delete a key from a cache configuration |
+| Cache | `cache_clear` | Clear all entries from a cache configuration |
+| ORM | `orm_describe` | Describe a CakePHP ORM Table: associations, behaviors, display field, primary key, entity class |
+| ORM | `orm_find` | Run a find query (`all`, `first`, or `count`) on an ORM Table with a configurable row limit |
 
 > [!WARNING]
 > The `tinker` tool executes arbitrary code in your application. Use responsibly and avoid modifying data without explicit approval.

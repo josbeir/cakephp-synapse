@@ -10,6 +10,7 @@ use Cake\Console\ConsoleInputOption;
 use Cake\Console\ConsoleOptionParser;
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Exception\ToolCallException;
+use Synapse\Utility\SubprocessRunner;
 use Throwable;
 
 /**
@@ -23,9 +24,11 @@ class CommandTools
      * Constructor
      *
      * @param \Cake\Console\CommandCollection|null $commandCollection Command collection to inspect
+     * @param \Synapse\Utility\SubprocessRunner $runner Subprocess execution utility
      */
     public function __construct(
         protected ?CommandCollection $commandCollection = null,
+        private SubprocessRunner $runner = new SubprocessRunner(),
     ) {
         $this->commandCollection ??= new CommandCollection();
     }
@@ -173,6 +176,66 @@ class CommandTools
             'usage' => null,
             'options' => $this->parseOptions($optionParser),
             'arguments' => $this->parseArguments($optionParser),
+        ];
+    }
+
+    /**
+     * Run a registered CakePHP console command in a subprocess.
+     *
+     * Only commands present in the application's command collection can be executed,
+     * preventing invocation of arbitrary shell commands.
+     *
+     * @param string $name Command name as registered (e.g. 'synapse search_docs')
+     * @param string $args Additional arguments/flags passed verbatim (e.g. '--help')
+     * @param int $timeout Maximum execution time in seconds (default: 60, max: 300)
+     * @return array{command: string, args: string, success: bool, output: string, stderr: string, exit_code: int}
+     */
+    #[McpTool(
+        name: 'run_command',
+        description: 'Run a registered CakePHP console command. ' .
+            'Use list_commands to discover available commands. ' .
+            'Only commands registered in the application command collection can be executed.',
+    )]
+    public function runCommand(string $name, string $args = '', int $timeout = 60): array
+    {
+        if (!$this->getCommandCollection()->has($name)) {
+            throw new ToolCallException(
+                sprintf("Command '%s' not found. Use list_commands to see available commands.", $name),
+            );
+        }
+
+        $timeout = min(max(1, $timeout), 300);
+
+        $phpBinary = $this->runner->getPhpBinary();
+        if ($phpBinary === null) {
+            throw new ToolCallException(
+                'Could not find PHP binary. Configure Synapse.tinker.php_binary or ensure php is in PATH.',
+            );
+        }
+
+        // Command names may contain spaces (e.g. "synapse search_docs"); each
+        // word is a separate argv element when passed to bin/cake.php.
+        $nameParts = array_map('escapeshellarg', explode(' ', trim($name)));
+        $commandStr = escapeshellarg($phpBinary) . ' bin/cake.php ' . implode(' ', $nameParts);
+
+        if (trim($args) !== '') {
+            // Escape each argument token individually to prevent shell injection.
+            // Users who need a single argument with embedded spaces should pass it
+            // as one token without whitespace separating it from other args.
+            $argTokens = preg_split('/\s+/', trim($args), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            $commandStr .= ' ' . implode(' ', array_map('escapeshellarg', $argTokens));
+        }
+
+        $cwd = dirname($this->runner->getBinPath());
+        $raw = $this->runner->run($commandStr, null, $timeout, $cwd);
+
+        return [
+            'command' => $name,
+            'args' => $args,
+            'success' => $raw['success'],
+            'output' => $raw['output'],
+            'stderr' => $raw['stderr'],
+            'exit_code' => $raw['exit_code'],
         ];
     }
 
