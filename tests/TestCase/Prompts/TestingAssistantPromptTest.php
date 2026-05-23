@@ -43,7 +43,6 @@ class TestingAssistantPromptTest extends TestCase
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertSame(Role::User, $result[0]->role);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('test', $content->text);
         $this->assertStringContainsString('PHPUnit', $content->text);
@@ -55,7 +54,6 @@ class TestingAssistantPromptTest extends TestCase
         $result = $this->prompt->handle('validate email', 'unit');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('unit', $content->text);
         $this->assertStringContainsString('test', $content->text);
@@ -67,7 +65,6 @@ class TestingAssistantPromptTest extends TestCase
         $result = $this->prompt->handle('API endpoint', 'integration');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('integration', $content->text);
         $this->assertStringContainsString('API endpoint', $content->text);
@@ -78,7 +75,6 @@ class TestingAssistantPromptTest extends TestCase
         $result = $this->prompt->handle('Users table', 'fixture');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('fixture', $content->text);
         $this->assertStringContainsString('Fixture definitions', $content->text);
@@ -90,7 +86,6 @@ class TestingAssistantPromptTest extends TestCase
         $result = $this->prompt->handle('Some feature');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('tinker', $content->text);
     }
@@ -103,7 +98,6 @@ class TestingAssistantPromptTest extends TestCase
         $result = $prompt->handle('test feature');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('4.5', $content->text);
     }
@@ -116,7 +110,6 @@ class TestingAssistantPromptTest extends TestCase
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertSame(Role::User, $result[0]->role);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
     }

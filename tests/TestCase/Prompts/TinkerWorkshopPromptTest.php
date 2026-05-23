@@ -43,7 +43,6 @@ class TinkerWorkshopPromptTest extends TestCase
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertSame(Role::User, $result[0]->role);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('explore', $content->text);
         $this->assertStringContainsString('fetchTable', $content->text);
@@ -55,7 +54,6 @@ class TinkerWorkshopPromptTest extends TestCase
         $result = $this->prompt->handle('test', 'validation rules');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('test', $content->text);
         $this->assertStringContainsString('validation rules', $content->text);
@@ -66,7 +64,6 @@ class TinkerWorkshopPromptTest extends TestCase
         $result = $this->prompt->handle('debug', 'query issue');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('debug', $content->text);
         $this->assertStringContainsString('diagnostic', $content->text);
@@ -86,7 +83,6 @@ class TinkerWorkshopPromptTest extends TestCase
         $result = $this->prompt->handle('test');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('fetchTable()', $content->text);
         $this->assertStringContainsString('getTableLocator()', $content->text);
@@ -101,7 +97,6 @@ class TinkerWorkshopPromptTest extends TestCase
         $result = $prompt->handle('explore', 'table structure');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('4.5', $content->text);
     }
@@ -114,7 +109,6 @@ class TinkerWorkshopPromptTest extends TestCase
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertSame(Role::User, $result[0]->role);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
     }

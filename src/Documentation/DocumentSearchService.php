@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Synapse\Documentation;
 
 use Cake\Core\Configure;
-use RuntimeException;
+use Symfony\Component\Filesystem\Filesystem;
 use Synapse\Documentation\Git\RepositoryManager;
 
 /**
@@ -39,10 +39,7 @@ class DocumentSearchService
         );
 
         // Ensure cache directory exists
-        $dir = dirname($databasePath);
-        if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
-            throw new RuntimeException(sprintf('Failed to create directory: %s', $dir));
-        }
+        (new Filesystem())->mkdir(dirname($databasePath));
 
         $this->searchEngine = new SearchEngine($databasePath);
         $this->repositoryManager = $repositoryManager ?? new RepositoryManager();

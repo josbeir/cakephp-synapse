@@ -5,6 +5,7 @@ namespace Synapse\Test\TestCase\Documentation\Git;
 
 use Cake\TestSuite\TestCase;
 use RuntimeException;
+use Symfony\Component\Filesystem\Filesystem;
 use Synapse\Documentation\Git\Repository;
 use Synapse\TestSuite\MockGitAdapter;
 
@@ -34,9 +35,7 @@ class RepositoryTest extends TestCase
         $this->testDir = TMP . 'test_repos' . DS;
         $this->gitAdapter = new MockGitAdapter();
 
-        if (!is_dir($this->testDir)) {
-            mkdir($this->testDir, 0755, true);
-        }
+        (new Filesystem())->mkdir($this->testDir);
     }
 
     /**
@@ -48,33 +47,7 @@ class RepositoryTest extends TestCase
         $this->gitAdapter->reset();
 
         // Clean up test directories
-        if (is_dir($this->testDir)) {
-            $this->removeDirectory($this->testDir);
-        }
-    }
-
-    /**
-     * Recursively remove a directory
-     *
-     * @param string $dir Directory path
-     */
-    protected function removeDirectory(string $dir): void
-    {
-        if (!is_dir($dir)) {
-            return;
-        }
-
-        $files = array_diff(scandir($dir), ['.', '..']);
-        foreach ($files as $file) {
-            $path = $dir . DS . $file;
-            if (is_dir($path)) {
-                $this->removeDirectory($path);
-            } else {
-                unlink($path);
-            }
-        }
-
-        rmdir($dir);
+        (new Filesystem())->remove($this->testDir);
     }
 
     /**

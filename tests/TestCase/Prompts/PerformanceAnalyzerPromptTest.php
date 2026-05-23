@@ -129,7 +129,6 @@ class PerformanceAnalyzerPromptTest extends TestCase
         $this->assertNotEmpty($result);
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('high memory usage', $content->text);
         $this->assertStringContainsString('loop processing', $content->text);

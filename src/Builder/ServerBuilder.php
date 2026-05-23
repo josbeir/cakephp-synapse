@@ -9,6 +9,7 @@ use Mcp\Schema\Enum\ProtocolVersion;
 use Mcp\Server;
 use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\CacheInterface;
+use Symfony\Component\Filesystem\Filesystem;
 use Synapse\SynapsePlugin;
 use Throwable;
 
@@ -111,23 +112,13 @@ class ServerBuilder
      */
     public function withPluginTools()
     {
-        $scanDirs = [
-            'Tools',
-            'Prompts',
-            'Resources',
-        ];
-
         $pluginSrcPath = dirname(__DIR__);
-        $pluginSrcPath = str_replace(ROOT, '', $pluginSrcPath);
-        $pluginSrcPath = ltrim($pluginSrcPath, DIRECTORY_SEPARATOR);
-        // Normalize to forward slashes for consistency across platforms
-        $pluginSrcPath = str_replace(DIRECTORY_SEPARATOR, '/', $pluginSrcPath);
+        $filesystem = new Filesystem();
 
-        foreach ($scanDirs as $dir) {
-            $path = $pluginSrcPath . '/' . $dir;
-            if (!in_array($path, $this->scanDirs, true)) {
-                $this->scanDirs[] = $path;
-            }
+        foreach (['Tools', 'Prompts', 'Resources'] as $dir) {
+            $absoluteDir = $pluginSrcPath . DIRECTORY_SEPARATOR . $dir;
+            $relativePath = rtrim($filesystem->makePathRelative($absoluteDir, $this->basePath), '/');
+            $this->addScanDirectory($relativePath);
         }
 
         return $this;

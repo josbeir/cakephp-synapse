@@ -3,10 +3,9 @@ declare(strict_types=1);
 
 namespace Synapse\Documentation\Git;
 
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use RuntimeException;
-use UnexpectedValueException;
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Finder\Finder;
 
 /**
  * Represents a git repository for documentation
@@ -59,13 +58,7 @@ class Repository
         }
 
         // Ensure parent directory exists
-        $parentDir = dirname($this->path);
-        if (!is_dir($parentDir) && !mkdir($parentDir, 0755, true)) {
-            throw new RuntimeException(sprintf(
-                'Failed to create directory: %s',
-                $parentDir,
-            ));
-        }
+        (new Filesystem())->mkdir(dirname($this->path));
 
         // Delegate to git adapter
         $this->gitAdapter->clone($this->url, $this->branch, $this->path);
@@ -110,32 +103,17 @@ class Repository
             return [];
         }
 
+        $finder = new Finder();
+        $finder->files()->name('*.md')->ignoreUnreadableDirs()->in($searchPath);
+
         $files = [];
-        $pathPrefix = $this->path . DS;
-        $pathPrefixLen = strlen($pathPrefix);
-
-        try {
-            $iterator = new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator(
-                    $searchPath,
-                    RecursiveDirectoryIterator::SKIP_DOTS,
-                ),
-            );
-
-            foreach ($iterator as $file) {
-                if ($file->isFile() && $file->getExtension() === 'md') {
-                    $absolutePath = $file->getPathname();
-                    if (str_starts_with($absolutePath, $pathPrefix)) {
-                        $relativePath = substr($absolutePath, $pathPrefixLen);
-                        $relativePath = str_replace(DS, '/', $relativePath);
-                        $files[] = $relativePath;
-                    }
-                }
+        foreach ($finder as $file) {
+            $relativePath = $file->getRelativePathname();
+            if ($this->root !== '') {
+                $relativePath = $this->root . '/' . $relativePath;
             }
-        } catch (UnexpectedValueException $unexpectedValueException) {
-            // Permission denied or unreadable subdirectory encountered
-            // Return files collected so far to allow partial indexing
-            return $files;
+
+            $files[] = str_replace('\\', '/', $relativePath);
         }
 
         return $files;
