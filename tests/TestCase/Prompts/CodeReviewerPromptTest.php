@@ -48,7 +48,6 @@ class CodeReviewerPromptTest extends TestCase
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertSame(Role::User, $result[0]->role);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString($code, $content->text);
         $this->assertStringContainsStringIgnoringCase('conventions', $content->text);
@@ -62,7 +61,6 @@ class CodeReviewerPromptTest extends TestCase
         $result = $this->prompt->handle($code, 'conventions');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('5.x', $content->text);
         $this->assertStringContainsString($code, $content->text);
@@ -74,7 +72,6 @@ class CodeReviewerPromptTest extends TestCase
         $result = $this->prompt->handle($code, 'security');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('SQL injection', $content->text);
         $this->assertStringContainsString($code, $content->text);
@@ -86,7 +83,6 @@ class CodeReviewerPromptTest extends TestCase
         $result = $this->prompt->handle($code, 'performance');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('N+1', $content->text);
         $this->assertStringContainsString($code, $content->text);
@@ -100,7 +96,6 @@ class CodeReviewerPromptTest extends TestCase
         $result = $prompt->handle('<?php echo $var; ?>');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('4.5', $content->text);
     }
@@ -113,7 +108,6 @@ class CodeReviewerPromptTest extends TestCase
         $result = $prompt->handle('public function test() {}');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('PHP 8.3+', $content->text);
     }
@@ -126,7 +120,6 @@ class CodeReviewerPromptTest extends TestCase
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertSame(Role::User, $result[0]->role);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
     }

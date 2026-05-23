@@ -47,7 +47,6 @@ class FeatureBuilderPromptTest extends TestCase
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertSame(Role::User, $result[0]->role);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('full-stack', $content->text);
         $this->assertStringContainsString('controllers, models, views', $content->text);
@@ -59,7 +58,6 @@ class FeatureBuilderPromptTest extends TestCase
         $result = $this->prompt->handle('file upload', 'controller');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('controller', $content->text);
         $this->assertStringContainsString('file upload', $content->text);
@@ -70,7 +68,6 @@ class FeatureBuilderPromptTest extends TestCase
         $result = $this->prompt->handle('REST API endpoint', 'middleware');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('PHP 8.2+', $content->text);
     }
@@ -83,7 +80,6 @@ class FeatureBuilderPromptTest extends TestCase
         $result = $prompt->handle('payment integration');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('4.5', $content->text);
     }
@@ -96,7 +92,6 @@ class FeatureBuilderPromptTest extends TestCase
         $result = $prompt->handle('API endpoint');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('PHP 8.3+', $content->text);
     }
@@ -109,7 +104,6 @@ class FeatureBuilderPromptTest extends TestCase
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertSame(Role::User, $result[0]->role);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
     }

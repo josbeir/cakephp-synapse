@@ -47,7 +47,6 @@ class DocumentationExpertPromptTest extends TestCase
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertSame(Role::User, $result[0]->role);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('basic overview', $content->text);
         $this->assertStringContainsString('Authentication', $content->text);
@@ -60,7 +59,6 @@ class DocumentationExpertPromptTest extends TestCase
 
         $this->assertNotEmpty($result);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('detailed information', $content->text);
         $this->assertStringContainsString('ORM', $content->text);
@@ -72,7 +70,6 @@ class DocumentationExpertPromptTest extends TestCase
 
         $this->assertNotEmpty($result);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('deep dive', $content->text);
         $this->assertStringContainsString('expert-level', $content->text);
@@ -83,7 +80,6 @@ class DocumentationExpertPromptTest extends TestCase
         $result = $this->prompt->handle('Controllers');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('detailed information', $content->text);
     }
@@ -96,7 +92,6 @@ class DocumentationExpertPromptTest extends TestCase
         $result = $prompt->handle('Routing', 'basic');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('4.5', $content->text);
         $this->assertStringNotContainsString('5.x', $content->text);
@@ -110,7 +105,6 @@ class DocumentationExpertPromptTest extends TestCase
         $result = $prompt->handle('Types', 'intermediate');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('PHP 8.3+', $content->text);
     }
@@ -123,7 +117,6 @@ class DocumentationExpertPromptTest extends TestCase
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertSame(Role::User, $result[0]->role);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
     }

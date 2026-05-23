@@ -142,15 +142,15 @@ class QualityAssurancePrompt extends AbstractPrompt
         $content .= $this->getConfigurationWarning($enabledTools);
         $content .= "---\n\n";
 
-        if (in_array($context, ['guidelines', 'all'])) {
+        if (in_array($context, ['guidelines', 'all'], true)) {
             $content .= $this->getGuidelinesSection($enabledTools);
         }
 
-        if (in_array($context, ['integration', 'all'])) {
+        if (in_array($context, ['integration', 'all'], true)) {
             $content .= $this->getIntegrationSection($enabledTools);
         }
 
-        if (in_array($context, ['troubleshooting', 'all'])) {
+        if (in_array($context, ['troubleshooting', 'all'], true)) {
             $content .= $this->getTroubleshootingSection($enabledTools);
         }
 

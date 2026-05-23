@@ -43,7 +43,6 @@ class MigrationGuidePromptTest extends TestCase
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertSame(Role::User, $result[0]->role);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('migration', $content->text);
         $this->assertStringContainsString('breaking changes', $content->text);
@@ -56,7 +55,6 @@ class MigrationGuidePromptTest extends TestCase
         $result = $this->prompt->handle('3.10', '5.0', 'authentication');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('authentication', $content->text);
         $this->assertStringContainsString('deprecated', $content->text);
@@ -69,7 +67,6 @@ class MigrationGuidePromptTest extends TestCase
         $result = $this->prompt->handle('4.0', '5.2');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('PHP', $content->text);
         $this->assertStringContainsString('8.2+', $content->text);
@@ -83,7 +80,6 @@ class MigrationGuidePromptTest extends TestCase
         $result = $prompt->handle('4.5', '5.2');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('PHP 8.3+', $content->text);
     }
@@ -96,7 +92,6 @@ class MigrationGuidePromptTest extends TestCase
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertSame(Role::User, $result[0]->role);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
     }
@@ -124,7 +119,6 @@ class MigrationGuidePromptTest extends TestCase
         $this->assertNotEmpty($result);
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('4.0', $content->text);
         $this->assertStringContainsString('5.0', $content->text);

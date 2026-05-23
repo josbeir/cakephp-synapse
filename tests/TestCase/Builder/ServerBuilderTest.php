@@ -10,6 +10,7 @@ use Cake\TestSuite\TestCase;
 use Mcp\Server;
 use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\CacheInterface;
+use Symfony\Component\Filesystem\Filesystem;
 use Synapse\Builder\ServerBuilder;
 use Synapse\SynapsePlugin;
 
@@ -118,15 +119,12 @@ class ServerBuilderTest extends TestCase
         $this->assertGreaterThan(1, count($scanDirs));
 
         // Plugin Tools, Prompts, and Resources paths should be in scan dirs
-        $pluginSrcPath = dirname(dirname(dirname(__DIR__)));
-        // Normalize dirname result to forward slashes first
-        $pluginSrcPath = str_replace(DIRECTORY_SEPARATOR, '/', $pluginSrcPath);
-        $pluginSrcPath .= '/src';
-        $pluginSrcPath = ltrim($pluginSrcPath, '/');
+        $filesystem = new Filesystem();
+        $pluginSrcPath = dirname(dirname(dirname(__DIR__))) . DIRECTORY_SEPARATOR . 'src';
 
-        $toolsPath = $pluginSrcPath . '/Tools';
-        $promptsPath = $pluginSrcPath . '/Prompts';
-        $resourcesPath = $pluginSrcPath . '/Resources';
+        $toolsPath = rtrim($filesystem->makePathRelative($pluginSrcPath . DIRECTORY_SEPARATOR . 'Tools', ROOT), '/');
+        $promptsPath = rtrim($filesystem->makePathRelative($pluginSrcPath . DIRECTORY_SEPARATOR . 'Prompts', ROOT), '/');
+        $resourcesPath = rtrim($filesystem->makePathRelative($pluginSrcPath . DIRECTORY_SEPARATOR . 'Resources', ROOT), '/');
 
         $this->assertContains($toolsPath, $scanDirs);
         $this->assertContains($promptsPath, $scanDirs);
@@ -144,15 +142,12 @@ class ServerBuilderTest extends TestCase
         $builder->withPluginTools();
 
         $scanDirs = $builder->getScanDirs();
-        $pluginSrcPath = dirname(dirname(dirname(__DIR__)));
-        // Normalize dirname result to forward slashes first
-        $pluginSrcPath = str_replace(DIRECTORY_SEPARATOR, '/', $pluginSrcPath);
-        $pluginSrcPath .= '/src';
-        $pluginSrcPath = ltrim($pluginSrcPath, '/');
+        $filesystem = new Filesystem();
+        $pluginSrcPath = dirname(dirname(dirname(__DIR__))) . DIRECTORY_SEPARATOR . 'src';
 
-        $toolsPath = $pluginSrcPath . '/Tools';
-        $promptsPath = $pluginSrcPath . '/Prompts';
-        $resourcesPath = $pluginSrcPath . '/Resources';
+        $toolsPath = rtrim($filesystem->makePathRelative($pluginSrcPath . DIRECTORY_SEPARATOR . 'Tools', ROOT), '/');
+        $promptsPath = rtrim($filesystem->makePathRelative($pluginSrcPath . DIRECTORY_SEPARATOR . 'Prompts', ROOT), '/');
+        $resourcesPath = rtrim($filesystem->makePathRelative($pluginSrcPath . DIRECTORY_SEPARATOR . 'Resources', ROOT), '/');
 
         // Count occurrences of each path - should be 1 each
         $toolsCount = count(array_filter($scanDirs, fn(string $dir): bool => $dir === $toolsPath));
@@ -283,15 +278,12 @@ class ServerBuilderTest extends TestCase
         $this->assertInstanceOf(Server::class, $server);
 
         // Verify Tools, Prompts, and Resources directories are in scan dirs
-        $pluginSrcPath = dirname(dirname(dirname(__DIR__)));
-        // Normalize dirname result to forward slashes first
-        $pluginSrcPath = str_replace(DIRECTORY_SEPARATOR, '/', $pluginSrcPath);
-        $pluginSrcPath .= '/src';
-        $pluginSrcPath = ltrim($pluginSrcPath, '/');
+        $filesystem = new Filesystem();
+        $pluginSrcPath = dirname(dirname(dirname(__DIR__))) . DIRECTORY_SEPARATOR . 'src';
 
-        $toolsPath = $pluginSrcPath . '/Tools';
-        $promptsPath = $pluginSrcPath . '/Prompts';
-        $resourcesPath = $pluginSrcPath . '/Resources';
+        $toolsPath = rtrim($filesystem->makePathRelative($pluginSrcPath . DIRECTORY_SEPARATOR . 'Tools', ROOT), '/');
+        $promptsPath = rtrim($filesystem->makePathRelative($pluginSrcPath . DIRECTORY_SEPARATOR . 'Prompts', ROOT), '/');
+        $resourcesPath = rtrim($filesystem->makePathRelative($pluginSrcPath . DIRECTORY_SEPARATOR . 'Resources', ROOT), '/');
         $this->assertContains($toolsPath, $builder->getScanDirs());
         $this->assertContains($promptsPath, $builder->getScanDirs());
         $this->assertContains($resourcesPath, $builder->getScanDirs());

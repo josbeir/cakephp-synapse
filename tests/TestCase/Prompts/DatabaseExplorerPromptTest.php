@@ -43,7 +43,6 @@ class DatabaseExplorerPromptTest extends TestCase
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertSame(Role::User, $result[0]->role);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('fetchTable', $content->text);
         $this->assertStringContainsString('users', $content->text);
@@ -55,7 +54,6 @@ class DatabaseExplorerPromptTest extends TestCase
         $result = $this->prompt->handle('posts', 'schema');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('schema', $content->text);
         $this->assertStringContainsString('posts', $content->text);
@@ -66,7 +64,6 @@ class DatabaseExplorerPromptTest extends TestCase
         $result = $this->prompt->handle('articles', 'data');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('data', $content->text);
         $this->assertStringContainsString('find()->limit(5)', $content->text);
@@ -77,7 +74,6 @@ class DatabaseExplorerPromptTest extends TestCase
         $result = $this->prompt->handle('comments', 'relationships');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('relationships', $content->text);
         $this->assertStringContainsString('associations', $content->text);
@@ -91,7 +87,6 @@ class DatabaseExplorerPromptTest extends TestCase
         $result = $prompt->handle('products');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('4.5', $content->text);
     }
@@ -104,7 +99,6 @@ class DatabaseExplorerPromptTest extends TestCase
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertSame(Role::User, $result[0]->role);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
     }

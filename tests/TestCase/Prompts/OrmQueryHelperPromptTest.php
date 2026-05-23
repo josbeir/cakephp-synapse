@@ -43,7 +43,6 @@ class OrmQueryHelperPromptTest extends TestCase
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertSame(Role::User, $result[0]->role);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('ORM query', $content->text);
         $this->assertStringContainsString('find()', $content->text);
@@ -55,7 +54,6 @@ class OrmQueryHelperPromptTest extends TestCase
         $result = $this->prompt->handle('join users and posts', 'users,posts');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('users,posts', $content->text);
         $this->assertStringContainsString('contain', $content->text);
@@ -67,7 +65,6 @@ class OrmQueryHelperPromptTest extends TestCase
         $result = $this->prompt->handle('complex query');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('tinker', $content->text);
         $this->assertStringContainsString('fetchTable', $content->text);
@@ -79,7 +76,6 @@ class OrmQueryHelperPromptTest extends TestCase
         $result = $this->prompt->handle('get recent records');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('sql()', $content->text);
         $this->assertStringContainsString('equivalent SQL', $content->text);
@@ -93,7 +89,6 @@ class OrmQueryHelperPromptTest extends TestCase
         $result = $prompt->handle('query example');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('4.5', $content->text);
     }
@@ -106,7 +101,6 @@ class OrmQueryHelperPromptTest extends TestCase
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertSame(Role::User, $result[0]->role);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
     }
@@ -134,7 +128,6 @@ class OrmQueryHelperPromptTest extends TestCase
         $this->assertNotEmpty($result);
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('find active users', $content->text);
         $this->assertStringContainsString('users,roles', $content->text);

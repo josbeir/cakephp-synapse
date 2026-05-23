@@ -44,7 +44,6 @@ class DebugHelperPromptTest extends TestCase
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertSame(Role::User, $result[0]->role);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString($error, $content->text);
         $this->assertStringContainsString('diagnostic steps', $content->text);
@@ -57,7 +56,6 @@ class DebugHelperPromptTest extends TestCase
         $result = $this->prompt->handle($error, 'database');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('database layer', $content->text);
         $this->assertStringContainsString($error, $content->text);
@@ -68,7 +66,6 @@ class DebugHelperPromptTest extends TestCase
         $result = $this->prompt->handle('Some error', 'controller');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('5.x', $content->text);
     }
@@ -81,7 +78,6 @@ class DebugHelperPromptTest extends TestCase
         $result = $prompt->handle('Error message');
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertStringContainsString('4.5', $content->text);
     }
@@ -94,7 +90,6 @@ class DebugHelperPromptTest extends TestCase
         $this->assertInstanceOf(PromptMessage::class, $result[0]);
         $this->assertSame(Role::User, $result[0]->role);
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        /** @var TextContent $content */
         $content = $result[0]->content;
         $this->assertNotEmpty($content->text);
     }
