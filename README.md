@@ -10,6 +10,8 @@
 
 Expose your CakePHP application functionality via the Model Context Protocol (MCP).
 
+![CakePHP Synapse Hero](/docs/hero.jpg)
+
 ## Table of Contents
 
 - [Overview](#overview)
