@@ -10,6 +10,7 @@ use Cake\Console\ConsoleInputOption;
 use Cake\Console\ConsoleOptionParser;
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Exception\ToolCallException;
+use Mcp\Schema\ToolAnnotations;
 use Synapse\Utility\SubprocessRunner;
 use Throwable;
 
@@ -57,6 +58,7 @@ class CommandTools
     #[McpTool(
         name: 'list_commands',
         description: 'List all available CakePHP console commands with optional filtering and sorting',
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
     )]
     public function listCommands(
         ?string $plugin = null,
@@ -133,6 +135,7 @@ class CommandTools
     #[McpTool(
         name: 'get_command_info',
         description: 'Get detailed information about a specific CakePHP console command',
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
     )]
     public function getCommandInfo(string $name): array
     {
@@ -195,6 +198,7 @@ class CommandTools
         description: 'Run a registered CakePHP console command. ' .
             'Use list_commands to discover available commands. ' .
             'Only commands registered in the application command collection can be executed.',
+        annotations: new ToolAnnotations(destructiveHint: true, idempotentHint: false),
     )]
     public function runCommand(string $name, string $args = '', int $timeout = 60): array
     {

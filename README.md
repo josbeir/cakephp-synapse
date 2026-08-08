@@ -135,9 +135,9 @@ Synapse includes several built-in tools and resources for common operations:
 | Category | Name | Description |
 |----------|------|-------------|
 | System | `system_info` | Get CakePHP version, PHP version, debug mode, etc. |
-| System | `config_read` | Read configuration values |
+| System | `config_read` | Read configuration values with sensitive keys redacted |
 | System | `debug_status` | Check if debug mode is enabled |
-| System | `list_env_vars` | List all available environment variables |
+| System | `list_env_vars` | List available environment variable names with values redacted |
 | Code Execution | `tinker` | Execute arbitrary PHP code with full application context |
 | Database | `database_connections` | List all configured database connections |
 | Database | `database_schema` | Get detailed schema information for tables (view all tables, inspect columns, constraints, indexes, understand foreign key relationships) |
@@ -149,7 +149,7 @@ Synapse includes several built-in tools and resources for common operations:
 | Documentation | `get_doc` | Retrieve full document content by document ID (format: `source::path`) |
 | Documentation | `docs_stats` | View index statistics and available sources |
 | Documentation | `docs://search/{query}` | Search CakePHP documentation and return formatted results |
-| Documentation | `docs://content/{documentId}` | Retrieve full document content by document ID (format: `source::path`) |
+| Documentation | `docs://content/{docId}` | Retrieve full document content by document ID (URI-encoded `source::path`) |
 | Commands | `list_commands` | List all available CakePHP console commands with optional filtering and sorting |
 | Commands | `get_command_info` | Get detailed information about a specific console command (options, arguments, help) |
 | Commands | `run_command` | Run a registered CakePHP console command in a subprocess with configurable timeout |

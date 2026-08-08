@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Synapse\Tools;
 
 use Mcp\Capability\Attribute\McpTool;
+use Mcp\Schema\ToolAnnotations;
 use Synapse\Utility\SubprocessRunner;
 
 /**
@@ -38,6 +39,7 @@ class TinkerTools
             'DO NOT create/modify data without explicit user approval. ' .
             'Prefer feature tests and existing commands over custom code. ' .
             'Use $this->fetchTable() and $this->log() for ORM and logging access.',
+        annotations: new ToolAnnotations(destructiveHint: true, idempotentHint: false),
     )]
     public function execute(string $code, int $timeout = 30): array
     {

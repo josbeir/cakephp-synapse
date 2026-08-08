@@ -7,6 +7,7 @@ use Cake\ORM\TableRegistry;
 use Exception;
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Exception\ToolCallException;
+use Mcp\Schema\ToolAnnotations;
 
 /**
  * Model Tools
@@ -28,6 +29,7 @@ class ModelTools
     #[McpTool(
         name: 'orm_describe',
         description: 'Describe a CakePHP ORM Table: associations, behaviors, display field, primary key, entity class',
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
     )]
     public function ormDescribe(string $alias, string $connection = 'default'): array
     {
@@ -81,6 +83,7 @@ class ModelTools
     #[McpTool(
         name: 'orm_find',
         description: "Run a find query on a CakePHP ORM Table. Type must be 'all', 'first', or 'count'.",
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
     )]
     public function ormFind(
         string $alias,

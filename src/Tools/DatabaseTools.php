@@ -8,6 +8,7 @@ use Cake\Datasource\ConnectionManager;
 use Exception;
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Exception\ToolCallException;
+use Mcp\Schema\ToolAnnotations;
 
 /**
  * Database Tools
@@ -28,6 +29,7 @@ class DatabaseTools
     #[McpTool(
         name: 'database_connections',
         description: 'Inspect available database connections, including the default connection',
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
     )]
     public function listConnections(): array
     {
@@ -80,6 +82,7 @@ class DatabaseTools
     #[McpTool(
         name: 'database_schema',
         description: 'Read database schema for tables, columns, constraints, and indexes',
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
     )]
     public function describeSchema(string $connection = 'default', ?string $table = null): array
     {

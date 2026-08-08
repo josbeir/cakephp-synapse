@@ -31,11 +31,6 @@ class ModelToolsTest extends TestCase
         $this->modelTools = new ModelTools();
     }
 
-    protected function tearDown(): void
-    {
-        parent::tearDown();
-    }
-
     // -------------------------------------------------------------------------
     // orm_describe
     // -------------------------------------------------------------------------

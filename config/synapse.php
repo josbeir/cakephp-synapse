@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use Synapse\Builder\ServerBuilder;
 use Synapse\Documentation\Git\GitAdapter;
 use Synapse\SynapsePlugin;
 
@@ -17,9 +18,18 @@ return [
          * These values are sent to MCP clients during initialization.
          */
         'serverInfo' => [
-            'name' => env('MCP_SERVER_NAME', 'Adaptic MCP Server'),
+            'name' => env('MCP_SERVER_NAME', 'Synapse MCP Server'),
             'version' => env('MCP_SERVER_VERSION', SynapsePlugin::VERSION),
         ],
+
+        /**
+         * Instructions sent to MCP clients during initialization. These act as
+         * a concise capability-selection hint for agents.
+         */
+        'instructions' => env(
+            'MCP_SERVER_INSTRUCTIONS',
+            ServerBuilder::DEFAULT_INSTRUCTIONS,
+        ),
 
         /**
          * Logger Configuration
@@ -33,12 +43,12 @@ return [
          * Protocol Version
          *
          * MCP protocol version to use. Available versions:
-         * - '2024-11-05' (recommended, most compatible)
+         * - '2024-11-05' (legacy compatibility)
          * - '2025-03-26'
          * - '2025-06-18'
-         * - '2025-11-25'
+         * - '2025-11-25' (default)
          */
-        'protocolVersion' => env('MCP_PROTOCOL_VERSION', '2024-11-05'),
+        'protocolVersion' => env('MCP_PROTOCOL_VERSION', '2025-11-25'),
 
         /**
          * Discovery Configuration

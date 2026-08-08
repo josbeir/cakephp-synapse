@@ -22,6 +22,25 @@ use Throwable;
 class ServerBuilder
 {
     /**
+     * Default server name advertised during MCP initialization.
+     */
+    public const DEFAULT_SERVER_NAME = 'Synapse MCP Server';
+
+    /**
+     * Latest protocol version supported by MCP SDK 0.7.
+     */
+    public const DEFAULT_PROTOCOL_VERSION = '2025-11-25';
+
+    /**
+     * Guidance sent to MCP clients to improve capability selection by agents.
+     */
+    public const DEFAULT_INSTRUCTIONS = 'Synapse exposes CakePHP inspection and development capabilities over MCP. ' .
+        'Start with read-only discovery tools such as system_info, list_commands, search_docs, ' .
+        'database_schema, orm_describe, and list_routes. Use get_doc after search_docs when full ' .
+        'documentation is needed. Use tinker and run_command only when necessary and with explicit ' .
+        'approval for side effects.';
+
+    /**
      * Default cache engine name for discovery caching
      */
     public const DEFAULT_CACHE_ENGINE = 'default';
@@ -47,6 +66,8 @@ class ServerBuilder
 
     private ?string $cacheEngine;
 
+    private string $instructions;
+
     private ?ContainerInterface $container = null;
 
     private ?LoggerInterface $logger = null;
@@ -60,7 +81,7 @@ class ServerBuilder
     {
         // Set defaults from config or use sensible defaults
         $this->serverInfo = $config['serverInfo'] ?? [
-            'name' => 'Adaptic MCP Server',
+            'name' => self::DEFAULT_SERVER_NAME,
             'version' => SynapsePlugin::VERSION,
         ];
 
@@ -69,7 +90,8 @@ class ServerBuilder
         $this->excludeDirs = $discovery['excludeDirs'] ?? ['tests', 'vendor', 'tmp'];
         $this->cacheEngine = $discovery['cache'] ?? self::DEFAULT_CACHE_ENGINE;
 
-        $this->protocolVersion = $config['protocolVersion'] ?? '2024-11-05';
+        $this->protocolVersion = $config['protocolVersion'] ?? self::DEFAULT_PROTOCOL_VERSION;
+        $this->instructions = $config['instructions'] ?? self::DEFAULT_INSTRUCTIONS;
         $this->basePath = $config['basePath'] ?? ROOT;
     }
 
@@ -173,7 +195,8 @@ class ServerBuilder
 
         $builder = Server::builder()
             ->setServerInfo($this->serverInfo['name'], $this->serverInfo['version'])
-            ->setProtocolVersion($protocolVersion);
+            ->setProtocolVersion($protocolVersion)
+            ->setInstructions($this->instructions);
 
         // Set logger if provided
         if ($this->logger instanceof LoggerInterface) {
@@ -264,6 +287,14 @@ class ServerBuilder
     public function getProtocolVersion(): string
     {
         return $this->protocolVersion;
+    }
+
+    /**
+     * Get the client-facing server instructions.
+     */
+    public function getInstructions(): string
+    {
+        return $this->instructions;
     }
 
     /**

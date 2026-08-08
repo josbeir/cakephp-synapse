@@ -92,6 +92,28 @@ class SystemToolsTest extends TestCase
     }
 
     /**
+     * Sensitive configuration values must not be exposed to MCP clients.
+     */
+    public function testReadConfigRedactsSensitiveValues(): void
+    {
+        Configure::write('Test.Sensitive.password', 'database-secret');
+        Configure::write('Test.Sensitive', [
+            'host' => 'localhost',
+            'api_key' => 'api-secret',
+            'port' => 3306,
+        ]);
+
+        $this->assertSame('[REDACTED]', $this->systemTools->readConfig('Test.Sensitive.password'));
+        $this->assertSame([
+            'host' => 'localhost',
+            'api_key' => '[REDACTED]',
+            'port' => 3306,
+        ], $this->systemTools->readConfig('Test.Sensitive'));
+
+        Configure::delete('Test');
+    }
+
+    /**
      * Test getDebugStatus method
      */
     public function testGetDebugStatus(): void
@@ -148,7 +170,7 @@ class SystemToolsTest extends TestCase
         $result = $this->systemTools->listEnvVars();
 
         $this->assertArrayHasKey('TEST_ENV_VAR', $result);
-        $this->assertEquals('test_value', $result['TEST_ENV_VAR']);
+        $this->assertSame('[REDACTED]', $result['TEST_ENV_VAR']);
 
         // Clean up
         putenv('TEST_ENV_VAR');

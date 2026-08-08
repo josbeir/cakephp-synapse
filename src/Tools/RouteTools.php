@@ -9,6 +9,7 @@ use Cake\Routing\Router;
 use Exception;
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Exception\ToolCallException;
+use Mcp\Schema\ToolAnnotations;
 
 /**
  * Route Tools
@@ -34,6 +35,7 @@ class RouteTools
     #[McpTool(
         name: 'list_routes',
         description: 'List all registered routes with optional filtering and sorting',
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
     )]
     public function listRoutes(
         bool $sort = false,
@@ -113,6 +115,7 @@ class RouteTools
     #[McpTool(
         name: 'get_route',
         description: 'Get detailed information about a specific named route',
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
     )]
     public function getRoute(string $name): array
     {
@@ -153,6 +156,7 @@ class RouteTools
     #[McpTool(
         name: 'match_url',
         description: 'Find which route matches a given URL path',
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
     )]
     public function matchUrl(string $url, string $method = 'GET'): array
     {
@@ -192,6 +196,7 @@ class RouteTools
     #[McpTool(
         name: 'detect_route_collisions',
         description: 'Detect potential route collisions and conflicts',
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
     )]
     public function detectRouteCollisions(): array
     {
