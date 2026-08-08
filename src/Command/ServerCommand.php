@@ -25,6 +25,11 @@ use Throwable;
 class ServerCommand extends Command
 {
     /**
+     * Internal environment flag used to prime Inspector's browser event stream.
+     */
+    private const INSPECTOR_BOOTSTRAP_ENV = 'SYNAPSE_INSPECTOR_BOOTSTRAP';
+
+    /**
      * @inheritDoc
      */
     public static function defaultName(): string
@@ -98,7 +103,7 @@ class ServerCommand extends Command
     {
         // If --inspect flag is present, launch inspector
         if ($args->getOption('inspect')) {
-            return $this->launchInspector($io);
+            return $this->launchInspector($args, $io);
         }
 
         $config = Configure::read('Synapse', []);
@@ -164,6 +169,8 @@ class ServerCommand extends Command
 
             $server = $builder->build();
 
+            $this->emitInspectorBootstrap();
+
             $logger->info('Discovery complete');
             $logger->info('MCP server started with stdio transport');
             $logger->info('Listening for MCP requests...');
@@ -181,12 +188,29 @@ class ServerCommand extends Command
     }
 
     /**
+     * Emit the Inspector bootstrap event without changing MCP stdout.
+     *
+     * Inspector's browser proxy needs an initial event on its event stream
+     * before the browser can send the MCP initialize request. This diagnostic
+     * is opt-in and is intentionally written to stderr only.
+     */
+    private function emitInspectorBootstrap(): void
+    {
+        if (getenv(self::INSPECTOR_BOOTSTRAP_ENV) !== '1') {
+            return;
+        }
+
+        fwrite(STDERR, "Synapse Inspector bootstrap ready\n");
+    }
+
+    /**
      * Launch MCP Inspector to test the server
      *
+     * @param \Cake\Console\Arguments $args Command arguments
      * @param \Cake\Console\ConsoleIo $io Console I/O
      * @return int Exit code
      */
-    private function launchInspector(ConsoleIo $io): int
+    private function launchInspector(Arguments $args, ConsoleIo $io): int
     {
         $io->out('<info>Launching MCP Inspector...</info>');
         $io->out('');
@@ -201,12 +225,7 @@ class ServerCommand extends Command
             return static::CODE_ERROR;
         }
 
-        // Build command - inspector will launch the actual server
-        $command = sprintf(
-            '%s @modelcontextprotocol/inspector %s',
-            escapeshellarg($npxPath),
-            'bin/cake synapse server',
-        );
+        $command = $this->buildInspectorCommand($args, $npxPath);
 
         $io->out('<info>Command:</info> ' . $command);
         $io->out('');
@@ -218,6 +237,57 @@ class ServerCommand extends Command
         passthru($command, $exitCode);
 
         return $exitCode === 0 ? static::CODE_SUCCESS : static::CODE_ERROR;
+    }
+
+    /**
+     * Build the command used by MCP Inspector to launch the CakePHP server.
+     *
+     * Inspector starts stdio servers without a shell. Passing the PHP entrypoint
+     * directly avoids relying on the executable bit or shell-script handling of
+     * the application's bin/cake wrapper. Changing to the application root
+     * before launching Inspector keeps CakePHP application discovery stable.
+     *
+     * @param \Cake\Console\Arguments $args Command arguments
+     * @param string $npxPath Absolute path to npx
+     * @return string Shell command for MCP Inspector
+     */
+    private function buildInspectorCommand(Arguments $args, string $npxPath): string
+    {
+        $applicationRoot = defined('ROOT') ? ROOT : (string)getcwd();
+        $applicationRoot = realpath($applicationRoot) ?: $applicationRoot;
+
+        $cakeScript = $applicationRoot . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'cake.php';
+
+        $serverCommand = [PHP_BINARY, $cakeScript];
+        if (!is_file($cakeScript)) {
+            $cakeExecutable = $applicationRoot . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'cake';
+            $serverCommand = [$cakeExecutable];
+        }
+
+        $serverCommand[] = 'synapse';
+        $serverCommand[] = 'server';
+
+        foreach (['clear-cache', 'no-cache', 'verbose', 'quiet'] as $option) {
+            if ($args->getOption($option)) {
+                $serverCommand[] = '--' . $option;
+            }
+        }
+
+        $command = [
+            escapeshellarg($npxPath),
+            escapeshellarg('@modelcontextprotocol/inspector'),
+            '--cwd',
+            escapeshellarg($applicationRoot),
+            '-e',
+            escapeshellarg(self::INSPECTOR_BOOTSTRAP_ENV . '=1'),
+            '--',
+        ];
+
+        foreach ($serverCommand as $argument) {
+            $command[] = escapeshellarg($argument);
+        }
+
+        return implode(' ', $command);
     }
 
     /**

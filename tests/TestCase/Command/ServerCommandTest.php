@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Synapse\Test\TestCase\Command;
 
+use Cake\Console\Arguments;
 use Cake\Console\TestSuite\ConsoleIntegrationTestTrait;
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
@@ -361,6 +362,41 @@ class ServerCommandTest extends TestCase
         }
 
         // If null, the test passes - executable simply wasn't found
+    }
+
+    /**
+     * Test the Inspector launcher uses an absolute Cake entrypoint and forwards
+     * server options needed for reliable discovery.
+     */
+    public function testBuildInspectorCommandUsesApplicationContext(): void
+    {
+        $command = $this->createServerCommand();
+        $method = new ReflectionMethod(ServerCommand::class, 'buildInspectorCommand');
+        $arguments = new Arguments([], [
+            'clear-cache' => true,
+            'no-cache' => true,
+            'verbose' => false,
+            'quiet' => false,
+        ], []);
+
+        $result = $method->invoke($command, $arguments, '/usr/bin/npx');
+
+        $this->assertStringContainsString('--cwd', $result);
+        $this->assertStringContainsString('-e', $result);
+        $this->assertStringContainsString(
+            escapeshellarg('SYNAPSE_INSPECTOR_BOOTSTRAP=1'),
+            $result,
+        );
+        $this->assertStringContainsString(escapeshellarg(ROOT), $result);
+        $this->assertStringContainsString(escapeshellarg(PHP_BINARY), $result);
+        $this->assertStringContainsString(
+            escapeshellarg(ROOT . DS . 'bin' . DS . 'cake.php'),
+            $result,
+        );
+        $this->assertStringContainsString(escapeshellarg('--clear-cache'), $result);
+        $this->assertStringContainsString(escapeshellarg('--no-cache'), $result);
+        $this->assertStringNotContainsString(escapeshellarg('--verbose'), $result);
+        $this->assertStringNotContainsString(escapeshellarg('--quiet'), $result);
     }
 
     /**
