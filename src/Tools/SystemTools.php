@@ -5,6 +5,7 @@ namespace Synapse\Tools;
 
 use Cake\Core\Configure;
 use Mcp\Capability\Attribute\McpTool;
+use Mcp\Schema\ToolAnnotations;
 
 /**
  * System Tools
@@ -14,6 +15,22 @@ use Mcp\Capability\Attribute\McpTool;
 class SystemTools
 {
     /**
+     * Configuration key fragments whose values must never cross the MCP boundary.
+     *
+     * @var list<string>
+     */
+    private const SENSITIVE_KEY_FRAGMENTS = [
+        'password',
+        'secret',
+        'token',
+        'api_key',
+        'apikey',
+        'private_key',
+        'credential',
+        'encryption_key',
+    ];
+
+    /**
      * Get system information about the CakePHP application.
      *
      * Returns basic information about the application environment,
@@ -21,7 +38,7 @@ class SystemTools
      *
      * @return array<string, mixed> System information
      */
-    #[McpTool(name: 'system_info')]
+    #[McpTool(name: 'system_info', annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true))]
     public function getSystemInfo(): array
     {
         return [
@@ -45,11 +62,16 @@ class SystemTools
      */
     #[McpTool(
         name: 'config_read',
-        description: 'Read a specific configuration value from the application',
+        description: 'Read a specific application configuration value; sensitive keys are redacted',
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
     )]
     public function readConfig(string $key): mixed
     {
-        return Configure::read($key);
+        if ($this->isSensitiveKey($key)) {
+            return '[REDACTED]';
+        }
+
+        return $this->redactConfigValue(Configure::read($key));
     }
 
     /**
@@ -59,7 +81,7 @@ class SystemTools
      *
      * @return array<string, mixed> Debug status information
      */
-    #[McpTool(name: 'debug_status')]
+    #[McpTool(name: 'debug_status', annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true))]
     public function getDebugStatus(): array
     {
         $result = [
@@ -75,15 +97,66 @@ class SystemTools
     }
 
     /**
-     * List all environment variables.
+     * List environment variable names with values redacted.
      *
-     * Returns all environment variables currently available in the application.
+     * Returns environment variable names without exposing credentials or other
+     * sensitive values to the MCP client.
      *
-     * @return array<string, string|false> Environment variables
+     * @return array<string, string> Environment variable names and redacted values
      */
-    #[McpTool(name: 'list_env_vars')]
+    #[McpTool(
+        name: 'list_env_vars',
+        description: 'List available environment variable names with all values redacted',
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
+    )]
     public function listEnvVars(): array
     {
-        return getenv();
+        $variables = getenv();
+        if (!is_array($variables)) {
+            return [];
+        }
+
+        return array_fill_keys(array_keys($variables), '[REDACTED]');
+    }
+
+    /**
+     * Redact sensitive values in a configuration tree while preserving safe metadata.
+     *
+     * @param mixed $value Configuration value
+     * @return mixed Configuration value with sensitive entries redacted
+     */
+    private function redactConfigValue(mixed $value): mixed
+    {
+        if (!is_array($value)) {
+            return $value;
+        }
+
+        $redacted = [];
+        foreach ($value as $key => $entry) {
+            if (is_string($key) && $this->isSensitiveKey($key)) {
+                $redacted[$key] = '[REDACTED]';
+                continue;
+            }
+
+            $redacted[$key] = $this->redactConfigValue($entry);
+        }
+
+        return $redacted;
+    }
+
+    /**
+     * Check whether a configuration path or array key is sensitive.
+     */
+    private function isSensitiveKey(string $key): bool
+    {
+        $normalized = strtolower(str_replace(['-', '.'], '_', $key));
+
+        foreach (self::SENSITIVE_KEY_FRAGMENTS as $fragment) {
+            if (str_contains($normalized, $fragment)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

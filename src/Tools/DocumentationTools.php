@@ -6,6 +6,7 @@ namespace Synapse\Tools;
 use Exception;
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Exception\ToolCallException;
+use Mcp\Schema\ToolAnnotations;
 use Synapse\Documentation\DocumentSearchService;
 
 /**
@@ -47,6 +48,7 @@ class DocumentationTools
         name: 'search_docs',
         description: 'Search CakePHP documentation using full-text search with relevance ranking. ' .
             'Results are sorted by relevance (best first) with scores where higher = more relevant.',
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
     )]
     public function searchDocs(
         string $query,
@@ -109,6 +111,7 @@ class DocumentationTools
     #[McpTool(
         name: 'docs_stats',
         description: 'Get statistics about the indexed documentation',
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
     )]
     public function getStats(): array
     {
@@ -135,6 +138,7 @@ class DocumentationTools
     #[McpTool(
         name: 'get_doc',
         description: 'Get full content of a documentation file by document ID',
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
     )]
     public function getDocument(string $docId): array
     {

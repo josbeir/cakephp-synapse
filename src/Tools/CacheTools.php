@@ -6,6 +6,7 @@ namespace Synapse\Tools;
 use Cake\Cache\Cache;
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Exception\ToolCallException;
+use Mcp\Schema\ToolAnnotations;
 
 /**
  * Cache Tools
@@ -25,6 +26,7 @@ class CacheTools
     #[McpTool(
         name: 'cache_configs',
         description: 'List all configured CakePHP cache configurations with engine information',
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
     )]
     public function listConfigs(): array
     {
@@ -58,6 +60,7 @@ class CacheTools
     #[McpTool(
         name: 'cache_read',
         description: 'Read a value from a CakePHP cache configuration by key',
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
     )]
     public function cacheRead(string $config, string $key): array
     {
@@ -86,6 +89,7 @@ class CacheTools
     #[McpTool(
         name: 'cache_write',
         description: 'Write a string value to a CakePHP cache configuration',
+        annotations: new ToolAnnotations(destructiveHint: true, idempotentHint: true),
     )]
     public function cacheWrite(string $config, string $key, string $value): array
     {
@@ -111,6 +115,7 @@ class CacheTools
     #[McpTool(
         name: 'cache_delete',
         description: 'Delete a key from a CakePHP cache configuration',
+        annotations: new ToolAnnotations(destructiveHint: true, idempotentHint: true),
     )]
     public function cacheDelete(string $config, string $key): array
     {
@@ -135,6 +140,7 @@ class CacheTools
     #[McpTool(
         name: 'cache_clear',
         description: 'Clear all entries from a CakePHP cache configuration',
+        annotations: new ToolAnnotations(destructiveHint: true, idempotentHint: true),
     )]
     public function cacheClear(string $config): array
     {

@@ -223,12 +223,16 @@ class DocumentationResourcesTest extends TestCase
 
         $this->getMockService()->expects($this->once())
             ->method('search')
+            ->with('test query with spaces', [
+                'limit' => 10,
+                'highlight' => true,
+            ])
             ->willReturn([]);
 
-        $result = $this->getResources()->searchResource('test query with spaces');
+        $result = $this->getResources()->searchResource('test%20query%20with%20spaces');
         $content = $result;
 
-        $this->assertEquals('docs://search/test+query+with+spaces', $content->uri);
+        $this->assertEquals('docs://search/test%20query%20with%20spaces', $content->uri);
     }
 
     /**
@@ -402,10 +406,10 @@ class DocumentationResourcesTest extends TestCase
             ->method('getSearchEngine')
             ->willReturn($mockSearchEngine);
 
-        $result = $this->getResources()->contentResource('cakephp-5x::docs/controllers.md');
+        $result = $this->getResources()->contentResource('cakephp-5x%3A%3Adocs%2Fcontrollers.md');
 
         $this->assertInstanceOf(TextResourceContents::class, $result);
-        $this->assertEquals('docs://content/cakephp-5x::docs/controllers.md', $result->uri);
+        $this->assertEquals('docs://content/cakephp-5x%3A%3Adocs%2Fcontrollers.md', $result->uri);
         $this->assertEquals('text/markdown', $result->mimeType);
         $this->assertEquals($documentData['content'], $result->text);
     }

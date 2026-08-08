@@ -50,20 +50,21 @@ class DocumentationResources
     public function searchResource(string $query): TextResourceContents
     {
         try {
-            if (trim($query) === '') {
+            $decodedQuery = rawurldecode($query);
+            if (trim($decodedQuery) === '') {
                 throw new ToolCallException('Search query cannot be empty');
             }
 
             // Search with default options
-            $results = $this->searchService->search($query, [
+            $results = $this->searchService->search($decodedQuery, [
                 'limit' => 10,
                 'highlight' => true,
             ]);
 
             // Format results as markdown
-            $content = $this->formatResultsAsMarkdown($query, $results);
+            $content = $this->formatResultsAsMarkdown($decodedQuery, $results);
 
-            $uri = sprintf('docs://search/%s', urlencode($query));
+            $uri = sprintf('docs://search/%s', rawurlencode($decodedQuery));
 
             return new TextResourceContents(
                 uri: $uri,
@@ -101,19 +102,20 @@ class DocumentationResources
     public function contentResource(string $docId): TextResourceContents
     {
         try {
-            if (trim($docId) === '') {
+            $decodedDocId = rawurldecode($docId);
+            if (trim($decodedDocId) === '') {
                 throw new ToolCallException('Document ID cannot be empty');
             }
 
             // Get document from search engine database (returns original markdown content)
             $searchEngine = $this->searchService->getSearchEngine();
-            $document = $searchEngine->getDocumentById($docId);
+            $document = $searchEngine->getDocumentById($decodedDocId);
 
             if ($document === null) {
-                throw new ToolCallException(sprintf('Document not found: %s', $docId));
+                throw new ToolCallException(sprintf('Document not found: %s', $decodedDocId));
             }
 
-            $uri = sprintf('docs://content/%s', $docId);
+            $uri = sprintf('docs://content/%s', rawurlencode($decodedDocId));
 
             return new TextResourceContents(
                 uri: $uri,

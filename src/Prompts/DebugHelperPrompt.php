@@ -58,7 +58,7 @@ Please help me:
    best practices
 5. If relevant, suggest tinker commands to test the fix
 
-Use the available tools (search_docs, read_documentation, tinker) to gather
+Use the available tools (search_docs, get_doc, tinker) to gather
 information and provide comprehensive guidance.
 TEXT,
                 ),

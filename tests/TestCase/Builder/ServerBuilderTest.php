@@ -39,9 +39,10 @@ class ServerBuilderTest extends TestCase
 
         $this->assertEquals(['src'], $builder->getScanDirs());
         $this->assertEquals(['tests', 'vendor', 'tmp'], $builder->getExcludeDirs());
-        $this->assertEquals('2024-11-05', $builder->getProtocolVersion());
+        $this->assertEquals(ServerBuilder::DEFAULT_PROTOCOL_VERSION, $builder->getProtocolVersion());
         $this->assertEquals(ServerBuilder::DEFAULT_CACHE_ENGINE, $builder->getCacheEngine());
-        $this->assertEquals('Adaptic MCP Server', $builder->getServerInfo()['name']);
+        $this->assertEquals(ServerBuilder::DEFAULT_SERVER_NAME, $builder->getServerInfo()['name']);
+        $this->assertEquals(ServerBuilder::DEFAULT_INSTRUCTIONS, $builder->getInstructions());
         $this->assertEquals(SynapsePlugin::VERSION, $builder->getServerInfo()['version']);
         $this->assertEquals(ROOT, $builder->getBasePath());
     }
@@ -58,6 +59,7 @@ class ServerBuilderTest extends TestCase
                 'excludeDirs' => ['ignore'],
                 'cache' => 'custom_cache',
             ],
+            'instructions' => 'Test server instructions',
             'protocolVersion' => '2024-11-05',
             'basePath' => '/custom/path',
         ];
@@ -69,6 +71,7 @@ class ServerBuilderTest extends TestCase
         $this->assertEquals(['custom', 'paths'], $builder->getScanDirs());
         $this->assertEquals(['ignore'], $builder->getExcludeDirs());
         $this->assertEquals('custom_cache', $builder->getCacheEngine());
+        $this->assertEquals('Test server instructions', $builder->getInstructions());
         $this->assertEquals('/custom/path', $builder->getBasePath());
     }
 
@@ -319,7 +322,7 @@ class ServerBuilderTest extends TestCase
     {
         $builder = new ServerBuilder();
 
-        $this->assertEquals('2024-11-05', $builder->getProtocolVersion());
+        $this->assertEquals(ServerBuilder::DEFAULT_PROTOCOL_VERSION, $builder->getProtocolVersion());
 
         $builder->setProtocolVersion('2024-11-05');
 
@@ -406,7 +409,7 @@ class ServerBuilderTest extends TestCase
         $builder = new ServerBuilder($config);
         $serverInfo = $builder->getServerInfo();
 
-        $this->assertEquals('Adaptic MCP Server', $serverInfo['name']);
+        $this->assertEquals(ServerBuilder::DEFAULT_SERVER_NAME, $serverInfo['name']);
         $this->assertEquals(SynapsePlugin::VERSION, $serverInfo['version']);
     }
 

@@ -5,6 +5,7 @@ namespace Synapse\Tools;
 
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Exception\ToolCallException;
+use Mcp\Schema\ToolAnnotations;
 use Symfony\Component\Finder\Finder;
 
 /**
@@ -25,6 +26,7 @@ class LogTools
         description: 'List all available log files in the application logs directory. ' .
             'Returns an empty array when no .log files exist or when the application uses ' .
             'non-filesystem logging (database, syslog, etc.).',
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
     )]
     public function listLogs(): array
     {
@@ -68,6 +70,7 @@ class LogTools
         name: 'log_read',
         description: 'Read the last N lines from a log file, optionally filtered by log level. ' .
             'Use log_list to discover available files.',
+        annotations: new ToolAnnotations(readOnlyHint: true, idempotentHint: true),
     )]
     public function readLog(string $file, int $lines = 100, ?string $level = null): array
     {
