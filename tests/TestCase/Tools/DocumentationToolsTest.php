@@ -26,14 +26,6 @@ class DocumentationToolsTest extends TestCase
     private ?MockObject $mockService = null;
 
     /**
-     * setUp method
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-    }
-
-    /**
      * Create mock service and tools for tests that need them
      */
     private function createMockServiceAndTools(): void

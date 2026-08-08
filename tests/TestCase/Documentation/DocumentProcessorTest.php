@@ -35,14 +35,6 @@ class DocumentProcessorTest extends TestCase
     }
 
     /**
-     * tearDown method
-     */
-    protected function tearDown(): void
-    {
-        parent::tearDown();
-    }
-
-    /**
      * Helper to read a test markdown file
      */
     protected function readTestFile(string $filename): string

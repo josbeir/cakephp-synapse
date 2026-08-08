@@ -23,14 +23,6 @@ class SearchDocsCommandTest extends TestCase
     use ConsoleIntegrationTestTrait;
 
     /**
-     * setUp method
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-    }
-
-    /**
      * Test command with basic query
      */
     public function testCommandWithBasicQuery(): void

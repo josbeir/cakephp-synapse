@@ -26,11 +26,6 @@ class DocumentationResourcesTest extends TestCase
      */
     private ?MockObject $mockService = null;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-    }
-
     /**
      * Create mock service and resources for tests that need them
      */

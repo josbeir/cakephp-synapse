@@ -48,7 +48,7 @@ class SynapsePlugin extends BasePlugin
     /**
      * Load all the plugin configuration and bootstrap logic.
      *
-     * @param \Cake\Core\PluginApplicationInterface<mixed> $app The host application
+     * @param \Cake\Core\PluginApplicationInterface $app The host application
      */
     public function bootstrap(PluginApplicationInterface $app): void
     {

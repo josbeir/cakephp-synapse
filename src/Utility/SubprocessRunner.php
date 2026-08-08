@@ -107,9 +107,7 @@ class SubprocessRunner
                 }
             }
 
-            if (is_resource($process)) {
-                proc_close($process); // cleanup only — exit code already captured above
-            }
+            proc_close($process); // cleanup only — exit code already captured above
         }
 
         if ($timedOut) {

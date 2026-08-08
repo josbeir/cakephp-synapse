@@ -14,7 +14,7 @@
         "php": ">=8.2",
         "ext-sqlite3": "*",
         "cakephp/cakephp": "^5.2",
-        "mcp/sdk": "^0.5",
+        "mcp/sdk": "^0.7",
         "symfony/filesystem": "^7.0 || ^8.0",
         "symfony/finder": "^7.0 || ^8.0"
     },

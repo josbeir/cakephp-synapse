@@ -39,14 +39,6 @@ class DatabaseToolsTest extends TestCase
     }
 
     /**
-     * tearDown method
-     */
-    protected function tearDown(): void
-    {
-        parent::tearDown();
-    }
-
-    /**
      * Test listConnections method
      */
     public function testListConnections(): void

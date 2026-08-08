@@ -352,10 +352,6 @@ class RouteToolsTest extends TestCase
     {
         $result = $this->RouteTools->listRoutes(
             sort: false,
-            method: null,
-            plugin: null,
-            prefix: null,
-            controller: null,
             withMiddlewares: false,
         );
 
