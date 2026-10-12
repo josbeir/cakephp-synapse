@@ -10,9 +10,6 @@ use Cake\Routing\RouteBuilder;
 use Synapse\SynapsePlugin;
 use Synapse\TestSuite\MockGitAdapter;
 
-/**
- * @extends BaseApplication<mixed>
- */
 class Application extends BaseApplication
 {
     public function middleware(MiddlewareQueue $middlewareQueue): MiddlewareQueue

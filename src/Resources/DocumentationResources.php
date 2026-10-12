@@ -87,8 +87,8 @@ class DocumentationResources
      * Returns original markdown with full formatting preserved.
      *
      * Example URIs:
-     * - docs://content/cakephp-5x::docs/en/controllers.md
-     * - docs://content/cakephp-5x::docs/en/orm/query-builder.md
+     * - docs://content/cakephp-6x::docs/en/controllers.md
+     * - docs://content/cakephp-6x::docs/en/orm/query-builder.md
      *
      * @param string $docId Document ID in format 'source::path'
      * @return \Mcp\Schema\Content\TextResourceContents Resource contents

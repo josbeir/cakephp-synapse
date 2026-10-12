@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ 'main' ]
+    branches: [ 'main', 'cake6' ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, cake6 ]
 
 env:
   PHP_EXTENSIONS: intl, sqlite3, fileinfo, pdo_sqlite
@@ -15,17 +15,10 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        php-version: [8.2, 8.3, 8.4, 8.5]
+        php-version: ['8.5']
         prefer-lowest: ['']
-        exclude:
-          - os: windows-latest
-            php-version: 8.3
-          - os: windows-latest
-            php-version: 8.4
-          - os: windows-latest
-            php-version: 8.5
         include:
-          - php-version: '8.2'
+          - php-version: '8.5'
             os: ubuntu-latest
             prefer-lowest: 'prefer-lowest'
 
@@ -44,8 +37,8 @@ jobs:
         shell: bash
         run: |
           if ${{ matrix.prefer-lowest == 'prefer-lowest' }}; then
-            composer update --prefer-lowest --prefer-stable
-            composer require --dev dereuromark/composer-prefer-lowest:dev-master
+            composer require --dev --no-update dereuromark/composer-prefer-lowest:dev-master
+            composer update --prefer-lowest --prefer-stable --prefer-dist --no-interaction --no-progress
           else
             composer install --prefer-dist --no-interaction --no-progress
           fi
@@ -53,7 +46,7 @@ jobs:
       - name: Run PHPUnit
         shell: bash
         run: |
-          if [[ ${{ matrix.php-version }} == '8.5' && ${{ matrix.os }} == 'ubuntu-latest' ]]; then
+          if [[ '${{ matrix.prefer-lowest }}' == '' && ${{ matrix.os }} == 'ubuntu-latest' ]]; then
             vendor/bin/phpunit --coverage-clover=coverage.xml --log-junit junit.xml
           else
             vendor/bin/phpunit --log-junit junit.xml
@@ -64,7 +57,7 @@ jobs:
         run: vendor/bin/validate-prefer-lowest -m
 
       - name: Upload coverage reports to Codecov
-        if: success() && matrix.php-version == '8.5' && matrix.os == 'ubuntu-latest'
+        if: success() && matrix.prefer-lowest == '' && matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -91,6 +84,9 @@ jobs:
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Validate Composer configuration
+        run: composer validate --no-check-publish
 
       - name: Run PHPStan
         run: vendor/bin/phpstan analyse --no-progress --error-format=github

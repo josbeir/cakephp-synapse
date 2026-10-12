@@ -27,8 +27,8 @@ class DocumentationExpertPromptTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->originalCakephpVersion = Configure::read('Synapse.prompts.cakephp_version', '5.x');
-        $this->originalPhpVersion = Configure::read('Synapse.prompts.php_version', '8.2');
+        $this->originalCakephpVersion = Configure::read('Synapse.prompts.cakephp_version', '6.x');
+        $this->originalPhpVersion = Configure::read('Synapse.prompts.php_version', '8.5');
         $this->prompt = new DocumentationExpertPrompt();
     }
 
@@ -50,7 +50,7 @@ class DocumentationExpertPromptTest extends TestCase
         $content = $result[0]->content;
         $this->assertStringContainsString('basic overview', $content->text);
         $this->assertStringContainsString('Authentication', $content->text);
-        $this->assertStringContainsString('5.x', $content->text);
+        $this->assertStringContainsString('6.x', $content->text);
     }
 
     public function testIntermediateDepth(): void
@@ -94,7 +94,7 @@ class DocumentationExpertPromptTest extends TestCase
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
         $content = $result[0]->content;
         $this->assertStringContainsString('4.5', $content->text);
-        $this->assertStringNotContainsString('5.x', $content->text);
+        $this->assertStringNotContainsString('6.x', $content->text);
     }
 
     public function testUsesConfiguredPhpVersion(): void

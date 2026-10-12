@@ -27,8 +27,8 @@ class FeatureBuilderPromptTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->originalCakephpVersion = Configure::read('Synapse.prompts.cakephp_version', '5.x');
-        $this->originalPhpVersion = Configure::read('Synapse.prompts.php_version', '8.2');
+        $this->originalCakephpVersion = Configure::read('Synapse.prompts.cakephp_version', '6.x');
+        $this->originalPhpVersion = Configure::read('Synapse.prompts.php_version', '8.5');
         $this->prompt = new FeatureBuilderPrompt();
     }
 
@@ -50,7 +50,7 @@ class FeatureBuilderPromptTest extends TestCase
         $content = $result[0]->content;
         $this->assertStringContainsString('full-stack', $content->text);
         $this->assertStringContainsString('controllers, models, views', $content->text);
-        $this->assertStringContainsString('5.x', $content->text);
+        $this->assertStringContainsString('6.x', $content->text);
     }
 
     public function testSpecificComponent(): void
@@ -69,7 +69,7 @@ class FeatureBuilderPromptTest extends TestCase
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
         $content = $result[0]->content;
-        $this->assertStringContainsString('PHP 8.2+', $content->text);
+        $this->assertStringContainsString('PHP 8.5+', $content->text);
     }
 
     public function testUsesConfiguredCakephpVersion(): void

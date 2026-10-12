@@ -8,7 +8,9 @@ use Cake\Console\TestSuite\ConsoleIntegrationTestTrait;
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
 use ReflectionMethod;
+use Synapse\Builder\ServerBuilder;
 use Synapse\Command\ServerCommand;
+use Synapse\Utility\SubprocessRunner;
 use TestApp\Application;
 
 /**
@@ -39,6 +41,56 @@ class ServerCommandTest extends TestCase
         $this->assertExitSuccess();
         $this->assertOutputContains('Start the MCP');
         $this->assertOutputContains('Model Context Protocol');
+    }
+
+    /**
+     * Test the CLI server keeps stdout valid MCP across cache options.
+     */
+    public function testStdioServerHandlesMcpRequestsWithCacheOptions(): void
+    {
+        $messages = [
+            [
+                'jsonrpc' => '2.0',
+                'id' => 1,
+                'method' => 'initialize',
+                'params' => [
+                    'protocolVersion' => ServerBuilder::DEFAULT_PROTOCOL_VERSION,
+                    'capabilities' => [],
+                    'clientInfo' => ['name' => 'synapse-cli-test', 'version' => '1.0.0'],
+                ],
+            ],
+            ['jsonrpc' => '2.0', 'method' => 'notifications/initialized'],
+            [
+                'jsonrpc' => '2.0',
+                'id' => 2,
+                'method' => 'tools/call',
+                'params' => ['name' => 'system_info', 'arguments' => []],
+            ],
+        ];
+        $input = implode(PHP_EOL, array_map(
+            static fn(array $message): string => json_encode($message, JSON_THROW_ON_ERROR),
+            $messages,
+        )) . PHP_EOL;
+
+        foreach (['--no-cache', '--clear-cache', ''] as $option) {
+            $command = escapeshellarg(PHP_BINARY) . ' bin/cake.php synapse server ' . $option;
+            $result = (new SubprocessRunner())->run($command, $input, 10, ROOT);
+
+            $this->assertTrue($result['success'], $result['stderr']);
+            $responses = [];
+            foreach (explode(PHP_EOL, trim($result['output'])) as $line) {
+                $response = json_decode($line, true, flags: JSON_THROW_ON_ERROR);
+                $this->assertIsArray($response);
+                if (isset($response['id'])) {
+                    $responses[$response['id']] = $response;
+                }
+            }
+
+            $this->assertSame('Synapse MCP Server', $responses[1]['result']['serverInfo']['name']);
+            $this->assertFalse($responses[2]['result']['isError'] ?? false);
+            $info = json_decode($responses[2]['result']['content'][0]['text'], true, flags: JSON_THROW_ON_ERROR);
+            $this->assertSame(Configure::version(), $info['cakephp_version']);
+        }
     }
 
     /**

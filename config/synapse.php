@@ -133,14 +133,14 @@ return [
              * Each source has a unique key and configuration.
              */
             'sources' => [
-                'cakephp-5x' => [
+                'cakephp-6x' => [
                     'enabled' => true,
                     'repository' => 'https://github.com/cakephp/docs.git',
-                    'branch' => '5.x',
+                    'branch' => '6.x',
                     'root' => 'docs/en', // Root directory within repo to index
                     'metadata' => [
-                        'name' => 'CakePHP 5.x Documentation',
-                        'version' => '5.x',
+                        'name' => 'CakePHP 6.x Documentation',
+                        'version' => '6.x',
                         'language' => 'en',
                     ],
                 ],
@@ -227,9 +227,9 @@ return [
              * The CakePHP version to reference in prompt responses.
              * This allows targeting specific version documentation and conventions.
              *
-             * Examples: '5.x', '5.2', '4.5', '4.x'
+             * Examples: '6.x', '6.0'
              */
-            'cakephp_version' => env('MCP_CAKEPHP_VERSION', '5.x'),
+            'cakephp_version' => env('MCP_CAKEPHP_VERSION', '6.x'),
 
             /**
              * PHP Version
@@ -237,9 +237,9 @@ return [
              * The PHP version to reference in prompt responses for type hints,
              * features, and best practices recommendations.
              *
-             * Examples: '8.2', '8.3', '8.4'
+             * Examples: '8.5', '8.5+'
              */
-            'php_version' => env('MCP_PHP_VERSION', '8.2+'),
+            'php_version' => env('MCP_PHP_VERSION', '8.5+'),
 
             /**
              * Quality Assurance Tools Configuration

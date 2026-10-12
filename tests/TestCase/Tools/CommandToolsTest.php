@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Synapse\Test\TestCase\Tools;
 
 use Cake\Console\CommandCollection;
-use Cake\Core\Container;
+use Cake\Container\Container;
 use Cake\Event\Event;
 use Cake\Event\EventManager;
 use Cake\TestSuite\TestCase;

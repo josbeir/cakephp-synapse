@@ -4,8 +4,7 @@ declare(strict_types=1);
 namespace Synapse\Command;
 
 use Cake\Command\Command;
-use Cake\Console\Arguments;
-use Cake\Console\ConsoleIo;
+use Cake\Console\ConsoleIoInterface;
 use Cake\Console\ConsoleOptionParser;
 use Throwable;
 
@@ -61,11 +60,9 @@ class TinkerEvalCommand extends Command
      * Reads PHP code from stdin, executes it
      * and outputs results as JSON to stdout.
      *
-     * @param \Cake\Console\Arguments $args Command arguments
-     * @param \Cake\Console\ConsoleIo $io Console I/O
      * @return int Exit code
      */
-    public function execute(Arguments $args, ConsoleIo $io): int
+    public function execute(): int
     {
         // phpcs:disable Squiz.PHP.Eval.Discouraged
 
@@ -73,7 +70,7 @@ class TinkerEvalCommand extends Command
         $code = file_get_contents('php://stdin');
 
         if ($code === false || trim($code) === '') {
-            $this->outputJson($io, [
+            $this->outputJson($this->io, [
                 'success' => false,
                 'error' => 'No code provided via stdin',
                 'type' => 'InvalidArgumentException',
@@ -83,7 +80,7 @@ class TinkerEvalCommand extends Command
         }
 
         // Parse and validate timeout
-        $timeout = (int)$args->getOption('timeout');
+        $timeout = (int)$this->args->getOption('timeout');
         $timeout = min(max(1, $timeout), 180);
 
         // Set execution limits
@@ -117,13 +114,13 @@ class TinkerEvalCommand extends Command
                 $response['count'] = count($result);
             }
 
-            $this->outputJson($io, $response);
+            $this->outputJson($this->io, $response);
 
             return static::CODE_SUCCESS;
         } catch (Throwable $throwable) {
             ob_end_clean();
 
-            $this->outputJson($io, [
+            $this->outputJson($this->io, [
                 'success' => false,
                 'error' => $throwable->getMessage(),
                 'type' => $throwable::class,
@@ -195,10 +192,10 @@ class TinkerEvalCommand extends Command
     /**
      * Output JSON response to stdout.
      *
-     * @param \Cake\Console\ConsoleIo $io Console I/O
+     * @param \Cake\Console\ConsoleIoInterface $io Console I/O
      * @param array<string, mixed> $data Data to output as JSON
      */
-    private function outputJson(ConsoleIo $io, array $data): void
+    private function outputJson(ConsoleIoInterface $io, array $data): void
     {
         // Use out() with no newline formatting, raw output
         $io->out(json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));

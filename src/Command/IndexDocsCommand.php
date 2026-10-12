@@ -5,7 +5,7 @@ namespace Synapse\Command;
 
 use Cake\Command\Command;
 use Cake\Console\Arguments;
-use Cake\Console\ConsoleIo;
+use Cake\Console\ConsoleIoInterface;
 use Cake\Console\ConsoleOptionParser;
 use Exception;
 use Synapse\Documentation\DocumentSearchService;
@@ -44,7 +44,7 @@ class IndexDocsCommand extends Command
             ->setDescription('Index documentation for full-text search')
             ->addOption('source', [
                 'short' => 's',
-                'help' => 'Specific source to index (e.g., cakephp-5x). If not specified, indexes all enabled sources.',
+                'help' => 'Specific source to index (e.g., cakephp-6x). If not specified, indexes all enabled sources.',
                 'default' => null,
             ])
             ->addOption('force', [
@@ -83,60 +83,58 @@ class IndexDocsCommand extends Command
     /**
      * Execute command
      *
-     * @param \Cake\Console\Arguments $args Command arguments
-     * @param \Cake\Console\ConsoleIo $io Console I/O
      * @return int|null Exit code
      */
-    public function execute(Arguments $args, ConsoleIo $io): ?int
+    public function execute(): ?int
     {
         $service = new DocumentSearchService();
-        $destroy = (bool)$args->getOption('destroy');
+        $destroy = (bool)$this->args->getOption('destroy');
 
         // Handle destroy operation separately
         if ($destroy) {
-            return $this->handleDestroy($service, $args, $io);
+            return $this->handleDestroy($service, $this->args, $this->io);
         }
 
-        $io->out('<info>Documentation Indexing</info>');
-        $io->hr();
+        $this->io->out('<info>Documentation Indexing</info>');
+        $this->io->hr();
 
-        $source = $args->getOption('source');
+        $source = $this->args->getOption('source');
         $source = is_string($source) ? $source : null;
 
-        $force = (bool)$args->getOption('force');
-        $pull = (bool)$args->getOption('pull');
-        $optimize = (bool)$args->getOption('optimize');
-        $showStats = (bool)$args->getOption('stats');
+        $force = (bool)$this->args->getOption('force');
+        $pull = (bool)$this->args->getOption('pull');
+        $optimize = (bool)$this->args->getOption('optimize');
+        $showStats = (bool)$this->args->getOption('stats');
 
         try {
             if ($source) {
                 // Index specific source
-                $io->out(sprintf('Indexing source: <info>%s</info>', $source));
+                $this->io->out(sprintf('Indexing source: <info>%s</info>', $source));
                 if ($force) {
-                    $io->out('<warning>Force re-index enabled</warning>');
+                    $this->io->out('<warning>Force re-index enabled</warning>');
                 }
 
                 if ($pull) {
-                    $io->out('<comment>Pulling latest changes from remote</comment>');
+                    $this->io->out('<comment>Pulling latest changes from remote</comment>');
                 }
 
                 $count = $service->indexSource($source, $force, $pull);
-                $io->success(sprintf('Indexed %d documents from source: %s', $count, $source));
+                $this->io->success(sprintf('Indexed %d documents from source: %s', $count, $source));
             } else {
                 // Index all enabled sources
-                $io->out('Indexing all enabled sources...');
+                $this->io->out('Indexing all enabled sources...');
                 if ($force) {
-                    $io->out('<warning>Force re-index enabled</warning>');
+                    $this->io->out('<warning>Force re-index enabled</warning>');
                 }
 
                 if ($pull) {
-                    $io->out('<comment>Pulling latest changes from remote</comment>');
+                    $this->io->out('<comment>Pulling latest changes from remote</comment>');
                 }
 
                 $results = $service->indexAll($force, $pull);
 
                 foreach ($results as $sourceKey => $count) {
-                    $io->out(sprintf(
+                    $this->io->out(sprintf(
                         '  • <info>%s</info>: %d documents',
                         $sourceKey,
                         $count,
@@ -144,27 +142,27 @@ class IndexDocsCommand extends Command
                 }
 
                 $totalCount = array_sum($results);
-                $io->success(sprintf('Indexed %d total documents from %d sources', $totalCount, count($results)));
+                $this->io->success(sprintf('Indexed %d total documents from %d sources', $totalCount, count($results)));
             }
 
             // Optimize index if requested
             if ($optimize) {
-                $io->out('Optimizing search index...');
+                $this->io->out('Optimizing search index...');
                 $service->optimize();
-                $io->success('Index optimized');
+                $this->io->success('Index optimized');
             }
 
             // Show statistics if requested
             if ($showStats) {
-                $io->hr();
-                $this->displayStatistics($service, $io);
+                $this->io->hr();
+                $this->displayStatistics($service, $this->io);
             }
 
             return static::CODE_SUCCESS;
         } catch (Exception $exception) {
-            $io->error('Indexing failed: ' . $exception->getMessage());
-            if ($io->level() >= ConsoleIo::VERBOSE) {
-                $io->out($exception->getTraceAsString());
+            $this->io->error('Indexing failed: ' . $exception->getMessage());
+            if ($this->io->level() >= ConsoleIoInterface::VERBOSE) {
+                $this->io->out($exception->getTraceAsString());
             }
 
             return static::CODE_ERROR;
@@ -175,9 +173,9 @@ class IndexDocsCommand extends Command
      * Display index statistics
      *
      * @param \Synapse\Documentation\DocumentSearchService $service Search service
-     * @param \Cake\Console\ConsoleIo $io Console I/O
+     * @param \Cake\Console\ConsoleIoInterface $io Console I/O
      */
-    private function displayStatistics(DocumentSearchService $service, ConsoleIo $io): void
+    private function displayStatistics(DocumentSearchService $service, ConsoleIoInterface $io): void
     {
         $io->out('<info>Index Statistics</info>');
 
@@ -200,10 +198,10 @@ class IndexDocsCommand extends Command
      *
      * @param \Synapse\Documentation\DocumentSearchService $service Search service
      * @param \Cake\Console\Arguments $args Command arguments
-     * @param \Cake\Console\ConsoleIo $io Console I/O
+     * @param \Cake\Console\ConsoleIoInterface $io Console I/O
      * @return int Exit code
      */
-    private function handleDestroy(DocumentSearchService $service, Arguments $args, ConsoleIo $io): int
+    private function handleDestroy(DocumentSearchService $service, Arguments $args, ConsoleIoInterface $io): int
     {
         $io->out('<warning>Destroy Search Index</warning>');
         $io->hr();
@@ -239,7 +237,7 @@ class IndexDocsCommand extends Command
             return static::CODE_SUCCESS;
         } catch (Exception $exception) {
             $io->error('Failed to destroy search index: ' . $exception->getMessage());
-            if ($io->level() >= ConsoleIo::VERBOSE) {
+            if ($io->level() >= ConsoleIoInterface::VERBOSE) {
                 $io->out($exception->getTraceAsString());
             }
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Synapse\Builder;
 
 use Cake\Cache\Cache;
-use Cake\Core\ContainerInterface;
+use Cake\Container\ContainerInterface;
 use Mcp\Schema\Enum\ProtocolVersion;
 use Mcp\Server;
 use Psr\Log\LoggerInterface;
@@ -98,9 +98,9 @@ class ServerBuilder
     /**
      * Set the DI container
      *
-     * @param \Cake\Core\ContainerInterface|null $container DI container
+     * @param \Cake\Container\ContainerInterface|null $container DI container
      */
-    public function setContainer(?ContainerInterface $container): self
+    public function setContainer(?ContainerInterface $container): static
     {
         $this->container = $container;
 
@@ -112,7 +112,7 @@ class ServerBuilder
      *
      * @param \Psr\Log\LoggerInterface|null $logger PSR-3 logger instance
      */
-    public function setLogger(?LoggerInterface $logger): self
+    public function setLogger(?LoggerInterface $logger): static
     {
         $this->logger = $logger;
 
@@ -129,10 +129,8 @@ class ServerBuilder
 
     /**
      * Add plugin built-in tools and prompts directories to scan dirs
-     *
-     * @return $this
      */
-    public function withPluginTools()
+    public function withPluginTools(): static
     {
         $pluginSrcPath = dirname(__DIR__);
         $filesystem = new Filesystem();
@@ -150,9 +148,8 @@ class ServerBuilder
      * Add a scan directory
      *
      * @param string $path Directory path to scan
-     * @return $this
      */
-    public function addScanDirectory(string $path)
+    public function addScanDirectory(string $path): static
     {
         if (!in_array($path, $this->scanDirs, true)) {
             $this->scanDirs[] = $path;
@@ -165,9 +162,8 @@ class ServerBuilder
      * Set protocol version
      *
      * @param string $version Protocol version string
-     * @return $this
      */
-    public function setProtocolVersion(string $version)
+    public function setProtocolVersion(string $version): static
     {
         $this->protocolVersion = $version;
 
@@ -176,10 +172,8 @@ class ServerBuilder
 
     /**
      * Disable caching
-     *
-     * @return $this
      */
-    public function withoutCache()
+    public function withoutCache(): static
     {
         $this->cacheEngine = null;
 

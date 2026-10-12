@@ -25,7 +25,7 @@ class DebugHelperPromptTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->originalCakephpVersion = Configure::read('Synapse.prompts.cakephp_version', '5.x');
+        $this->originalCakephpVersion = Configure::read('Synapse.prompts.cakephp_version', '6.x');
         $this->prompt = new DebugHelperPrompt();
     }
 
@@ -67,7 +67,7 @@ class DebugHelperPromptTest extends TestCase
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
         $content = $result[0]->content;
-        $this->assertStringContainsString('5.x', $content->text);
+        $this->assertStringContainsString('6.x', $content->text);
     }
 
     public function testUsesConfiguredCakephpVersion(): void

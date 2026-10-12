@@ -25,7 +25,7 @@ class TinkerWorkshopPromptTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->originalCakephpVersion = Configure::read('Synapse.prompts.cakephp_version', '5.x');
+        $this->originalCakephpVersion = Configure::read('Synapse.prompts.cakephp_version', '6.x');
         $this->prompt = new TinkerWorkshopPrompt();
     }
 
