@@ -4,8 +4,8 @@ declare(strict_types=1);
 namespace Synapse\Test\TestCase\Builder;
 
 use Cake\Cache\Cache;
+use Cake\Container\ContainerInterface;
 use Cake\Core\Configure;
-use Cake\Core\ContainerInterface;
 use Cake\TestSuite\TestCase;
 use Mcp\Server;
 use Psr\Log\LoggerInterface;

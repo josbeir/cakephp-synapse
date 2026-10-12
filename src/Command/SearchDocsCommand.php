@@ -4,8 +4,7 @@ declare(strict_types=1);
 namespace Synapse\Command;
 
 use Cake\Command\Command;
-use Cake\Console\Arguments;
-use Cake\Console\ConsoleIo;
+use Cake\Console\ConsoleIoInterface;
 use Cake\Console\ConsoleOptionParser;
 use Exception;
 use Synapse\Documentation\DocumentSearchService;
@@ -61,7 +60,7 @@ class SearchDocsCommand extends Command
             ])
             ->addOption('source', [
                 'short' => 's',
-                'help' => 'Filter results by source (e.g., cakephp-5x)',
+                'help' => 'Filter results by source (e.g., cakephp-6x)',
                 'default' => null,
             ])
             ->addOption('no-snippet', [
@@ -93,27 +92,25 @@ class SearchDocsCommand extends Command
     /**
      * Execute command
      *
-     * @param \Cake\Console\Arguments $args Command arguments
-     * @param \Cake\Console\ConsoleIo $io Console I/O
      * @return int|null Exit code
      */
-    public function execute(Arguments $args, ConsoleIo $io): ?int
+    public function execute(): ?int
     {
-        $query = $args->getArgument('query');
+        $query = $this->args->getArgument('query');
         if (!is_string($query) || trim($query) === '') {
-            $io->error('Search query cannot be empty');
+            $this->io->error('Search query cannot be empty');
 
             return static::CODE_ERROR;
         }
 
-        $limit = (int)$args->getOption('limit');
-        $fuzzy = (bool)$args->getOption('fuzzy');
-        $source = $args->getOption('source');
+        $limit = (int)$this->args->getOption('limit');
+        $fuzzy = (bool)$this->args->getOption('fuzzy');
+        $source = $this->args->getOption('source');
         $source = is_string($source) ? $source : null;
 
-        $noSnippet = (bool)$args->getOption('no-snippet');
-        $detailed = (bool)$args->getOption('detailed');
-        $interactive = (bool)$args->getOption('interactive') && !(bool)$args->getOption('non-interactive');
+        $noSnippet = (bool)$this->args->getOption('no-snippet');
+        $detailed = (bool)$this->args->getOption('detailed');
+        $interactive = (bool)$this->args->getOption('interactive') && !(bool)$this->args->getOption('non-interactive');
 
         $this->service = new DocumentSearchService();
 
@@ -121,21 +118,21 @@ class SearchDocsCommand extends Command
             // Check if index has documents
             $stats = $this->service->getStatistics();
             if ($stats['total_documents'] === 0) {
-                $io->warning('Documentation index is empty. Run "bin/cake synapse index" first.');
+                $this->io->warning('Documentation index is empty. Run "bin/cake synapse index" first.');
 
                 return static::CODE_ERROR;
             }
 
-            $io->out(sprintf('<info>Searching for:</info> %s', $query));
+            $this->io->out(sprintf('<info>Searching for:</info> %s', $query));
             if ($fuzzy) {
-                $io->out('<comment>Fuzzy matching enabled</comment>');
+                $this->io->out('<comment>Fuzzy matching enabled</comment>');
             }
 
             if ($source !== null) {
-                $io->out(sprintf('<comment>Filtering by source: %s</comment>', $source));
+                $this->io->out(sprintf('<comment>Filtering by source: %s</comment>', $source));
             }
 
-            $io->hr();
+            $this->io->hr();
 
             // Perform search
             $options = [
@@ -154,27 +151,27 @@ class SearchDocsCommand extends Command
             $results = $this->service->search($query, $options);
 
             if ($results === []) {
-                $io->warning('No results found.');
+                $this->io->warning('No results found.');
 
                 return static::CODE_SUCCESS;
             }
 
-            $io->success(sprintf('Found %d result(s):', count($results)));
-            $io->out('');
+            $this->io->success(sprintf('Found %d result(s):', count($results)));
+            $this->io->out('');
 
             // Display results
-            $this->displayResults($results, $noSnippet, $io);
+            $this->displayResults($results, $noSnippet, $this->io);
 
             // Enter interactive mode if enabled
             if ($interactive) {
-                return $this->interactiveMode($results, $io);
+                return $this->interactiveMode($results, $this->io);
             }
 
             return static::CODE_SUCCESS;
         } catch (Exception $exception) {
-            $io->error('Search failed: ' . $exception->getMessage());
+            $this->io->error('Search failed: ' . $exception->getMessage());
             if ($detailed) {
-                $io->out($exception->getTraceAsString());
+                $this->io->out($exception->getTraceAsString());
             }
 
             return static::CODE_ERROR;
@@ -186,9 +183,9 @@ class SearchDocsCommand extends Command
      *
      * @param array<array<string, mixed>> $results Search results
      * @param bool $noSnippet Hide snippets
-     * @param \Cake\Console\ConsoleIo $io Console I/O
+     * @param \Cake\Console\ConsoleIoInterface $io Console I/O
      */
-    private function displayResults(array $results, bool $noSnippet, ConsoleIo $io): void
+    private function displayResults(array $results, bool $noSnippet, ConsoleIoInterface $io): void
     {
         // Prepare table data with headers as first row
         $tableData = [];
@@ -251,10 +248,10 @@ class SearchDocsCommand extends Command
      * Enter interactive mode for browsing results
      *
      * @param array<array<string, mixed>> $results Search results
-     * @param \Cake\Console\ConsoleIo $io Console I/O
+     * @param \Cake\Console\ConsoleIoInterface $io Console I/O
      * @return int Exit code
      */
-    private function interactiveMode(array $results, ConsoleIo $io): int
+    private function interactiveMode(array $results, ConsoleIoInterface $io): int
     {
         $io->out('');
         $io->hr();
@@ -303,9 +300,9 @@ class SearchDocsCommand extends Command
      * Show all snippets
      *
      * @param array<array<string, mixed>> $results Search results
-     * @param \Cake\Console\ConsoleIo $io Console I/O
+     * @param \Cake\Console\ConsoleIoInterface $io Console I/O
      */
-    private function showAllSnippets(array $results, ConsoleIo $io): void
+    private function showAllSnippets(array $results, ConsoleIoInterface $io): void
     {
         $io->out('');
         $io->hr();
@@ -344,9 +341,9 @@ class SearchDocsCommand extends Command
      *
      * @param array<array<string, mixed>> $results Search results
      * @param int $index Result index
-     * @param \Cake\Console\ConsoleIo $io Console I/O
+     * @param \Cake\Console\ConsoleIoInterface $io Console I/O
      */
-    private function viewResultDetail(array $results, int $index, ConsoleIo $io): void
+    private function viewResultDetail(array $results, int $index, ConsoleIoInterface $io): void
     {
         $result = $results[$index];
         $totalResults = count($results);
@@ -451,9 +448,9 @@ class SearchDocsCommand extends Command
      * (code blocks, links, lists, etc.), not the cleaned content used for search.
      *
      * @param array<string, mixed> $result Search result
-     * @param \Cake\Console\ConsoleIo $io Console I/O
+     * @param \Cake\Console\ConsoleIoInterface $io Console I/O
      */
-    private function viewFullDocument(array $result, ConsoleIo $io): void
+    private function viewFullDocument(array $result, ConsoleIoInterface $io): void
     {
         $documentId = $result['id'] ?? null;
 

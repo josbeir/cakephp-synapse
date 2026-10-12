@@ -6,10 +6,10 @@ namespace Synapse\Command;
 use Cake\Command\Command;
 use Cake\Console\Arguments;
 use Cake\Console\CommandFactoryInterface;
-use Cake\Console\ConsoleIo;
+use Cake\Console\ConsoleIoInterface;
 use Cake\Console\ConsoleOptionParser;
+use Cake\Container\ContainerInterface;
 use Cake\Core\Configure;
-use Cake\Core\ContainerInterface;
 use Cake\Log\Log;
 use Mcp\Server\Transport\StdioTransport;
 use Psr\Log\NullLogger;
@@ -48,7 +48,7 @@ class ServerCommand extends Command
     /**
      * Constructor
      *
-     * @param \Cake\Core\ContainerInterface $container CakePHP DI container
+     * @param \Cake\Container\ContainerInterface $container CakePHP DI container
      * @param \Cake\Console\CommandFactoryInterface|null $factory Command factory
      */
     public function __construct(
@@ -95,15 +95,13 @@ class ServerCommand extends Command
     /**
      * Execute the command
      *
-     * @param \Cake\Console\Arguments $args Command arguments
-     * @param \Cake\Console\ConsoleIo $io Console I/O
      * @return int Exit code
      */
-    public function execute(Arguments $args, ConsoleIo $io): int
+    public function execute(): int
     {
         // If --inspect flag is present, launch inspector
-        if ($args->getOption('inspect')) {
-            return $this->launchInspector($args, $io);
+        if ($this->args->getOption('inspect')) {
+            return $this->launchInspector($this->args, $this->io);
         }
 
         $config = Configure::read('Synapse', []);
@@ -113,7 +111,7 @@ class ServerCommand extends Command
 
         // Use stderr in verbose mode so we can see what's happening.
         // Note that this overrides the configured log engine.
-        if ($args->getOption('verbose')) {
+        if ($this->args->getOption('verbose')) {
             $logEngine = 'stderr';
         }
 
@@ -123,7 +121,7 @@ class ServerCommand extends Command
 
         try {
             // Handle cache clearing if requested
-            if ($args->getOption('clear-cache')) {
+            if ($this->args->getOption('clear-cache')) {
                 $cacheEngine = $config['discovery']['cache'] ?? ServerBuilder::DEFAULT_CACHE_ENGINE;
 
                 if (ServerBuilder::clearCache($cacheEngine)) {
@@ -146,7 +144,7 @@ class ServerCommand extends Command
                 ->withPluginTools();
 
             // Disable cache if --no-cache flag
-            if ($args->getOption('no-cache')) {
+            if ($this->args->getOption('no-cache')) {
                 $builder->withoutCache();
                 $logger->debug('Discovery caching disabled via --no-cache');
             } else {
@@ -207,10 +205,10 @@ class ServerCommand extends Command
      * Launch MCP Inspector to test the server
      *
      * @param \Cake\Console\Arguments $args Command arguments
-     * @param \Cake\Console\ConsoleIo $io Console I/O
+     * @param \Cake\Console\ConsoleIoInterface $io Console I/O
      * @return int Exit code
      */
-    private function launchInspector(Arguments $args, ConsoleIo $io): int
+    private function launchInspector(Arguments $args, ConsoleIoInterface $io): int
     {
         $io->out('<info>Launching MCP Inspector...</info>');
         $io->out('');

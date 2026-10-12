@@ -1,14 +1,17 @@
 [![PHPStan Level 8](https://img.shields.io/badge/PHPStan-level%208-brightgreen)](https://github.com/josbeir/cakephp-synapse)
-[![Build Status](https://github.com/josbeir/cakephp-synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/josbeir/cakephp-synapse/actions)
+[![Build Status](https://github.com/josbeir/cakephp-synapse/actions/workflows/ci.yml/badge.svg?branch=cake6)](https://github.com/josbeir/cakephp-synapse/actions?query=branch%3Acake6)
 [![codecov](https://codecov.io/github/josbeir/cakephp-synapse/graph/badge.svg?token=4VGWJQTWH5)](https://codecov.io/github/josbeir/cakephp-synapse)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PHP Version](https://img.shields.io/badge/php-8.2%2B-blue.svg)](https://www.php.net/releases/8.2/en.php)
-[![CakePHP Version](https://img.shields.io/badge/CakePHP-5.2%2B-red.svg)](https://cakephp.org/)
+[![PHP Version](https://img.shields.io/badge/php-8.5%2B-blue.svg)](https://www.php.net/releases/8.5/en.php)
+[![CakePHP Version](https://img.shields.io/badge/CakePHP-6.x-red.svg)](https://cakephp.org/)
 [![Packagist Downloads](https://img.shields.io/packagist/dt/josbeir/cakephp-synapse)](https://packagist.org/packages/josbeir/cakephp-synapse)
 
 # Synapse: a CakePHP MCP-Server plugin
 
 Expose your CakePHP application functionality via the Model Context Protocol (MCP).
+
+> [!NOTE]
+> The `cake6` branch targets the upcoming CakePHP 6 release and requires PHP 8.5 or higher, matching the current [CakePHP 6 requirements](https://github.com/cakephp/cakephp/blob/6.x/composer.json). For CakePHP 5 applications, use the stable plugin releases on `main`.
 
 ![CakePHP Synapse Hero](/docs/hero.jpg)
 
@@ -61,15 +64,24 @@ The Model Context Protocol is an open protocol that enables seamless integration
 
 ### Requirements
 
-- PHP 8.2 or higher
-- CakePHP 5.2 or higher
+- PHP 8.5 or higher
+- CakePHP 6.x (currently a development release)
 
 ### Installing the Plugin
 
-Install via Composer as a development dependency:
+While CakePHP 6 and its dependencies are in development, set the following in your application's `composer.json` to allow development dependencies while preferring stable releases:
+
+```json
+{
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
+```
+
+Install the CakePHP 6 branch via Composer as a development dependency:
 
 ```bash
-composer require --dev josbeir/cakephp-synapse
+composer require --dev josbeir/cakephp-synapse:dev-cake6 --with-all-dependencies
 ```
 
 > [!NOTE]
@@ -212,10 +224,10 @@ Prompts can reference a specific CakePHP version and use various quality tools. 
 return [
     'Synapse' => [
         'prompts' => [
-            // Target CakePHP version for prompt responses (e.g. '5.x', '5.2', '4.5', '4.x')
-            'cakephp_version' => env('MCP_CAKEPHP_VERSION', '5.x'),
+            // Target CakePHP version for prompt responses (e.g. '6.x', '6.0')
+            'cakephp_version' => env('MCP_CAKEPHP_VERSION', '6.x'),
 
-            // Target PHP version for prompt responses (e.g. '8.2', '8.3', '8.x')
+            // Target PHP version for prompt responses (e.g. '8.5', '8.x')
             'php_version' => env('MCP_PHP_VERSION', PHP_VERSION),
 
             // Quality tools configuration
@@ -276,7 +288,7 @@ Use the CLI to manage and search the index:
 bin/cake synapse index
 
 # Index specific source
-bin/cake synapse index --source cakephp-5x
+bin/cake synapse index --source cakephp-6x
 
 # Force re-index and optimize
 bin/cake synapse index --force --optimize

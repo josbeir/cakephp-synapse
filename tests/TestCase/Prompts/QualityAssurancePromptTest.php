@@ -26,8 +26,8 @@ class QualityAssurancePromptTest extends TestCase
         parent::setUp();
 
         // Set default configuration
-        Configure::write('Synapse.prompts.cakephp_version', '5.x');
-        Configure::write('Synapse.prompts.php_version', '8.2+');
+        Configure::write('Synapse.prompts.cakephp_version', '6.x');
+        Configure::write('Synapse.prompts.php_version', '8.5+');
         Configure::write('Synapse.prompts.quality_tools', [
             'phpcs' => ['enabled' => true, 'standard' => 'cakephp', 'extensions' => ['php']],
             'phpstan' => ['enabled' => true, 'level' => 8, 'baseline' => false],

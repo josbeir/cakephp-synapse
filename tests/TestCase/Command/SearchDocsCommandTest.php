@@ -30,7 +30,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search authentication --non-interactive');
 
         // May fail if index is empty, which is acceptable
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -65,7 +65,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search cakephp --limit 2 --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -83,7 +83,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search database -l 1 --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -101,7 +101,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search auth --fuzzy --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -119,7 +119,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search auth -f --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -137,7 +137,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search authentication --source test-docs --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -155,7 +155,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search database -s test-docs --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -173,7 +173,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search authentication --no-snippet --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -190,7 +190,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search authentication --detailed --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -210,7 +210,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search authentication -d --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -230,7 +230,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search nonexistentquery12345xyzabc --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -260,7 +260,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search authentication --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -277,7 +277,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search cakephp --limit 10 --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -294,7 +294,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search authentication --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -311,7 +311,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search auth --fuzzy --limit 5 --detailed --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -329,7 +329,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search authentication --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -347,7 +347,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search auth --limit 2 --fuzzy --source test-docs --detailed --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -366,7 +366,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search cakephp --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -384,7 +384,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search "user authentication" --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -487,7 +487,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search "authentication & authorization" --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;
@@ -516,7 +516,7 @@ class SearchDocsCommandTest extends TestCase
         $this->exec('synapse search authentication --non-interactive');
 
         // Skip test if index is empty
-        if ($this->_exitCode === 1) {
+        if ($this->exitCode === 1) {
             $this->assertErrorContains('Documentation index is empty');
 
             return;

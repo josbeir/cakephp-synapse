@@ -4,9 +4,9 @@ declare(strict_types=1);
 namespace Synapse;
 
 use Cake\Console\CommandCollection;
+use Cake\Container\ContainerInterface;
 use Cake\Core\BasePlugin;
 use Cake\Core\Configure;
-use Cake\Core\ContainerInterface;
 use Cake\Core\PluginApplicationInterface;
 use Cake\Event\EventInterface;
 use Cake\Event\EventManagerInterface;
@@ -93,7 +93,7 @@ class SynapsePlugin extends BasePlugin
     /**
      * Register application container services.
      *
-     * @param \Cake\Core\ContainerInterface $container The Container to update.
+     * @param \Cake\Container\ContainerInterface $container The Container to update.
      */
     public function services(ContainerInterface $container): void
     {

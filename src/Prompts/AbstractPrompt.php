@@ -28,8 +28,8 @@ abstract class AbstractPrompt
      */
     public function __construct()
     {
-        $this->cakephpVersion = Configure::read('Synapse.prompts.cakephp_version', '5.x');
-        $this->phpVersion = Configure::read('Synapse.prompts.php_version', '8.2');
+        $this->cakephpVersion = Configure::read('Synapse.prompts.cakephp_version', '6.x');
+        $this->phpVersion = Configure::read('Synapse.prompts.php_version', '8.5');
     }
 
     /**

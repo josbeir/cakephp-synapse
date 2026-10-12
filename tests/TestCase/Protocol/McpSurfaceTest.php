@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Synapse\Test\TestCase\Protocol;
 
+use Cake\Container\Container;
 use Cake\TestSuite\TestCase;
 use Mcp\Server\Transport\StdioTransport;
 use Synapse\Builder\ServerBuilder;
@@ -83,6 +84,7 @@ class McpSurfaceTest extends TestCase
         };
 
         $server = (new ServerBuilder())
+            ->setContainer(new Container())
             ->withoutCache()
             ->withPluginTools()
             ->build();

@@ -25,7 +25,7 @@ class MigrationGuidePromptTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->originalPhpVersion = Configure::read('Synapse.prompts.php_version', '8.2');
+        $this->originalPhpVersion = Configure::read('Synapse.prompts.php_version', '8.5');
         $this->prompt = new MigrationGuidePrompt();
     }
 
@@ -69,7 +69,7 @@ class MigrationGuidePromptTest extends TestCase
         $this->assertInstanceOf(TextContent::class, $result[0]->content);
         $content = $result[0]->content;
         $this->assertStringContainsString('PHP', $content->text);
-        $this->assertStringContainsString('8.2+', $content->text);
+        $this->assertStringContainsString('8.5+', $content->text);
     }
 
     public function testUsesConfiguredPhpVersion(): void
