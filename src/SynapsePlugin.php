@@ -10,80 +10,67 @@ use Cake\Core\ContainerInterface;
 use Cake\Core\PluginApplicationInterface;
 use Cake\Event\EventInterface;
 use Cake\Event\EventManagerInterface;
-use Cake\Log\Log;
-use Synapse\Command\ServerCommand;
-use Synapse\Tools\CommandTools;
+use Synapse\Documentation\DocumentSearchService;
+use Synapse\Server\SynapseServer;
+use Synapse\Service\CacheService;
+use Synapse\Service\CommandCollectionProvider;
+use Synapse\Service\CommandService;
+use Synapse\Service\DatabaseService;
+use Synapse\Service\DocumentationResourceService;
+use Synapse\Service\DocumentationService;
+use Synapse\Service\LogService;
+use Synapse\Service\ModelService;
+use Synapse\Service\RouteService;
+use Synapse\Service\SystemService;
+use Synapse\Service\TinkerService;
+use Synapse\Utility\SubprocessRunner;
 
 /**
- * Synapse Plugin
+ * CakePHP development capabilities for the Crustum MCP local server.
  *
- * Model Context Protocol (MCP) server plugin for CakePHP.
- * Exposes CakePHP functionality as MCP Tools, Resources, and Prompts.
+ * Load Crustum/Mcp before this plugin, with HTTP routes and middleware disabled.
  */
 class SynapsePlugin extends BasePlugin
 {
-    /**
-     * Plugin version
-     */
-    public const VERSION = '0.1.12';
+    public const VERSION = '1.0.0';
 
-    /**
-     * Plugin name
-     */
     protected ?string $name = 'Synapse';
 
-    /**
-     * Stores the CommandCollection captured from Console.buildCommands event
-     */
-    protected static ?CommandCollection $commandCollection = null;
+    private ?CommandCollectionProvider $commands = null;
 
     /**
-     * Reset the static CommandCollection (for testing purposes)
-     */
-    public static function resetCommandCollection(): void
-    {
-        static::$commandCollection = null;
-    }
-
-    /**
-     * Load all the plugin configuration and bootstrap logic.
+     * Load defaults and application overrides, then register the local handle.
      *
-     * @param \Cake\Core\PluginApplicationInterface $app The host application
+     * @param \Cake\Core\PluginApplicationInterface $app Host application
      */
     public function bootstrap(PluginApplicationInterface $app): void
     {
-        if (!defined('APP')) {
-            parent::bootstrap($app);
-        }
+        parent::bootstrap($app);
 
+        $overrides = Configure::read('Synapse', []);
         Configure::load('Synapse.synapse');
-
-        // Load app specific config file.
+        Configure::write('Synapse', array_replace_recursive(Configure::read('Synapse'), $overrides));
         if (file_exists(ROOT . DS . 'config' . DS . 'app_synapse.php')) {
             Configure::load('app_synapse');
         }
 
-        // Configure synapse logger for MCP server (if not already configured)
-        $logConfig = Configure::read('Log.synapse');
-        if ($logConfig !== null && !Log::getConfig('synapse')) {
-            Log::setConfig('synapse', $logConfig);
+        if (!Configure::check('Mcp.local.synapse')) {
+            Configure::write('Mcp.local.synapse', SynapseServer::class);
         }
     }
 
     /**
-     * Register application event listeners.
+     * Capture commands in the same provider that is registered with the container.
      *
-     * @param \Cake\Event\EventManagerInterface $eventManager The Event Manager to update.
+     * @param \Cake\Event\EventManagerInterface $eventManager Application event manager
      */
     public function events(EventManagerInterface $eventManager): EventManagerInterface
     {
-        // Listen for Console.buildCommands event to capture CommandCollection
-        $eventManager->on('Console.buildCommands', function (EventInterface $event): void {
+        $provider = $this->commandProvider();
+        $eventManager->on('Console.buildCommands', function (EventInterface $event) use ($provider): void {
             $commands = $event->getData('commands');
-
             if ($commands instanceof CommandCollection) {
-                // Store in static property so services() can access it
-                static::$commandCollection = $commands;
+                $provider->set($commands);
             }
         });
 
@@ -91,23 +78,34 @@ class SynapsePlugin extends BasePlugin
     }
 
     /**
-     * Register application container services.
+     * Register lazy application services used by MCP capabilities.
      *
-     * @param \Cake\Core\ContainerInterface $container The Container to update.
+     * @param \Cake\Core\ContainerInterface $container Application container
      */
     public function services(ContainerInterface $container): void
     {
-        // Register ServerCommand with container for proper DI
-        $container->add(ServerCommand::class)
-            ->addArgument($container);
+        $container->addShared(CommandCollectionProvider::class, $this->commandProvider());
+        $container->addShared(SubprocessRunner::class);
+        $container->addShared(DocumentSearchService::class);
+        $container->addShared(SystemService::class);
+        $container->addShared(DatabaseService::class);
+        $container->addShared(RouteService::class);
+        $container->addShared(CacheService::class);
+        $container->addShared(LogService::class);
+        $container->addShared(ModelService::class);
+        $container->addShared(CommandService::class)
+            ->addArgument(CommandCollectionProvider::class)
+            ->addArgument(SubprocessRunner::class);
+        $container->addShared(TinkerService::class)->addArgument(SubprocessRunner::class);
+        $container->addShared(DocumentationService::class)->addArgument(DocumentSearchService::class);
+        $container->addShared(DocumentationResourceService::class)->addArgument(DocumentSearchService::class);
+    }
 
-        // Register CommandCollection factory that returns the captured collection
-        $container->addShared(CommandCollection::class, function (): CommandCollection {
-            return static::$commandCollection ?? new CommandCollection();
-        });
-
-        // Register CommandTools with CommandCollection dependency
-        $container->add(CommandTools::class)
-            ->addArgument(CommandCollection::class);
+    /**
+     * Get the plugin instance's command provider.
+     */
+    private function commandProvider(): CommandCollectionProvider
+    {
+        return $this->commands ??= new CommandCollectionProvider();
     }
 }

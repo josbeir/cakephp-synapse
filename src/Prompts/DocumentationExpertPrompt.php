@@ -3,30 +3,53 @@ declare(strict_types=1);
 
 namespace Synapse\Prompts;
 
-use Mcp\Capability\Attribute\McpPrompt;
-use Mcp\Schema\Content\PromptMessage;
-use Mcp\Schema\Content\TextContent;
-use Mcp\Schema\Enum\Role;
+use Crustum\Mcp\Request;
+use Crustum\Mcp\Response;
+use Crustum\Mcp\Server\Attributes\Description;
+use Crustum\Mcp\Server\Attributes\Name;
+use Crustum\Mcp\Server\Prompts\Argument;
 
 /**
  * Documentation Expert Prompt
  *
  * Comprehensive CakePHP feature exploration with configurable depth levels.
  */
+#[Name('documentation-expert')]
+#[Description('Get comprehensive guidance on a CakePHP feature with examples and best practices')]
 class DocumentationExpertPrompt extends AbstractPrompt
 {
+    /**
+     * @inheritDoc
+     */
+    public function arguments(): array
+    {
+        return [
+            new Argument('topic', 'The CakePHP feature or topic to explore', true),
+            new Argument('depth', 'Detail level: "basic", "intermediate", or "advanced"', false),
+        ];
+    }
+
+    /**
+     * Render the advertised prompt arguments.
+     *
+     * @param \Crustum\Mcp\Request $request MCP arguments
+     * @return array<\Crustum\Mcp\Response>
+     */
+    public function handle(Request $request): array
+    {
+        $arguments = $this->validatedArguments($request);
+
+        return $this->render($arguments['topic'], $arguments['depth'] ?? 'intermediate');
+    }
+
     /**
      * Get comprehensive guidance on a CakePHP feature
      *
      * @param string $topic The CakePHP feature or topic to explore
      * @param string $depth Detail level: "basic", "intermediate", or "advanced"
-     * @return array<\Mcp\Schema\Content\PromptMessage>
+     * @return array<\Crustum\Mcp\Response>
      */
-    #[McpPrompt(
-        name: 'documentation-expert',
-        description: 'Get comprehensive guidance on a CakePHP feature with examples and best practices',
-    )]
-    public function handle(
+    public function render(
         string $topic,
         string $depth = 'intermediate',
     ): array {
@@ -47,15 +70,12 @@ class DocumentationExpertPrompt extends AbstractPrompt
     /**
      * Get basic documentation messages
      *
-     * @return array<\Mcp\Schema\Content\PromptMessage>
+     * @return array<\Crustum\Mcp\Response>
      */
     private function getBasicDocumentationMessages(string $topic): array
     {
         return [
-            new PromptMessage(
-                role: Role::User,
-                content: new TextContent(
-                    text: <<<TEXT
+            Response::text(<<<TEXT
 I need a basic overview of '{$topic}' in CakePHP {$this->cakephpVersion}.
 
 Please:
@@ -68,24 +88,19 @@ Please:
    - Link to the full documentation
 
 Keep it brief and beginner-friendly. Focus on getting started quickly.
-TEXT,
-                ),
-            ),
+TEXT),
         ];
     }
 
     /**
      * Get intermediate documentation messages
      *
-     * @return array<\Mcp\Schema\Content\PromptMessage>
+     * @return array<\Crustum\Mcp\Response>
      */
     private function getIntermediateDocumentationMessages(string $topic): array
     {
         return [
-            new PromptMessage(
-                role: Role::User,
-                content: new TextContent(
-                    text: <<<TEXT
+            Response::text(<<<TEXT
 I need detailed information about '{$topic}' in CakePHP {$this->cakephpVersion}.
 
 Please:
@@ -102,24 +117,19 @@ Please:
 5. Provide links to related documentation
 
 Aim for practical, production-ready guidance that covers the most common scenarios.
-TEXT,
-                ),
-            ),
+TEXT),
         ];
     }
 
     /**
      * Get advanced documentation messages
      *
-     * @return array<\Mcp\Schema\Content\PromptMessage>
+     * @return array<\Crustum\Mcp\Response>
      */
     private function getAdvancedDocumentationMessages(string $topic): array
     {
         return [
-            new PromptMessage(
-                role: Role::User,
-                content: new TextContent(
-                    text: <<<TEXT
+            Response::text(<<<TEXT
 I need an expert-level deep dive into '{$topic}' in CakePHP {$this->cakephpVersion}.
 
 Please:
@@ -147,9 +157,7 @@ Please:
 
 This is for an experienced developer who needs comprehensive, production-grade understanding.
 Include performance implications, security considerations, and architectural decisions.
-TEXT,
-                ),
-            ),
+TEXT),
         ];
     }
 }

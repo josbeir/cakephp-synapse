@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use Synapse\Builder\ServerBuilder;
+use Synapse\Server\SynapseServer;
 use Synapse\Documentation\Git\GitAdapter;
 use Synapse\SynapsePlugin;
 
@@ -28,64 +28,17 @@ return [
          */
         'instructions' => env(
             'MCP_SERVER_INSTRUCTIONS',
-            ServerBuilder::DEFAULT_INSTRUCTIONS,
+            SynapseServer::DEFAULT_INSTRUCTIONS,
         ),
 
         /**
-         * Logger Configuration
-         *
-         * Configure the logger engine name to use for MCP server logging.
-         * Defaults to stderr to not clash with stdio output.
+         * Additional Crustum capability classes appended to the built-in catalog.
+         * Register their service dependencies in the application's container.
          */
-        'logger' => null,
-
-        /**
-         * Protocol Version
-         *
-         * MCP protocol version to use. Available versions:
-         * - '2024-11-05' (legacy compatibility)
-         * - '2025-03-26'
-         * - '2025-06-18'
-         * - '2025-11-25' (default)
-         */
-        'protocolVersion' => env('MCP_PROTOCOL_VERSION', '2025-11-25'),
-
-        /**
-         * Discovery Configuration
-         *
-         * Configure which directories to scan for MCP elements (Tools, Resources, Prompts).
-         * Elements are discovered using PHP 8 attributes like #[McpTool], #[McpResource], etc.
-         */
-        'discovery' => [
-            // Directories to scan for MCP elements (relative to ROOT)
-            // Note: The plugin's built-in tools are automatically included
-            'scanDirs' => ['src'],
-
-            // Directories to exclude from scanning
-            'excludeDirs' => ['tests', 'vendor', 'tmp', 'logs', 'webroot'],
-
-            /**
-             * Discovery Cache
-             *
-             * Cache engine name to use for discovery caching (improves startup performance).
-             * Use any cache configuration defined in config/app.php (e.g., 'default', 'mcp').
-             * Defaults to 'default' cache engine if not specified.
-             *
-             * Examples:
-             * - 'default' (use default cache engine - recommended)
-             * - 'mcp' (use dedicated cache engine)
-             * - Any other cache engine name from config/app.php
-             *
-             * Configure cache settings in config/app.php:
-             * 'Cache' => [
-             *     'mcp' => [
-             *         'className' => 'File',
-             *         'duration' => '+1 hour',
-             *         'path' => CACHE . 'mcp' . DS,
-             *     ],
-             * ]
-             */
-            'cache' => env('MCP_DISCOVERY_CACHE', 'default'),
+        'capabilities' => [
+            'tools' => [],
+            'prompts' => [],
+            'resources' => [],
         ],
 
         /**

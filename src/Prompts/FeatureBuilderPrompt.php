@@ -3,30 +3,57 @@ declare(strict_types=1);
 
 namespace Synapse\Prompts;
 
-use Mcp\Capability\Attribute\McpPrompt;
-use Mcp\Schema\Content\PromptMessage;
-use Mcp\Schema\Content\TextContent;
-use Mcp\Schema\Enum\Role;
+use Crustum\Mcp\Request;
+use Crustum\Mcp\Response;
+use Crustum\Mcp\Server\Attributes\Description;
+use Crustum\Mcp\Server\Attributes\Name;
+use Crustum\Mcp\Server\Prompts\Argument;
 
 /**
  * Feature Builder Prompt
  *
  * Guide for implementing complete features following CakePHP conventions.
  */
+#[Name('feature-builder')]
+#[Description('Guide for implementing a complete feature following CakePHP conventions')]
 class FeatureBuilderPrompt extends AbstractPrompt
 {
+    /**
+     * @inheritDoc
+     */
+    public function arguments(): array
+    {
+        return [
+            new Argument('feature', 'Feature description', true),
+            new Argument(
+                'component',
+                'Component type (controller, model, behavior, helper, middleware, command, full-stack)',
+                false,
+            ),
+        ];
+    }
+
+    /**
+     * Render the advertised prompt arguments.
+     *
+     * @param \Crustum\Mcp\Request $request MCP arguments
+     * @return array<\Crustum\Mcp\Response>
+     */
+    public function handle(Request $request): array
+    {
+        $arguments = $this->validatedArguments($request);
+
+        return $this->render($arguments['feature'], $arguments['component'] ?? 'full-stack');
+    }
+
     /**
      * Feature implementation guide
      *
      * @param string $feature Feature description
      * @param string $component Component type (controller, model, behavior, helper, middleware, command, full-stack)
-     * @return array<\Mcp\Schema\Content\PromptMessage>
+     * @return array<\Crustum\Mcp\Response>
      */
-    #[McpPrompt(
-        name: 'feature-builder',
-        description: 'Guide for implementing a complete feature following CakePHP conventions',
-    )]
-    public function handle(
+    public function render(
         string $feature,
         string $component = 'full-stack',
     ): array {
@@ -38,10 +65,7 @@ class FeatureBuilderPrompt extends AbstractPrompt
         );
 
         return [
-            new PromptMessage(
-                role: Role::User,
-                content: new TextContent(
-                    text: <<<TEXT
+            Response::text(<<<TEXT
 I want to implement this feature in my CakePHP {$this->cakephpVersion} application: {$feature}
 
 Component focus: {$component}
@@ -56,9 +80,7 @@ Please help me by:
 
 Focus on CakePHP {$this->cakephpVersion} best practices, use proper typing (PHP {$this->phpVersion}+),
 and follow the framework conventions.
-TEXT,
-                ),
-            ),
+TEXT),
         ];
     }
 }

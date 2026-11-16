@@ -110,7 +110,6 @@ class SearchEngine
 
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             if (
-                is_array($row) &&
                 isset($row['compile_options']) &&
                 is_string($row['compile_options']) &&
                 str_contains($row['compile_options'], 'ENABLE_FTS5')
@@ -281,7 +280,7 @@ class SearchEngine
 
         if ($result instanceof SQLite3Result) {
             while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-                if (is_array($row) && isset($row['name'])) {
+                if (isset($row['name'])) {
                     $columns[] = (string)$row['name'];
                 }
             }
@@ -615,10 +614,6 @@ class SearchEngine
 
         $results = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-            if (!is_array($row)) {
-                continue;
-            }
-
             $metadataArray = json_decode((string)$row['metadata'], true);
 
             $results[] = [
@@ -676,7 +671,7 @@ class SearchEngine
 
         $counts = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-            if (is_array($row) && isset($row['source'])) {
+            if (isset($row['source'])) {
                 $counts[(string)$row['source']] = (int)$row['count'];
             }
         }

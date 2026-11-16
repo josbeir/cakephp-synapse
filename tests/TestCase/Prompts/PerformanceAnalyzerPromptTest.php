@@ -5,10 +5,10 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
-use Mcp\Exception\PromptGetException;
-use Mcp\Schema\Content\PromptMessage;
-use Mcp\Schema\Content\TextContent;
-use Mcp\Schema\Enum\Role;
+use Crustum\Mcp\Enums\Role;
+use Crustum\Mcp\Exception\ValidationException;
+use Crustum\Mcp\Response;
+use Crustum\Mcp\Server\Content\Text as TextContent;
 use Synapse\Prompts\PerformanceAnalyzerPrompt;
 
 /**
@@ -37,48 +37,44 @@ class PerformanceAnalyzerPromptTest extends TestCase
 
     public function testBasic(): void
     {
-        $result = $this->prompt->handle('slow database queries');
+        $result = $this->prompt->render('slow database queries');
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertSame(Role::User, $result[0]->role);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertSame(Role::User, $result[0]->role());
 
-        /** @var \Mcp\Schema\Content\TextContent $content */
-        $content = $result[0]->content;
-        $this->assertStringContainsString('performance', $content->text);
-        $this->assertStringContainsString('optimization', $content->text);
-        $this->assertStringContainsString('slow database queries', $content->text);
+        $content = $result[0]->content();
+        $this->assertStringContainsString('performance', (string)$content);
+        $this->assertStringContainsString('optimization', (string)$content);
+        $this->assertStringContainsString('slow database queries', (string)$content);
     }
 
     public function testWithContext(): void
     {
         $context = 'foreach loop over 10k records';
-        $result = $this->prompt->handle('memory usage', $context);
+        $result = $this->prompt->render('memory usage', $context);
 
-        /** @var \Mcp\Schema\Content\TextContent $content */
-        $content = $result[0]->content;
-        $this->assertStringContainsString($context, $content->text);
-        $this->assertStringContainsString('memory usage', $content->text);
+        $content = $result[0]->content();
+        $this->assertStringContainsString($context, (string)$content);
+        $this->assertStringContainsString('memory usage', (string)$content);
     }
 
     public function testIncludesCachingGuidance(): void
     {
-        $result = $this->prompt->handle('page load time');
+        $result = $this->prompt->render('page load time');
 
-        /** @var \Mcp\Schema\Content\TextContent $content */
-        $content = $result[0]->content;
-        $this->assertStringContainsString('caching', $content->text);
-        $this->assertStringContainsString('query cache', $content->text);
+        $content = $result[0]->content();
+        $this->assertStringContainsString('caching', (string)$content);
+        $this->assertStringContainsString('query cache', (string)$content);
     }
 
     public function testIncludesQueryOptimization(): void
     {
-        $result = $this->prompt->handle('slow queries');
+        $result = $this->prompt->render('slow queries');
 
-        /** @var \Mcp\Schema\Content\TextContent $content */
-        $content = $result[0]->content;
-        $this->assertStringContainsString('eager loading', $content->text);
-        $this->assertStringContainsString('N+1', $content->text);
+        $content = $result[0]->content();
+        $this->assertStringContainsString('eager loading', (string)$content);
+        $this->assertStringContainsString('N+1', (string)$content);
     }
 
     public function testUsesConfiguredCakephpVersion(): void
@@ -86,51 +82,49 @@ class PerformanceAnalyzerPromptTest extends TestCase
         Configure::write('Synapse.prompts.cakephp_version', '4.5');
         $prompt = new PerformanceAnalyzerPrompt();
 
-        $result = $prompt->handle('performance issue');
+        $result = $prompt->render('performance issue');
 
-        /** @var \Mcp\Schema\Content\TextContent $content */
-        $content = $result[0]->content;
-        $this->assertStringContainsString('4.5', $content->text);
+        $content = $result[0]->content();
+        $this->assertStringContainsString('4.5', (string)$content);
     }
 
     public function testReturnsValidStructure(): void
     {
-        $result = $this->prompt->handle('high CPU usage', 'complex query loop');
+        $result = $this->prompt->render('high CPU usage', 'complex query loop');
 
         $this->assertCount(1, $result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertSame(Role::User, $result[0]->role);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertSame(Role::User, $result[0]->role());
 
-        /** @var \Mcp\Schema\Content\TextContent $content */
-        $content = $result[0]->content;
-        $this->assertNotEmpty($content->text);
+        $content = $result[0]->content();
+        $this->assertNotEmpty((string)$content);
     }
 
     public function testEmptyConcernThrowsException(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage("Parameter 'concern' cannot be empty");
 
-        $this->prompt->handle('');
+        $this->prompt->render('');
     }
 
     public function testEmptyConcernWithContextThrowsException(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage("Parameter 'concern' cannot be empty");
 
-        $this->prompt->handle('', 'some code snippet');
+        $this->prompt->render('', 'some code snippet');
     }
 
     public function testValidConcernWithContext(): void
     {
-        $result = $this->prompt->handle('high memory usage', 'loop processing');
+        $result = $this->prompt->render('high memory usage', 'loop processing');
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('high memory usage', $content->text);
-        $this->assertStringContainsString('loop processing', $content->text);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('high memory usage', (string)$content);
+        $this->assertStringContainsString('loop processing', (string)$content);
     }
 }

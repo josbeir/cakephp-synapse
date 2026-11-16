@@ -5,10 +5,10 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
-use Mcp\Exception\PromptGetException;
-use Mcp\Schema\Content\PromptMessage;
-use Mcp\Schema\Content\TextContent;
-use Mcp\Schema\Enum\Role;
+use Crustum\Mcp\Enums\Role;
+use Crustum\Mcp\Exception\ValidationException;
+use Crustum\Mcp\Response;
+use Crustum\Mcp\Server\Content\Text as TextContent;
 use Synapse\Prompts\QualityAssurancePrompt;
 
 /**
@@ -53,14 +53,14 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testAllToolsAndAllContext(): void
     {
-        $result = $this->prompt->handle(context: 'all', tools: 'all');
+        $result = $this->prompt->render(context: 'all', tools: 'all');
 
         $this->assertCount(1, $result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertEquals(Role::User, $result[0]->role);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertEquals(Role::User, $result[0]->role());
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
 
-        $text = $result[0]->content->text;
+        $text = (string)$result[0]->content();
         $this->assertStringContainsString('CakePHP Quality Assurance Guide', $text);
         $this->assertStringContainsString('PHPCS', $text);
         $this->assertStringContainsString('PHPStan', $text);
@@ -74,10 +74,9 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testGuidelinesContext(): void
     {
-        $result = $this->prompt->handle(context: 'guidelines', tools: 'all');
+        $result = $this->prompt->render(context: 'guidelines', tools: 'all');
 
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $text = (string)$result[0]->content();
         $this->assertStringContainsString('Coding Guidelines & Best Practices', $text);
         $this->assertStringContainsString('General CakePHP', $text);
         $this->assertStringContainsString('Type hint', $text);
@@ -88,10 +87,9 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testIntegrationContext(): void
     {
-        $result = $this->prompt->handle(context: 'integration', tools: 'all');
+        $result = $this->prompt->render(context: 'integration', tools: 'all');
 
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $text = (string)$result[0]->content();
         $this->assertStringContainsString('Integration & Automation', $text);
         $this->assertStringContainsString('Composer Scripts', $text);
         $this->assertStringContainsString('Git Pre-commit Hook', $text);
@@ -104,10 +102,9 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testTroubleshootingContext(): void
     {
-        $result = $this->prompt->handle(context: 'troubleshooting', tools: 'all');
+        $result = $this->prompt->render(context: 'troubleshooting', tools: 'all');
 
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $text = (string)$result[0]->content();
         $this->assertStringContainsString('Troubleshooting', $text);
         $this->assertStringContainsString('Problem:', $text);
         $this->assertStringContainsString('Solution:', $text);
@@ -118,10 +115,9 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testFilteredTools(): void
     {
-        $result = $this->prompt->handle(context: 'all', tools: 'phpcs,phpstan');
+        $result = $this->prompt->render(context: 'all', tools: 'phpcs,phpstan');
 
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $text = (string)$result[0]->content();
         $this->assertStringContainsString('PHPCS', $text);
         $this->assertStringContainsString('PHPStan', $text);
         // PHPUnit and Rector should not appear in guidelines or tool summaries
@@ -134,10 +130,9 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testSingleTool(): void
     {
-        $result = $this->prompt->handle(context: 'guidelines', tools: 'phpcs');
+        $result = $this->prompt->render(context: 'guidelines', tools: 'phpcs');
 
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $text = (string)$result[0]->content();
         $this->assertStringContainsString('PHPCS', $text);
         $this->assertStringContainsString('PascalCase', $text);
         // PHPStan should not appear in enabled tools or guidelines
@@ -158,10 +153,9 @@ class QualityAssurancePromptTest extends TestCase
         ]);
 
         $prompt = new QualityAssurancePrompt();
-        $result = $prompt->handle(context: 'all', tools: 'all');
+        $result = $prompt->render(context: 'all', tools: 'all');
 
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $text = (string)$result[0]->content();
         $this->assertStringContainsString('No quality assurance tools are enabled', $text);
         $this->assertStringContainsString('config/synapse.php', $text);
     }
@@ -174,9 +168,8 @@ class QualityAssurancePromptTest extends TestCase
         Configure::write('Synapse.prompts.cakephp_version', '4.5');
         $prompt = new QualityAssurancePrompt();
 
-        $result = $prompt->handle(context: 'all', tools: 'all');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $result = $prompt->render(context: 'all', tools: 'all');
+        $text = (string)$result[0]->content();
 
         $this->assertStringContainsString('CakePHP Version:** 4.5', $text);
     }
@@ -189,9 +182,8 @@ class QualityAssurancePromptTest extends TestCase
         Configure::write('Synapse.prompts.php_version', '8.3');
         $prompt = new QualityAssurancePrompt();
 
-        $result = $prompt->handle(context: 'all', tools: 'all');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $result = $prompt->render(context: 'all', tools: 'all');
+        $text = (string)$result[0]->content();
 
         $this->assertStringContainsString('PHP Version:** 8.3', $text);
     }
@@ -201,12 +193,12 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testReturnsValidStructure(): void
     {
-        $result = $this->prompt->handle(context: 'all', tools: 'all');
+        $result = $this->prompt->render(context: 'all', tools: 'all');
 
         $this->assertNotEmpty($result);
-        $this->assertContainsOnlyInstancesOf(PromptMessage::class, $result);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $this->assertIsString($result[0]->content->text);
+        $this->assertContainsOnlyInstancesOf(Response::class, $result);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $this->assertNotEmpty((string)$result[0]->content());
     }
 
     /**
@@ -214,9 +206,8 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testPhpcsConfiguration(): void
     {
-        $result = $this->prompt->handle(context: 'guidelines', tools: 'phpcs');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $result = $this->prompt->render(context: 'guidelines', tools: 'phpcs');
+        $text = (string)$result[0]->content();
 
         $this->assertStringContainsString('Standard: cakephp', $text);
         $this->assertStringContainsString('PHPCS Guidelines', $text);
@@ -227,9 +218,8 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testPhpstanConfiguration(): void
     {
-        $result = $this->prompt->handle(context: 'guidelines', tools: 'phpstan');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $result = $this->prompt->render(context: 'guidelines', tools: 'phpstan');
+        $text = (string)$result[0]->content();
 
         $this->assertStringContainsString('Level: 8', $text);
         $this->assertStringContainsString('PHPStan Guidelines (Level 8)', $text);
@@ -240,9 +230,8 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testPhpunitConfiguration(): void
     {
-        $result = $this->prompt->handle(context: 'guidelines', tools: 'phpunit');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $result = $this->prompt->render(context: 'guidelines', tools: 'phpunit');
+        $text = (string)$result[0]->content();
 
         $this->assertStringContainsString('Coverage: 80%', $text);
         $this->assertStringContainsString('PHPUnit Guidelines', $text);
@@ -253,9 +242,8 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testRectorConfiguration(): void
     {
-        $result = $this->prompt->handle(context: 'guidelines', tools: 'rector');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $result = $this->prompt->render(context: 'guidelines', tools: 'rector');
+        $text = (string)$result[0]->content();
 
         $this->assertStringContainsString('Set: cakephp', $text);
         $this->assertStringContainsString('Rector Guidelines', $text);
@@ -269,9 +257,8 @@ class QualityAssurancePromptTest extends TestCase
         Configure::write('Synapse.prompts.quality_tools.psalm.enabled', true);
         $prompt = new QualityAssurancePrompt();
 
-        $result = $prompt->handle(context: 'guidelines', tools: 'psalm');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $result = $prompt->render(context: 'guidelines', tools: 'psalm');
+        $text = (string)$result[0]->content();
 
         $this->assertStringContainsString('Psalm', $text);
         $this->assertStringContainsString('Level: 3', $text);
@@ -283,9 +270,8 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testConfigurationFileWarning(): void
     {
-        $result = $this->prompt->handle(context: 'all', tools: 'all');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $result = $this->prompt->render(context: 'all', tools: 'all');
+        $text = (string)$result[0]->content();
 
         $this->assertStringContainsString('Configuration Files First', $text);
         $this->assertStringContainsString('ALWAYS check for existing configuration files', $text);
@@ -297,9 +283,8 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testComposerScriptsIncluded(): void
     {
-        $result = $this->prompt->handle(context: 'integration', tools: 'all');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $result = $this->prompt->render(context: 'integration', tools: 'all');
+        $text = (string)$result[0]->content();
 
         $this->assertStringContainsString('composer.json', $text);
         $this->assertStringContainsString('"scripts"', $text);
@@ -311,9 +296,8 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testGitHooksIncluded(): void
     {
-        $result = $this->prompt->handle(context: 'integration', tools: 'all');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $result = $this->prompt->render(context: 'integration', tools: 'all');
+        $text = (string)$result[0]->content();
 
         $this->assertStringContainsString('pre-commit', $text);
         $this->assertStringContainsString('chmod +x', $text);
@@ -324,9 +308,8 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testCiCdExamplesIncluded(): void
     {
-        $result = $this->prompt->handle(context: 'integration', tools: 'all');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $result = $this->prompt->render(context: 'integration', tools: 'all');
+        $text = (string)$result[0]->content();
 
         $this->assertStringContainsString('GitHub Actions', $text);
         $this->assertStringContainsString('GitLab CI', $text);
@@ -339,9 +322,8 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testBestPracticesSectionIncluded(): void
     {
-        $result = $this->prompt->handle(context: 'guidelines', tools: 'all');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $result = $this->prompt->render(context: 'guidelines', tools: 'all');
+        $text = (string)$result[0]->content();
 
         $this->assertStringContainsString('Best Practices', $text);
     }
@@ -354,9 +336,8 @@ class QualityAssurancePromptTest extends TestCase
         Configure::write('Synapse.prompts.quality_tools.phpstan.baseline', true);
         $prompt = new QualityAssurancePrompt();
 
-        $result = $prompt->handle(context: 'all', tools: 'phpstan');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $result = $prompt->render(context: 'all', tools: 'phpstan');
+        $text = (string)$result[0]->content();
 
         $this->assertStringContainsString('with baseline', $text);
     }
@@ -369,9 +350,8 @@ class QualityAssurancePromptTest extends TestCase
         Configure::write('Synapse.prompts.quality_tools.phpunit.coverage', false);
         $prompt = new QualityAssurancePrompt();
 
-        $result = $prompt->handle(context: 'all', tools: 'phpunit');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $result = $prompt->render(context: 'all', tools: 'phpunit');
+        $text = (string)$result[0]->content();
 
         // Summary shouldn't show coverage
         $this->assertStringNotContainsString('Coverage: 80%', $text);
@@ -385,9 +365,8 @@ class QualityAssurancePromptTest extends TestCase
         Configure::write('Synapse.prompts.quality_tools.phpcs.standard', 'PSR12');
         $prompt = new QualityAssurancePrompt();
 
-        $result = $prompt->handle(context: 'all', tools: 'phpcs');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $result = $prompt->render(context: 'all', tools: 'phpcs');
+        $text = (string)$result[0]->content();
 
         $this->assertStringContainsString('Standard: PSR12', $text);
     }
@@ -397,9 +376,8 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testToolDisplayNames(): void
     {
-        $result = $this->prompt->handle(context: 'all', tools: 'all');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $result = $this->prompt->render(context: 'all', tools: 'all');
+        $text = (string)$result[0]->content();
 
         $this->assertStringContainsString('PHPCS (Code Standards)', $text);
         $this->assertStringContainsString('PHPStan (Static Analysis)', $text);
@@ -415,7 +393,7 @@ class QualityAssurancePromptTest extends TestCase
         Configure::delete('Synapse.prompts.quality_tools');
         $prompt = new QualityAssurancePrompt();
 
-        $result = $prompt->handle(context: 'all', tools: 'all');
+        $result = $prompt->render(context: 'all', tools: 'all');
 
         // Should use defaults
         $this->assertCount(1, $result);
@@ -426,10 +404,10 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testFilteredToolsWithNonExistent(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage("Invalid values for parameter 'tools': nonexistent");
 
-        $this->prompt->handle(context: 'all', tools: 'phpcs,nonexistent');
+        $this->prompt->render(context: 'all', tools: 'phpcs,nonexistent');
     }
 
     /**
@@ -440,9 +418,8 @@ class QualityAssurancePromptTest extends TestCase
         Configure::write('Synapse.prompts.quality_tools.psalm.enabled', true);
         $prompt = new QualityAssurancePrompt();
 
-        $result = $prompt->handle(context: 'all', tools: 'all');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $result = $prompt->render(context: 'all', tools: 'all');
+        $text = (string)$result[0]->content();
 
         $this->assertStringContainsString('✓ **PHPCS', $text);
         $this->assertStringContainsString('✓ **PHPStan', $text);
@@ -456,9 +433,8 @@ class QualityAssurancePromptTest extends TestCase
      */
     public function testConfigurationWarningAdaptsToTools(): void
     {
-        $result = $this->prompt->handle(context: 'all', tools: 'phpcs');
-        /** @phpstan-ignore-next-line */
-        $text = $result[0]->content->text;
+        $result = $this->prompt->render(context: 'all', tools: 'phpcs');
+        $text = (string)$result[0]->content();
 
         $this->assertStringContainsString('`phpcs.xml`', $text);
         $this->assertStringNotContainsString('`phpstan.neon`', $text);
@@ -466,50 +442,50 @@ class QualityAssurancePromptTest extends TestCase
 
     public function testInvalidContextThrowsException(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage("Invalid value for parameter 'context': 'invalid'");
 
-        $this->prompt->handle('invalid');
+        $this->prompt->render('invalid');
     }
 
     public function testInvalidContextContainsExpectedValues(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Expected one of: guidelines, integration, troubleshooting, all');
 
-        $this->prompt->handle('setup');
+        $this->prompt->render('setup');
     }
 
     public function testInvalidContextContainsPromptName(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Prompt: quality-assurance');
 
-        $this->prompt->handle('bad');
+        $this->prompt->render('bad');
     }
 
     public function testInvalidToolsThrowsException(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage("Invalid values for parameter 'tools': invalid");
 
-        $this->prompt->handle('guidelines', 'phpcs,invalid');
+        $this->prompt->render('guidelines', 'phpcs,invalid');
     }
 
     public function testValidContextAndTools(): void
     {
-        $result = $this->prompt->handle('integration', 'phpcs,phpstan');
+        $result = $this->prompt->render('integration', 'phpcs,phpstan');
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
     }
 
     public function testDefaultContextAndToolsAreValid(): void
     {
-        $result = $this->prompt->handle();
+        $result = $this->prompt->render();
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
     }
 }

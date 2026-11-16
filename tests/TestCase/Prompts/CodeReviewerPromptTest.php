@@ -5,10 +5,10 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
-use Mcp\Exception\PromptGetException;
-use Mcp\Schema\Content\PromptMessage;
-use Mcp\Schema\Content\TextContent;
-use Mcp\Schema\Enum\Role;
+use Crustum\Mcp\Enums\Role;
+use Crustum\Mcp\Exception\ValidationException;
+use Crustum\Mcp\Response;
+use Crustum\Mcp\Server\Content\Text as TextContent;
 use Synapse\Prompts\CodeReviewerPrompt;
 
 /**
@@ -42,50 +42,50 @@ class CodeReviewerPromptTest extends TestCase
     public function testAll(): void
     {
         $code = 'public function index() { return $this->render(); }';
-        $result = $this->prompt->handle($code, 'all');
+        $result = $this->prompt->render($code, 'all');
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertSame(Role::User, $result[0]->role);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString($code, $content->text);
-        $this->assertStringContainsStringIgnoringCase('conventions', $content->text);
-        $this->assertStringContainsStringIgnoringCase('security', $content->text);
-        $this->assertStringContainsStringIgnoringCase('performance', $content->text);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertSame(Role::User, $result[0]->role());
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString($code, (string)$content);
+        $this->assertStringContainsStringIgnoringCase('conventions', (string)$content);
+        $this->assertStringContainsStringIgnoringCase('security', (string)$content);
+        $this->assertStringContainsStringIgnoringCase('performance', (string)$content);
     }
 
     public function testConventionsFocus(): void
     {
         $code = 'class MyController {}';
-        $result = $this->prompt->handle($code, 'conventions');
+        $result = $this->prompt->render($code, 'conventions');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('5.x', $content->text);
-        $this->assertStringContainsString($code, $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('5.x', (string)$content);
+        $this->assertStringContainsString($code, (string)$content);
     }
 
     public function testSecurityFocus(): void
     {
         $code = '$query = "SELECT * FROM users WHERE id = " . $id;';
-        $result = $this->prompt->handle($code, 'security');
+        $result = $this->prompt->render($code, 'security');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('SQL injection', $content->text);
-        $this->assertStringContainsString($code, $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('SQL injection', (string)$content);
+        $this->assertStringContainsString($code, (string)$content);
     }
 
     public function testPerformanceFocus(): void
     {
         $code = 'foreach ($users as $user) { $user->posts; }';
-        $result = $this->prompt->handle($code, 'performance');
+        $result = $this->prompt->render($code, 'performance');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('N+1', $content->text);
-        $this->assertStringContainsString($code, $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('N+1', (string)$content);
+        $this->assertStringContainsString($code, (string)$content);
     }
 
     public function testUsesConfiguredCakephpVersion(): void
@@ -93,11 +93,11 @@ class CodeReviewerPromptTest extends TestCase
         Configure::write('Synapse.prompts.cakephp_version', '4.5');
         $prompt = new CodeReviewerPrompt();
 
-        $result = $prompt->handle('<?php echo $var; ?>');
+        $result = $prompt->render('<?php echo $var; ?>');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('4.5', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('4.5', (string)$content);
     }
 
     public function testUsesConfiguredPhpVersion(): void
@@ -105,54 +105,54 @@ class CodeReviewerPromptTest extends TestCase
         Configure::write('Synapse.prompts.php_version', '8.3');
         $prompt = new CodeReviewerPrompt();
 
-        $result = $prompt->handle('public function test() {}');
+        $result = $prompt->render('public function test() {}');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('PHP 8.3+', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('PHP 8.3+', (string)$content);
     }
 
     public function testReturnsValidStructure(): void
     {
-        $result = $this->prompt->handle('$x = 1;', 'all');
+        $result = $this->prompt->render('$x = 1;', 'all');
 
         $this->assertCount(1, $result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertSame(Role::User, $result[0]->role);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertNotEmpty($content->text);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertSame(Role::User, $result[0]->role());
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertNotEmpty((string)$content);
     }
 
     public function testInvalidFocusThrowsException(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage("Invalid value for parameter 'focus': 'invalid'");
 
-        $this->prompt->handle('public function test() {}', 'invalid');
+        $this->prompt->render('public function test() {}', 'invalid');
     }
 
     public function testInvalidFocusContainsExpectedValues(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Expected one of: conventions, security, performance, testing, all');
 
-        $this->prompt->handle('$x = 1;', 'optimization');
+        $this->prompt->render('$x = 1;', 'optimization');
     }
 
     public function testInvalidFocusContainsPromptName(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Prompt: code-reviewer');
 
-        $this->prompt->handle('function test() {}', 'bad');
+        $this->prompt->render('function test() {}', 'bad');
     }
 
     public function testDefaultFocusIsValid(): void
     {
-        $result = $this->prompt->handle('return true;');
+        $result = $this->prompt->render('return true;');
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
     }
 }

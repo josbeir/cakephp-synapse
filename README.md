@@ -3,7 +3,7 @@
 [![codecov](https://codecov.io/github/josbeir/cakephp-synapse/graph/badge.svg?token=4VGWJQTWH5)](https://codecov.io/github/josbeir/cakephp-synapse)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PHP Version](https://img.shields.io/badge/php-8.2%2B-blue.svg)](https://www.php.net/releases/8.2/en.php)
-[![CakePHP Version](https://img.shields.io/badge/CakePHP-5.2%2B-red.svg)](https://cakephp.org/)
+[![CakePHP Version](https://img.shields.io/badge/CakePHP-5.4%2B-red.svg)](https://cakephp.org/)
 [![Packagist Downloads](https://img.shields.io/packagist/dt/josbeir/cakephp-synapse)](https://packagist.org/packages/josbeir/cakephp-synapse)
 
 # Synapse: a CakePHP MCP-Server plugin
@@ -26,10 +26,8 @@ Expose your CakePHP application functionality via the Model Context Protocol (MC
   - [Creating Custom Tools, Resources, and Prompts](#creating-custom-tools-resources-and-prompts)
 - [CLI usage](#cli-usage)
 - [Running the Server](#running-the-server)
-  - [Command Options](#command-options)
   - [Testing with MCP Inspector](#testing-with-mcp-inspector)
-  - [Transport Options](#transport-options)
-- [Discovery Caching](#discovery-caching)
+- [Upgrading from 0.x](#upgrading-from-0x)
 - [Testing](#testing)
 - [Contributing](#contributing)
 - [License](#license)
@@ -37,10 +35,7 @@ Expose your CakePHP application functionality via the Model Context Protocol (MC
 
 ## Overview
 
-Synapse is a CakePHP plugin that implements the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), allowing AI assistants and other MCP clients to interact with your CakePHP application through a standardized interface.
-
-> [!WARNING]
-> This plugin uses the [MCP PHP SDK](https://github.com/modelcontextprotocol/php-sdk) which is currently in active development. Features and APIs may change as the SDK evolves.
+Synapse provides CakePHP development capabilities over the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/). It uses [Crustum MCP](https://github.com/Crustum/mcp) for protocol handling, local stdio transport, explicit capability registration, and Inspector integration.
 
 The Model Context Protocol is an open protocol that enables seamless integration between AI assistants (like Claude) and your application's data and functionality. With Synapse, you can expose:
 
@@ -51,7 +46,7 @@ The Model Context Protocol is an open protocol that enables seamless integration
 ## Features
 
 - 🚀 **Rapid Integration**: Enable MCP support in your CakePHP app with minimal setup
-- 🔍 **Attribute-Based Discovery**: Finds MCP tools, resources, and prompts using PHP 8+ attributes and class scanning
+- 🔍 **Explicit Capability Catalog**: Built-in tools, resources, and prompts with stable names, schemas, and annotations
 - 🛠️ **Built-in Tools**: Includes tools for system info, database schema exploration, route inspection, code execution, log inspection, cache management, ORM introspection, and more
 - 📚 **Advanced Documentation Search**: Full-text search with fuzzy matching and relevance ranking, powered by SQLite FTS5 (indexes official CakePHP markdown docs)
 - 🧩 **Customizable & Extensible**: Easily define your own tools, resources, and prompts using attributes and configuration
@@ -62,7 +57,11 @@ The Model Context Protocol is an open protocol that enables seamless integration
 ### Requirements
 
 - PHP 8.2 or higher
-- CakePHP 5.2 or higher
+- CakePHP 5.4 or higher (5.x)
+- SQLite3 with FTS5, intl, and the extensions required by Composer's dependency resolution
+- `ext-sodium` for the current OAuth dependency on PHP 8.5
+
+Crustum currently registers Bake console commands unconditionally, so CakePHP Bake is included as a runtime dependency. Synapse does not load Bake or Tessera as application plugins and does not require OAuth tables.
 
 ### Installing the Plugin
 
@@ -75,18 +74,25 @@ composer require --dev josbeir/cakephp-synapse
 > [!NOTE]
 > This plugin is typically used as a development tool to allow AI assistants to interact with your application during development. It should not be installed in production environments.
 
-```bash
-bin/cake plugin load --only-cli --optional Synapse
+Load the plugins in this order in your application's `config/plugins.php`:
+
+```php
+return [
+    'Crustum/Mcp' => [
+        'onlyCli' => true,
+        'optional' => true,
+        'routes' => false,
+        'middleware' => false,
+    ],
+    'Synapse' => ['onlyCli' => true, 'optional' => true],
+];
 ```
 
-The plugin will automatically register itself and discover MCP elements in your application.
+For an application that loads plugins programmatically, use the same plugin names and options with `$this->addPlugin()`. Use the full `Crustum/Mcp` name so configuration loading resolves the already loaded plugin.
 
-> [!TIP]
-> **After updating the plugin**, it's recommended to re-index the documentation to ensure all features work correctly:
-> ```bash
-> bin/cake synapse index -d  # Destroy old index
-> bin/cake synapse index     # Re-index documentation
-> ```
+Synapse registers its local server as `synapse`. This setup enables no HTTP endpoints or HTTP middleware.
+
+The existing documentation index remains compatible with 1.0. See the [upgrade guide](docs/UPGRADING.md) when migrating from 0.x.
 
 ## Quick Start
 
@@ -97,16 +103,16 @@ The plugin will automatically register itself and discover MCP elements in your 
 To connect Claude Code/Desktop or other MCP clients (VSCode/Zed/...):
 
 1. Configure the client to use stdio transport
-2. Point it to your CakePHP bin directory: `bin/cake synapse server`
+2. Point it to your CakePHP bin directory: `bin/cake mcp start synapse`
 3. The client will communicate with your app via the MCP protocol
 
-Most clients require a **command** wich will be your cake executable `bin/cake` followed by **arguments**: `synapse server`
+Most clients require a **command** which will be your cake executable `bin/cake` followed by **arguments**: `mcp start synapse`
 
 ```json
 {
   "my-cakephp-app": {
     "command": "bin/cake",
-    "args": ["synapse", "server"]
+    "args": ["mcp", "start", "synapse"]
   }
 }
 ```
@@ -117,14 +123,18 @@ Or run when using `DDEV` instance
 {
   "my-cakephp-app": {
     "command": "ddev",
-    "args": ["cake", "synapse", "server"],
+    "args": ["cake", "mcp", "start", "synapse"]
   }
 }
 ```
 
 ## Configuration
 
-Various configuration options are available for Synapse. Refer to `config/synapse.php` in this plugin for details on available settings and customization.
+Defaults live in `config/synapse.php`. Override them under the `Synapse` key in your application configuration, or create `config/app_synapse.php`. Documentation indexing, prompt settings, Tinker paths, server metadata, and instructions remain configurable.
+
+Additional capabilities belong under `Synapse.capabilities.tools`, `.prompts`, and `.resources`. Crustum registration belongs under `Mcp.local`. Hosts can override `Mcp.local.synapse` with their own server class.
+
+Capabilities are registered explicitly on each process startup. Synapse no longer scans application directories or caches discovered classes. Crustum handles protocol negotiation and response cache hints.
 
 
 
@@ -192,11 +202,7 @@ Synapse includes pre-defined prompt workflows that guide LLMs through common Cak
 | `tinker-workshop` | Interactive PHP exploration and testing guide | `goal` (required: explore/test/debug), `subject` (optional) |
 | `quality-assurance` | Coding guidelines and QA best practices for CakePHP | `context` (optional: guidelines/integration/troubleshooting/all), `tools` (optional: all or comma-separated list) |
 
-**Prompts automatically:**
-- Search relevant documentation
-- Read detailed guides
-- Execute test code via tinker
-- Provide structured, comprehensive answers following best practices
+Prompts return guidance for the agent to follow using the available tools. They do not invoke tools or execute code themselves.
 
 **Benefits:**
 - **Faster workflows** - Common tasks become one-step operations
@@ -233,39 +239,23 @@ return [
 
 ### Creating Custom Tools, Resources, and Prompts
 
-You can extend Synapse with your own tools, resources, and prompts using PHP attributes. Synapse automatically discovers classes in your `src/` directory using MCP attributes.
-
-**Tools** expose functions that AI assistants can call. Create them with `#[McpTool]`:
+Create classes extending Crustum's `Tool`, `Prompt`, or `Resource`, using its supported names, descriptions, schemas, and response API. Register additional classes explicitly:
 
 ```php
-<?php
-namespace App\Mcp;
-
-use Mcp\Capability\Attribute\McpTool;
-
-class MyTools
-{
-    #[McpTool(name: 'get_user', description: 'Fetch a user by ID')]
-    public function getUser(int $id): array
-    {
-        $usersTable = $this->fetchTable('Users');
-        $user = $usersTable->get($id);
-
-        return [
-            'id' => $user->id,
-            'email' => $user->email,
-            'name' => $user->name,
-        ];
-    }
-}
+return [
+    'Synapse' => [
+        'capabilities' => [
+            'tools' => [\App\Mcp\Tools\ApplicationInfoTool::class],
+            'prompts' => [],
+            'resources' => [],
+        ],
+    ],
+];
 ```
 
-**Resources** expose data sources. Create them with `#[McpResourceTemplate]`.
+These lists append to Synapse's built-in catalog. Duplicate names and invalid classes fail at startup. Register dependencies in the CakePHP container; capability handlers can receive services through method injection. Crustum's `shouldRegister()` conditions apply to both listing and invocation.
 
-**Prompts** guide LLMs through workflows. Create them with `#[McpPrompt]`.
-
-For detailed documentation on all MCP capabilities, attributes, and implementation patterns, see the [MCP PHP SDK documentation](https://github.com/modelcontextprotocol/php-sdk).
-
+See the [complete custom-tool migration example](docs/UPGRADING.md#custom-capabilities) and [Crustum integration documentation](https://github.com/Crustum/mcp/blob/main/docs/index.md).
 
 ## CLI usage
 
@@ -299,92 +289,31 @@ bin/cake synapse search "authentication" --non-interactive
 
 ## Running the Server
 
-> [!NOTE]
-> In most cases, you do **not** need to run the MCP server manually. The server is typically started automatically by your IDE or MCP-enabled client (such as Claude Desktop, VSCode, Zed, etc.) when you configure it to use your CakePHP app. The client will launch the server using the appropriate command (e.g., `bin/cake synapse server`) and handle the connection for you.
-
-If you want to run the MCP server manually for testing or debugging purposes, you can use the following CLI commands:
+Configure your MCP client to launch the local server from the application directory:
 
 ```bash
-# Start with default settings (stdio transport)
-bin/cake synapse server
-
-# Start with verbose output
-bin/cake synapse server --verbose
-
-# Disable caching
-bin/cake synapse server --no-cache
-
-# Launch MCP Inspector for testing (requires Node.js/npx)
-bin/cake synapse server --inspect
-
-# View help
-bin/cake synapse server --help
+bin/cake mcp start synapse
 ```
 
-### Command Options
-
-| Option | Short | Description |
-|--------|-------|-------------|
-| `--transport` | `-t` | Transport type (currently only `stdio` is supported) |
-| `--no-cache` | `-n` | Disable discovery caching for this run |
-| `--clear-cache` | `-c` | Clear discovery cache before starting |
-| `--inspect` | `-i` | Launch MCP Inspector to test the server interactively (requires Node.js/npx) |
-| `--verbose` | `-v` | Enable verbose output (pipes logging to stderr) |
-| `--quiet` | `-q` | Suppress all output except errors |
+The command reads MCP requests from stdin and writes only protocol responses to stdout. Configure application logging to use files or stderr.
 
 ### Testing with MCP Inspector
 
-The `--inspect` flag launches the [MCP Inspector](https://github.com/modelcontextprotocol/inspector), a development tool that provides a web-based UI for testing your MCP server:
+Crustum provides the native Inspector command:
 
 ```bash
-bin/cake synapse server --inspect
+bin/cake mcp inspector synapse
 ```
 
-This will:
-1. Start the MCP Inspector (downloads automatically via npx if not installed)
-2. Launch the server in inspector mode
-3. Open a web browser with an interactive UI
-4. Allow you to test tools, resources, and prompts interactively
+Inspector requires Node.js/npx and a browser. It can inspect capability metadata and invoke tools, prompts, and resources.
 
-**Requirements:**
-- Node.js and npx must be installed
-- A web browser
+Synapse officially supports local stdio. Remote HTTP servers, OAuth configuration, and MCP Apps are outside this release's integration.
 
-The inspector is invaluable during development for:
-- Testing tool functionality
-- Inspecting resource data
-- Debugging server behavior
-- Verifying tool schemas and documentation
+## Upgrading from 0.x
 
-### Transport Options
+Version 1.0 replaces the SDK implementation with Crustum MCP and requires CakePHP 5.4+. Update client launch arguments and migrate SDK attribute capabilities to explicit Crustum classes. The old server command, discovery cache flags, and scanning configuration have been removed.
 
-Currently, Synapse supports:
-- **stdio** - Standard input/output (default, recommended for most MCP clients)
-
-Future versions may include HTTP/SSE transport.
-
-## Discovery Caching
-
-Discovery caching improves server startup performance by caching the discovered MCP elements (tools, resources, prompts).
-
-### Configuration
-
-Synapse uses CakePHP's built-in PSR-16 cache system. Configure caching in `config/synapse.php`
-
-### Command Options
-
-```bash
-# Disable caching for this run
-bin/cake synapse server --no-cache
-bin/cake synapse server -n
-
-# Clear cache before starting
-bin/cake synapse server --clear-cache
-bin/cake synapse server -c
-
-# Combine options
-bin/cake synapse server --clear-cache --verbose
-```
+See [UPGRADING.md](docs/UPGRADING.md) for the migration checklist, configuration mapping, and custom-tool example.
 
 ## Testing
 
@@ -441,7 +370,4 @@ This plugin is open-sourced software licensed under the [MIT license](LICENSE.md
 
 - Built with [CakePHP](https://cakephp.org/)
 - Implements [Model Context Protocol](https://modelcontextprotocol.io/)
-- Uses the [MCP PHP SDK](https://github.com/modelcontextprotocol/php-sdk)
-
-> [!NOTE]
-> The MCP PHP SDK is in active development and APIs may change.
+- Built on [Crustum MCP](https://github.com/Crustum/mcp)

@@ -5,10 +5,10 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
-use Mcp\Exception\PromptGetException;
-use Mcp\Schema\Content\PromptMessage;
-use Mcp\Schema\Content\TextContent;
-use Mcp\Schema\Enum\Role;
+use Crustum\Mcp\Enums\Role;
+use Crustum\Mcp\Exception\ValidationException;
+use Crustum\Mcp\Response;
+use Crustum\Mcp\Server\Content\Text as TextContent;
 use Synapse\Prompts\FeatureBuilderPrompt;
 
 /**
@@ -41,35 +41,35 @@ class FeatureBuilderPromptTest extends TestCase
 
     public function testFullStack(): void
     {
-        $result = $this->prompt->handle('user authentication', 'full-stack');
+        $result = $this->prompt->render('user authentication', 'full-stack');
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertSame(Role::User, $result[0]->role);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('full-stack', $content->text);
-        $this->assertStringContainsString('controllers, models, views', $content->text);
-        $this->assertStringContainsString('5.x', $content->text);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertSame(Role::User, $result[0]->role());
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('full-stack', (string)$content);
+        $this->assertStringContainsString('controllers, models, views', (string)$content);
+        $this->assertStringContainsString('5.x', (string)$content);
     }
 
     public function testSpecificComponent(): void
     {
-        $result = $this->prompt->handle('file upload', 'controller');
+        $result = $this->prompt->render('file upload', 'controller');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('controller', $content->text);
-        $this->assertStringContainsString('file upload', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('controller', (string)$content);
+        $this->assertStringContainsString('file upload', (string)$content);
     }
 
     public function testIncludesPhpVersion(): void
     {
-        $result = $this->prompt->handle('REST API endpoint', 'middleware');
+        $result = $this->prompt->render('REST API endpoint', 'middleware');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('PHP 8.2+', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('PHP 8.2+', (string)$content);
     }
 
     public function testUsesConfiguredCakephpVersion(): void
@@ -77,11 +77,11 @@ class FeatureBuilderPromptTest extends TestCase
         Configure::write('Synapse.prompts.cakephp_version', '4.5');
         $prompt = new FeatureBuilderPrompt();
 
-        $result = $prompt->handle('payment integration');
+        $result = $prompt->render('payment integration');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('4.5', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('4.5', (string)$content);
     }
 
     public function testUsesConfiguredPhpVersion(): void
@@ -89,54 +89,54 @@ class FeatureBuilderPromptTest extends TestCase
         Configure::write('Synapse.prompts.php_version', '8.3');
         $prompt = new FeatureBuilderPrompt();
 
-        $result = $prompt->handle('API endpoint');
+        $result = $prompt->render('API endpoint');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('PHP 8.3+', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('PHP 8.3+', (string)$content);
     }
 
     public function testReturnsValidStructure(): void
     {
-        $result = $this->prompt->handle('export feature', 'model');
+        $result = $this->prompt->render('export feature', 'model');
 
         $this->assertCount(1, $result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertSame(Role::User, $result[0]->role);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertNotEmpty($content->text);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertSame(Role::User, $result[0]->role());
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertNotEmpty((string)$content);
     }
 
     public function testInvalidComponentThrowsException(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage("Invalid value for parameter 'component': 'invalid'");
 
-        $this->prompt->handle('user authentication', 'invalid');
+        $this->prompt->render('user authentication', 'invalid');
     }
 
     public function testInvalidComponentContainsExpectedValues(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Expected one of: controller, model, behavior, helper, middleware, command, full-stack');
 
-        $this->prompt->handle('feature', 'service');
+        $this->prompt->render('feature', 'service');
     }
 
     public function testInvalidComponentContainsPromptName(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Prompt: feature-builder');
 
-        $this->prompt->handle('REST API', 'bad');
+        $this->prompt->render('REST API', 'bad');
     }
 
     public function testDefaultComponentIsValid(): void
     {
-        $result = $this->prompt->handle('payment integration');
+        $result = $this->prompt->render('payment integration');
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
     }
 }

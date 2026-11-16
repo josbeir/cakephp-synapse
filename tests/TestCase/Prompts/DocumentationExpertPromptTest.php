@@ -5,10 +5,10 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
-use Mcp\Exception\PromptGetException;
-use Mcp\Schema\Content\PromptMessage;
-use Mcp\Schema\Content\TextContent;
-use Mcp\Schema\Enum\Role;
+use Crustum\Mcp\Enums\Role;
+use Crustum\Mcp\Exception\ValidationException;
+use Crustum\Mcp\Response;
+use Crustum\Mcp\Server\Content\Text as TextContent;
 use Synapse\Prompts\DocumentationExpertPrompt;
 
 /**
@@ -41,47 +41,47 @@ class DocumentationExpertPromptTest extends TestCase
 
     public function testBasicDepth(): void
     {
-        $result = $this->prompt->handle('Authentication', 'basic');
+        $result = $this->prompt->render('Authentication', 'basic');
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertSame(Role::User, $result[0]->role);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('basic overview', $content->text);
-        $this->assertStringContainsString('Authentication', $content->text);
-        $this->assertStringContainsString('5.x', $content->text);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertSame(Role::User, $result[0]->role());
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('basic overview', (string)$content);
+        $this->assertStringContainsString('Authentication', (string)$content);
+        $this->assertStringContainsString('5.x', (string)$content);
     }
 
     public function testIntermediateDepth(): void
     {
-        $result = $this->prompt->handle('ORM', 'intermediate');
+        $result = $this->prompt->render('ORM', 'intermediate');
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('detailed information', $content->text);
-        $this->assertStringContainsString('ORM', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('detailed information', (string)$content);
+        $this->assertStringContainsString('ORM', (string)$content);
     }
 
     public function testAdvancedDepth(): void
     {
-        $result = $this->prompt->handle('Middleware', 'advanced');
+        $result = $this->prompt->render('Middleware', 'advanced');
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('deep dive', $content->text);
-        $this->assertStringContainsString('expert-level', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('deep dive', (string)$content);
+        $this->assertStringContainsString('expert-level', (string)$content);
     }
 
     public function testDefaultsToIntermediate(): void
     {
-        $result = $this->prompt->handle('Controllers');
+        $result = $this->prompt->render('Controllers');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('detailed information', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('detailed information', (string)$content);
     }
 
     public function testUsesConfiguredCakephpVersion(): void
@@ -89,12 +89,12 @@ class DocumentationExpertPromptTest extends TestCase
         Configure::write('Synapse.prompts.cakephp_version', '4.5');
         $prompt = new DocumentationExpertPrompt();
 
-        $result = $prompt->handle('Routing', 'basic');
+        $result = $prompt->render('Routing', 'basic');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('4.5', $content->text);
-        $this->assertStringNotContainsString('5.x', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('4.5', (string)$content);
+        $this->assertStringNotContainsString('5.x', (string)$content);
     }
 
     public function testUsesConfiguredPhpVersion(): void
@@ -102,46 +102,46 @@ class DocumentationExpertPromptTest extends TestCase
         Configure::write('Synapse.prompts.php_version', '8.3');
         $prompt = new DocumentationExpertPrompt();
 
-        $result = $prompt->handle('Types', 'intermediate');
+        $result = $prompt->render('Types', 'intermediate');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('PHP 8.3+', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('PHP 8.3+', (string)$content);
     }
 
     public function testReturnsValidStructure(): void
     {
-        $result = $this->prompt->handle('Testing', 'basic');
+        $result = $this->prompt->render('Testing', 'basic');
 
         $this->assertCount(1, $result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertSame(Role::User, $result[0]->role);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertNotEmpty($content->text);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertSame(Role::User, $result[0]->role());
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertNotEmpty((string)$content);
     }
 
     public function testInvalidDepthThrowsException(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage("Invalid value for parameter 'depth': 'expert'");
 
-        $this->prompt->handle('Authentication', 'expert');
+        $this->prompt->render('Authentication', 'expert');
     }
 
     public function testInvalidDepthContainsExpectedValues(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Expected one of: basic, intermediate, advanced');
 
-        $this->prompt->handle('ORM', 'invalid');
+        $this->prompt->render('ORM', 'invalid');
     }
 
     public function testInvalidDepthContainsPromptName(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Prompt: documentation-expert');
 
-        $this->prompt->handle('Controllers', 'custom');
+        $this->prompt->render('Controllers', 'custom');
     }
 }
