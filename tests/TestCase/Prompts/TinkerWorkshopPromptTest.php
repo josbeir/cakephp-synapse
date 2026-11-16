@@ -5,10 +5,10 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
-use Mcp\Exception\PromptGetException;
-use Mcp\Schema\Content\PromptMessage;
-use Mcp\Schema\Content\TextContent;
-use Mcp\Schema\Enum\Role;
+use Crustum\Mcp\Enums\Role;
+use Crustum\Mcp\Exception\ValidationException;
+use Crustum\Mcp\Response;
+use Crustum\Mcp\Server\Content\Text as TextContent;
 use Synapse\Prompts\TinkerWorkshopPrompt;
 
 /**
@@ -37,56 +37,56 @@ class TinkerWorkshopPromptTest extends TestCase
 
     public function testExplore(): void
     {
-        $result = $this->prompt->handle('explore', 'Authentication component');
+        $result = $this->prompt->render('explore', 'Authentication component');
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertSame(Role::User, $result[0]->role);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('explore', $content->text);
-        $this->assertStringContainsString('fetchTable', $content->text);
-        $this->assertStringContainsString('Authentication component', $content->text);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertSame(Role::User, $result[0]->role());
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('explore', (string)$content);
+        $this->assertStringContainsString('fetchTable', (string)$content);
+        $this->assertStringContainsString('Authentication component', (string)$content);
     }
 
     public function testTest(): void
     {
-        $result = $this->prompt->handle('test', 'validation rules');
+        $result = $this->prompt->render('test', 'validation rules');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('test', $content->text);
-        $this->assertStringContainsString('validation rules', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('test', (string)$content);
+        $this->assertStringContainsString('validation rules', (string)$content);
     }
 
     public function testDebug(): void
     {
-        $result = $this->prompt->handle('debug', 'query issue');
+        $result = $this->prompt->render('debug', 'query issue');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('debug', $content->text);
-        $this->assertStringContainsString('diagnostic', $content->text);
-        $this->assertStringContainsString('query issue', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('debug', (string)$content);
+        $this->assertStringContainsString('diagnostic', (string)$content);
+        $this->assertStringContainsString('query issue', (string)$content);
     }
 
     public function testWithoutSubject(): void
     {
-        $result = $this->prompt->handle('explore');
+        $result = $this->prompt->render('explore');
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
+        $this->assertInstanceOf(Response::class, $result[0]);
     }
 
     public function testIncludesAvailableMethods(): void
     {
-        $result = $this->prompt->handle('test');
+        $result = $this->prompt->render('test');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('fetchTable()', $content->text);
-        $this->assertStringContainsString('getTableLocator()', $content->text);
-        $this->assertStringContainsString('log()', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('fetchTable()', (string)$content);
+        $this->assertStringContainsString('getTableLocator()', (string)$content);
+        $this->assertStringContainsString('log()', (string)$content);
     }
 
     public function testUsesConfiguredCakephpVersion(): void
@@ -94,54 +94,54 @@ class TinkerWorkshopPromptTest extends TestCase
         Configure::write('Synapse.prompts.cakephp_version', '4.5');
         $prompt = new TinkerWorkshopPrompt();
 
-        $result = $prompt->handle('explore', 'table structure');
+        $result = $prompt->render('explore', 'table structure');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('4.5', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('4.5', (string)$content);
     }
 
     public function testReturnsValidStructure(): void
     {
-        $result = $this->prompt->handle('debug', 'association loading');
+        $result = $this->prompt->render('debug', 'association loading');
 
         $this->assertCount(1, $result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertSame(Role::User, $result[0]->role);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertNotEmpty($content->text);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertSame(Role::User, $result[0]->role());
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertNotEmpty((string)$content);
     }
 
     public function testInvalidGoalThrowsException(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage("Invalid value for parameter 'goal': 'invalid'");
 
-        $this->prompt->handle('invalid', 'some subject');
+        $this->prompt->render('invalid', 'some subject');
     }
 
     public function testInvalidGoalContainsExpectedValues(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Expected one of: explore, test, debug');
 
-        $this->prompt->handle('analyze', 'database queries');
+        $this->prompt->render('analyze', 'database queries');
     }
 
     public function testInvalidGoalContainsPromptName(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Prompt: tinker-workshop');
 
-        $this->prompt->handle('bad', 'something');
+        $this->prompt->render('bad', 'something');
     }
 
     public function testValidGoalsWithoutSubject(): void
     {
-        $result = $this->prompt->handle('explore');
+        $result = $this->prompt->render('explore');
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
     }
 }

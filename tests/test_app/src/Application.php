@@ -26,15 +26,13 @@ class Application extends BaseApplication
             parent::bootstrap();
         }
 
+        $this->addPlugin('Crustum/Mcp', ['routes' => false, 'middleware' => false]);
         $this->addPlugin(SynapsePlugin::class);
     }
 
     public function pluginBootstrap(): void
     {
         parent::pluginBootstrap();
-
-        // Allows MCP tool discovery from test_app
-        Configure::write('Synapse.discovery.scanDirs', ['../../src']);
 
         // Make sure we override he Mock adapter in our application context too.
         Configure::write('Synapse.documentation.git_adapter', MockGitAdapter::class);

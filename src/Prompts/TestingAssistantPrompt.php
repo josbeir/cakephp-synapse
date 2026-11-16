@@ -3,30 +3,53 @@ declare(strict_types=1);
 
 namespace Synapse\Prompts;
 
-use Mcp\Capability\Attribute\McpPrompt;
-use Mcp\Schema\Content\PromptMessage;
-use Mcp\Schema\Content\TextContent;
-use Mcp\Schema\Enum\Role;
+use Crustum\Mcp\Request;
+use Crustum\Mcp\Response;
+use Crustum\Mcp\Server\Attributes\Description;
+use Crustum\Mcp\Server\Attributes\Name;
+use Crustum\Mcp\Server\Prompts\Argument;
 
 /**
  * Testing Assistant Prompt
  *
  * Generate test cases and testing guidance.
  */
+#[Name('testing-assistant')]
+#[Description('Generate test cases and testing guidance')]
 class TestingAssistantPrompt extends AbstractPrompt
 {
+    /**
+     * @inheritDoc
+     */
+    public function arguments(): array
+    {
+        return [
+            new Argument('subject', 'What to test (description or code snippet)', true),
+            new Argument('testType', 'Test type (unit, integration, fixture, all)', false),
+        ];
+    }
+
+    /**
+     * Render the advertised prompt arguments.
+     *
+     * @param \Crustum\Mcp\Request $request MCP arguments
+     * @return array<\Crustum\Mcp\Response>
+     */
+    public function handle(Request $request): array
+    {
+        $arguments = $this->validatedArguments($request);
+
+        return $this->render($arguments['subject'], $arguments['testType'] ?? 'all');
+    }
+
     /**
      * Generate test cases and guidance
      *
      * @param string $subject What to test (description or code snippet)
      * @param string $testType Test type (unit, integration, fixture, all)
-     * @return array<\Mcp\Schema\Content\PromptMessage>
+     * @return array<\Crustum\Mcp\Response>
      */
-    #[McpPrompt(
-        name: 'testing-assistant',
-        description: 'Generate test cases and testing guidance',
-    )]
-    public function handle(
+    public function render(
         string $subject,
         string $testType = 'all',
     ): array {
@@ -38,10 +61,7 @@ class TestingAssistantPrompt extends AbstractPrompt
         );
 
         return [
-            new PromptMessage(
-                role: Role::User,
-                content: new TextContent(
-                    text: <<<TEXT
+            Response::text(<<<TEXT
 I need to write tests for: {$subject}
 
 Test type: {$testType}
@@ -70,9 +90,7 @@ Follow CakePHP {$this->cakephpVersion} testing conventions:
 - Proper test isolation
 - Factory patterns for test data
 - Integration test helpers
-TEXT,
-                ),
-            ),
+TEXT),
         ];
     }
 }

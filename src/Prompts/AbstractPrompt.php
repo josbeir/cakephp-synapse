@@ -4,14 +4,16 @@ declare(strict_types=1);
 namespace Synapse\Prompts;
 
 use Cake\Core\Configure;
-use Mcp\Exception\PromptGetException;
+use Crustum\Mcp\Exception\ValidationException;
+use Crustum\Mcp\Request;
+use Crustum\Mcp\Server\Prompt;
 
 /**
  * Abstract Prompt Base Class
  *
  * Provides shared configuration and utilities for all MCP prompts.
  */
-abstract class AbstractPrompt
+abstract class AbstractPrompt extends Prompt
 {
     /**
      * CakePHP version to reference in prompts
@@ -39,7 +41,7 @@ abstract class AbstractPrompt
      * @param array<string> $allowed Allowed values
      * @param string $paramName The parameter name (for error message)
      * @param string $promptName The prompt name (for error message)
-     * @throws \Mcp\Exception\PromptGetException
+     * @throws \Crustum\Mcp\Exception\ValidationException
      */
     protected function validateEnumParameter(
         string $value,
@@ -49,7 +51,8 @@ abstract class AbstractPrompt
     ): void {
         if (!in_array($value, $allowed, true)) {
             $allowedStr = implode(', ', $allowed);
-            throw new PromptGetException(
+            $this->invalidArgument(
+                $paramName,
                 sprintf("Invalid value for parameter '%s': '%s'. ", $paramName, $value) .
                 sprintf('Expected one of: %s. ', $allowedStr) .
                 'Prompt: ' . $promptName,
@@ -63,7 +66,7 @@ abstract class AbstractPrompt
      * @param string $value The parameter value
      * @param string $paramName The parameter name (for error message)
      * @param string $promptName The prompt name (for error message)
-     * @throws \Mcp\Exception\PromptGetException
+     * @throws \Crustum\Mcp\Exception\ValidationException
      */
     protected function validateNonEmptyParameter(
         string $value,
@@ -71,7 +74,8 @@ abstract class AbstractPrompt
         string $promptName,
     ): void {
         if ($value === '' || $value === '0') {
-            throw new PromptGetException(
+            $this->invalidArgument(
+                $paramName,
                 sprintf("Parameter '%s' cannot be empty. Prompt: %s", $paramName, $promptName),
             );
         }
@@ -84,7 +88,7 @@ abstract class AbstractPrompt
      * @param array<string> $allowed Allowed values
      * @param string $paramName The parameter name (for error message)
      * @param string $promptName The prompt name (for error message)
-     * @throws \Mcp\Exception\PromptGetException
+     * @throws \Crustum\Mcp\Exception\ValidationException
      */
     protected function validateCommaSeparatedParameter(
         string $value,
@@ -102,11 +106,56 @@ abstract class AbstractPrompt
         if ($invalid !== []) {
             $invalidStr = implode(', ', $invalid);
             $allowedStr = implode(', ', $allowed);
-            throw new PromptGetException(
+            $this->invalidArgument(
+                $paramName,
                 sprintf("Invalid values for parameter '%s': %s. ", $paramName, $invalidStr) .
                 sprintf('Expected one of: %s. ', $allowedStr) .
                 'Prompt: ' . $promptName,
             );
         }
+    }
+
+    /**
+     * Validate string arguments before defaults and prompt-specific validation.
+     *
+     * @param \Crustum\Mcp\Request $request MCP arguments
+     * @return array<string, string>
+     */
+    protected function validatedArguments(Request $request): array
+    {
+        $input = $request->all();
+        $arguments = [];
+        foreach ($this->arguments() as $argument) {
+            if (!array_key_exists($argument->name, $input)) {
+                if ($argument->required) {
+                    $this->invalidArgument($argument->name, sprintf('Argument "%s" is required.', $argument->name));
+                }
+
+                continue;
+            }
+
+            $value = $input[$argument->name];
+            if (!is_string($value) || ($argument->required && trim($value) === '')) {
+                $this->invalidArgument(
+                    $argument->name,
+                    sprintf('Argument "%s" must be a non-empty string.', $argument->name),
+                );
+            }
+
+            $arguments[$argument->name] = $value;
+        }
+
+        return $arguments;
+    }
+
+    /**
+     * Report an invalid prompt argument using Crustum's protocol error mapping.
+     *
+     * @param string $field Argument name
+     * @param string $message Actionable validation message
+     */
+    protected function invalidArgument(string $field, string $message): never
+    {
+        throw new ValidationException([$field => [$message]], $message);
     }
 }

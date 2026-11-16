@@ -3,30 +3,53 @@ declare(strict_types=1);
 
 namespace Synapse\Prompts;
 
-use Mcp\Capability\Attribute\McpPrompt;
-use Mcp\Schema\Content\PromptMessage;
-use Mcp\Schema\Content\TextContent;
-use Mcp\Schema\Enum\Role;
+use Crustum\Mcp\Request;
+use Crustum\Mcp\Response;
+use Crustum\Mcp\Server\Attributes\Description;
+use Crustum\Mcp\Server\Attributes\Name;
+use Crustum\Mcp\Server\Prompts\Argument;
 
 /**
  * Code Reviewer Prompt
  *
  * Review code against CakePHP conventions and best practices.
  */
+#[Name('code-reviewer')]
+#[Description('Review code against CakePHP conventions and best practices')]
 class CodeReviewerPrompt extends AbstractPrompt
 {
+    /**
+     * @inheritDoc
+     */
+    public function arguments(): array
+    {
+        return [
+            new Argument('code', 'Code snippet to review', true),
+            new Argument('focus', 'Focus area (conventions, security, performance, testing, all)', false),
+        ];
+    }
+
+    /**
+     * Render the advertised prompt arguments.
+     *
+     * @param \Crustum\Mcp\Request $request MCP arguments
+     * @return array<\Crustum\Mcp\Response>
+     */
+    public function handle(Request $request): array
+    {
+        $arguments = $this->validatedArguments($request);
+
+        return $this->render($arguments['code'], $arguments['focus'] ?? 'all');
+    }
+
     /**
      * Review code against CakePHP conventions
      *
      * @param string $code Code snippet to review
      * @param string $focus Focus area (conventions, security, performance, testing, all)
-     * @return array<\Mcp\Schema\Content\PromptMessage>
+     * @return array<\Crustum\Mcp\Response>
      */
-    #[McpPrompt(
-        name: 'code-reviewer',
-        description: 'Review code against CakePHP conventions and best practices',
-    )]
-    public function handle(
+    public function render(
         string $code,
         string $focus = 'all',
     ): array {
@@ -38,10 +61,7 @@ class CodeReviewerPrompt extends AbstractPrompt
         );
 
         return [
-            new PromptMessage(
-                role: Role::User,
-                content: new TextContent(
-                    text: <<<TEXT
+            Response::text(<<<TEXT
 Please review this CakePHP code:
 
 ```php
@@ -69,9 +89,7 @@ Provide:
 - Recommended fixes with corrected code
 - Links to relevant documentation
 - Explanation of why each change improves the code
-TEXT,
-                ),
-            ),
+TEXT),
         ];
     }
 }

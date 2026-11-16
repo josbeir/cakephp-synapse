@@ -5,10 +5,10 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
-use Mcp\Exception\PromptGetException;
-use Mcp\Schema\Content\PromptMessage;
-use Mcp\Schema\Content\TextContent;
-use Mcp\Schema\Enum\Role;
+use Crustum\Mcp\Enums\Role;
+use Crustum\Mcp\Exception\ValidationException;
+use Crustum\Mcp\Response;
+use Crustum\Mcp\Server\Content\Text as TextContent;
 use Synapse\Prompts\DebugHelperPrompt;
 
 /**
@@ -38,36 +38,36 @@ class DebugHelperPromptTest extends TestCase
     public function testBasicError(): void
     {
         $error = 'Call to undefined method Foo::bar()';
-        $result = $this->prompt->handle($error);
+        $result = $this->prompt->render($error);
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertSame(Role::User, $result[0]->role);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString($error, $content->text);
-        $this->assertStringContainsString('diagnostic steps', $content->text);
-        $this->assertStringContainsString('search_docs', $content->text);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertSame(Role::User, $result[0]->role());
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString($error, (string)$content);
+        $this->assertStringContainsString('diagnostic steps', (string)$content);
+        $this->assertStringContainsString('search_docs', (string)$content);
     }
 
     public function testWithContext(): void
     {
         $error = 'Database connection failed';
-        $result = $this->prompt->handle($error, 'database');
+        $result = $this->prompt->render($error, 'database');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('database layer', $content->text);
-        $this->assertStringContainsString($error, $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('database layer', (string)$content);
+        $this->assertStringContainsString($error, (string)$content);
     }
 
     public function testIncludesVersionReference(): void
     {
-        $result = $this->prompt->handle('Some error', 'controller');
+        $result = $this->prompt->render('Some error', 'controller');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('5.x', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('5.x', (string)$content);
     }
 
     public function testUsesConfiguredCakephpVersion(): void
@@ -75,54 +75,54 @@ class DebugHelperPromptTest extends TestCase
         Configure::write('Synapse.prompts.cakephp_version', '4.5');
         $prompt = new DebugHelperPrompt();
 
-        $result = $prompt->handle('Error message');
+        $result = $prompt->render('Error message');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('4.5', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('4.5', (string)$content);
     }
 
     public function testReturnsValidStructure(): void
     {
-        $result = $this->prompt->handle('Test error');
+        $result = $this->prompt->render('Test error');
 
         $this->assertCount(1, $result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertSame(Role::User, $result[0]->role);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertNotEmpty($content->text);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertSame(Role::User, $result[0]->role());
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertNotEmpty((string)$content);
     }
 
     public function testInvalidContextThrowsException(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage("Invalid value for parameter 'context': 'invalid'");
 
-        $this->prompt->handle('Some error', 'invalid');
+        $this->prompt->render('Some error', 'invalid');
     }
 
     public function testInvalidContextContainsExpectedValues(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Expected one of: controller, model, database, view');
 
-        $this->prompt->handle('Error message', 'service');
+        $this->prompt->render('Error message', 'service');
     }
 
     public function testInvalidContextContainsPromptName(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Prompt: debug-helper');
 
-        $this->prompt->handle('Test error', 'bad');
+        $this->prompt->render('Test error', 'bad');
     }
 
     public function testEmptyContextIsValid(): void
     {
-        $result = $this->prompt->handle('Error message', '');
+        $result = $this->prompt->render('Error message', '');
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
     }
 }

@@ -3,30 +3,53 @@ declare(strict_types=1);
 
 namespace Synapse\Prompts;
 
-use Mcp\Capability\Attribute\McpPrompt;
-use Mcp\Schema\Content\PromptMessage;
-use Mcp\Schema\Content\TextContent;
-use Mcp\Schema\Enum\Role;
+use Crustum\Mcp\Request;
+use Crustum\Mcp\Response;
+use Crustum\Mcp\Server\Attributes\Description;
+use Crustum\Mcp\Server\Attributes\Name;
+use Crustum\Mcp\Server\Prompts\Argument;
 
 /**
  * ORM Query Helper Prompt
  *
  * Build complex ORM queries with guidance.
  */
+#[Name('orm-query-helper')]
+#[Description('Build complex ORM queries with guidance')]
 class OrmQueryHelperPrompt extends AbstractPrompt
 {
+    /**
+     * @inheritDoc
+     */
+    public function arguments(): array
+    {
+        return [
+            new Argument('queryGoal', 'What you want to query (describe in plain English)', true),
+            new Argument('tables', 'Tables involved (comma-separated)', false),
+        ];
+    }
+
+    /**
+     * Render the advertised prompt arguments.
+     *
+     * @param \Crustum\Mcp\Request $request MCP arguments
+     * @return array<\Crustum\Mcp\Response>
+     */
+    public function handle(Request $request): array
+    {
+        $arguments = $this->validatedArguments($request);
+
+        return $this->render($arguments['queryGoal'], $arguments['tables'] ?? '');
+    }
+
     /**
      * Build complex ORM queries with guidance
      *
      * @param string $queryGoal What you want to query (describe in plain English)
      * @param string $tables Tables involved (comma-separated)
-     * @return array<\Mcp\Schema\Content\PromptMessage>
+     * @return array<\Crustum\Mcp\Response>
      */
-    #[McpPrompt(
-        name: 'orm-query-helper',
-        description: 'Build complex ORM queries with guidance',
-    )]
-    public function handle(
+    public function render(
         string $queryGoal,
         string $tables = '',
     ): array {
@@ -36,10 +59,7 @@ class OrmQueryHelperPrompt extends AbstractPrompt
 Tables involved: ' . $tables : '';
 
         return [
-            new PromptMessage(
-                role: Role::User,
-                content: new TextContent(
-                    text: <<<TEXT
+            Response::text(<<<TEXT
 I need to build a CakePHP {$this->cakephpVersion} ORM query for: {$queryGoal}{$tablesHint}
 
 Please:
@@ -75,9 +95,7 @@ Please:
 9. Add proper error handling and type safety
 
 Make it production-ready with proper type hints and null handling.
-TEXT,
-                ),
-            ),
+TEXT),
         ];
     }
 }

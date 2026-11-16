@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  PHP_EXTENSIONS: intl, sqlite3, fileinfo, pdo_sqlite
+  PHP_EXTENSIONS: intl, sqlite3, fileinfo, pdo_sqlite, sodium
 
 jobs:
   test:

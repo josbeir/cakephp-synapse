@@ -3,30 +3,53 @@ declare(strict_types=1);
 
 namespace Synapse\Prompts;
 
-use Mcp\Capability\Attribute\McpPrompt;
-use Mcp\Schema\Content\PromptMessage;
-use Mcp\Schema\Content\TextContent;
-use Mcp\Schema\Enum\Role;
+use Crustum\Mcp\Request;
+use Crustum\Mcp\Response;
+use Crustum\Mcp\Server\Attributes\Description;
+use Crustum\Mcp\Server\Attributes\Name;
+use Crustum\Mcp\Server\Prompts\Argument;
 
 /**
  * Performance Analyzer Prompt
  *
  * Analyze and optimize performance issues.
  */
+#[Name('performance-analyzer')]
+#[Description('Analyze and optimize performance issues')]
 class PerformanceAnalyzerPrompt extends AbstractPrompt
 {
+    /**
+     * @inheritDoc
+     */
+    public function arguments(): array
+    {
+        return [
+            new Argument('concern', 'Performance concern (e.g., "slow queries", "memory usage")', true),
+            new Argument('context', 'Context or code snippet showing the issue', false),
+        ];
+    }
+
+    /**
+     * Render the advertised prompt arguments.
+     *
+     * @param \Crustum\Mcp\Request $request MCP arguments
+     * @return array<\Crustum\Mcp\Response>
+     */
+    public function handle(Request $request): array
+    {
+        $arguments = $this->validatedArguments($request);
+
+        return $this->render($arguments['concern'], $arguments['context'] ?? '');
+    }
+
     /**
      * Analyze and optimize performance
      *
      * @param string $concern Performance concern (e.g., "slow queries", "memory usage")
      * @param string $context Context or code snippet showing the issue
-     * @return array<\Mcp\Schema\Content\PromptMessage>
+     * @return array<\Crustum\Mcp\Response>
      */
-    #[McpPrompt(
-        name: 'performance-analyzer',
-        description: 'Analyze and optimize performance issues',
-    )]
-    public function handle(
+    public function render(
         string $concern,
         string $context = '',
     ): array {
@@ -38,10 +61,7 @@ Context:
 ' . $context : '';
 
         return [
-            new PromptMessage(
-                role: Role::User,
-                content: new TextContent(
-                    text: <<<TEXT
+            Response::text(<<<TEXT
 I have a performance issue: {$concern}{$contextSection}
 
 Please help by:
@@ -59,9 +79,7 @@ Please help by:
 7. Estimating the impact of each optimization
 
 Focus on CakePHP {$this->cakephpVersion}-specific solutions and built-in optimization features.
-TEXT,
-                ),
-            ),
+TEXT),
         ];
     }
 }

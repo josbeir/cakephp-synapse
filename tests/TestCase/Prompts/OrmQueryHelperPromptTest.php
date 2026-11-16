@@ -5,10 +5,10 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
-use Mcp\Exception\PromptGetException;
-use Mcp\Schema\Content\PromptMessage;
-use Mcp\Schema\Content\TextContent;
-use Mcp\Schema\Enum\Role;
+use Crustum\Mcp\Enums\Role;
+use Crustum\Mcp\Exception\ValidationException;
+use Crustum\Mcp\Response;
+use Crustum\Mcp\Server\Content\Text as TextContent;
 use Synapse\Prompts\OrmQueryHelperPrompt;
 
 /**
@@ -37,48 +37,48 @@ class OrmQueryHelperPromptTest extends TestCase
 
     public function testBasic(): void
     {
-        $result = $this->prompt->handle('find all users with their posts');
+        $result = $this->prompt->render('find all users with their posts');
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertSame(Role::User, $result[0]->role);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('ORM query', $content->text);
-        $this->assertStringContainsString('find()', $content->text);
-        $this->assertStringContainsString('find all users with their posts', $content->text);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertSame(Role::User, $result[0]->role());
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('ORM query', (string)$content);
+        $this->assertStringContainsString('find()', (string)$content);
+        $this->assertStringContainsString('find all users with their posts', (string)$content);
     }
 
     public function testWithTables(): void
     {
-        $result = $this->prompt->handle('join users and posts', 'users,posts');
+        $result = $this->prompt->render('join users and posts', 'users,posts');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('users,posts', $content->text);
-        $this->assertStringContainsString('contain', $content->text);
-        $this->assertStringContainsString('join users and posts', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('users,posts', (string)$content);
+        $this->assertStringContainsString('contain', (string)$content);
+        $this->assertStringContainsString('join users and posts', (string)$content);
     }
 
     public function testIncludesTinkerExample(): void
     {
-        $result = $this->prompt->handle('complex query');
+        $result = $this->prompt->render('complex query');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('tinker', $content->text);
-        $this->assertStringContainsString('fetchTable', $content->text);
-        $this->assertStringContainsString('toArray()', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('tinker', (string)$content);
+        $this->assertStringContainsString('fetchTable', (string)$content);
+        $this->assertStringContainsString('toArray()', (string)$content);
     }
 
     public function testIncludesSqlReference(): void
     {
-        $result = $this->prompt->handle('get recent records');
+        $result = $this->prompt->render('get recent records');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('sql()', $content->text);
-        $this->assertStringContainsString('equivalent SQL', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('sql()', (string)$content);
+        $this->assertStringContainsString('equivalent SQL', (string)$content);
     }
 
     public function testUsesConfiguredCakephpVersion(): void
@@ -86,50 +86,50 @@ class OrmQueryHelperPromptTest extends TestCase
         Configure::write('Synapse.prompts.cakephp_version', '4.5');
         $prompt = new OrmQueryHelperPrompt();
 
-        $result = $prompt->handle('query example');
+        $result = $prompt->render('query example');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('4.5', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('4.5', (string)$content);
     }
 
     public function testReturnsValidStructure(): void
     {
-        $result = $this->prompt->handle('get active users', 'users');
+        $result = $this->prompt->render('get active users', 'users');
 
         $this->assertCount(1, $result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertSame(Role::User, $result[0]->role);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertNotEmpty($content->text);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertSame(Role::User, $result[0]->role());
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertNotEmpty((string)$content);
     }
 
     public function testEmptyQueryGoalThrowsException(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage("Parameter 'queryGoal' cannot be empty");
 
-        $this->prompt->handle('');
+        $this->prompt->render('');
     }
 
     public function testEmptyQueryGoalWithTablesThrowsException(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage("Parameter 'queryGoal' cannot be empty");
 
-        $this->prompt->handle('', 'users,posts');
+        $this->prompt->render('', 'users,posts');
     }
 
     public function testValidQueryGoalWithTables(): void
     {
-        $result = $this->prompt->handle('find active users', 'users,roles');
+        $result = $this->prompt->render('find active users', 'users,roles');
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('find active users', $content->text);
-        $this->assertStringContainsString('users,roles', $content->text);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('find active users', (string)$content);
+        $this->assertStringContainsString('users,roles', (string)$content);
     }
 }

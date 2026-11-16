@@ -4,10 +4,11 @@ declare(strict_types=1);
 namespace Synapse\Prompts;
 
 use Cake\Core\Configure;
-use Mcp\Capability\Attribute\McpPrompt;
-use Mcp\Schema\Content\PromptMessage;
-use Mcp\Schema\Content\TextContent;
-use Mcp\Schema\Enum\Role;
+use Crustum\Mcp\Request;
+use Crustum\Mcp\Response;
+use Crustum\Mcp\Server\Attributes\Description;
+use Crustum\Mcp\Server\Attributes\Name;
+use Crustum\Mcp\Server\Prompts\Argument;
 
 /**
  * Quality Assurance Prompt
@@ -15,8 +16,42 @@ use Mcp\Schema\Enum\Role;
  * Provides coding guidelines and QA best practices for CakePHP applications.
  * Configurable to include only the tools enabled in your project.
  */
+#[Name('quality-assurance')]
+#[Description('Get coding guidelines and QA best practices for CakePHP')]
 class QualityAssurancePrompt extends AbstractPrompt
 {
+    /**
+     * @inheritDoc
+     */
+    public function arguments(): array
+    {
+        return [
+            new Argument(
+                'context',
+                'What information to focus on (guidelines, integration, troubleshooting, all)',
+                false,
+            ),
+            new Argument(
+                'tools',
+                'Override enabled tools for this request (all, or comma-separated: phpcs,phpstan)',
+                false,
+            ),
+        ];
+    }
+
+    /**
+     * Render the advertised prompt arguments.
+     *
+     * @param \Crustum\Mcp\Request $request MCP arguments
+     * @return array<\Crustum\Mcp\Response>
+     */
+    public function handle(Request $request): array
+    {
+        $arguments = $this->validatedArguments($request);
+
+        return $this->render($arguments['context'] ?? 'all', $arguments['tools'] ?? 'all');
+    }
+
     /**
      * Quality tools configuration
      *
@@ -45,13 +80,9 @@ class QualityAssurancePrompt extends AbstractPrompt
      *
      * @param string $context What information to focus on (guidelines, integration, troubleshooting, all)
      * @param string $tools Override enabled tools for this request (all, or comma-separated: phpcs,phpstan)
-     * @return array<\Mcp\Schema\Content\PromptMessage>
+     * @return array<\Crustum\Mcp\Response>
      */
-    #[McpPrompt(
-        name: 'quality-assurance',
-        description: 'Get coding guidelines and QA best practices for CakePHP',
-    )]
-    public function handle(
+    public function render(
         string $context = 'all',
         string $tools = 'all',
     ): array {
@@ -74,25 +105,15 @@ class QualityAssurancePrompt extends AbstractPrompt
 
         if ($enabledTools === []) {
             return [
-                new PromptMessage(
-                    role: Role::User,
-                    content: new TextContent(
-                        text: 'No quality assurance tools are enabled. ' .
-                        'Please configure tools in config/synapse.php under Synapse.prompts.quality_tools.',
-                    ),
-                ),
+                Response::text('No quality assurance tools are enabled. ' .
+                        'Please configure tools in config/synapse.php under Synapse.prompts.quality_tools.'),
             ];
         }
 
         $content = $this->buildPromptContent($context, $enabledTools);
 
         return [
-            new PromptMessage(
-                role: Role::User,
-                content: new TextContent(
-                    text: $content,
-                ),
-            ),
+            Response::text($content),
         ];
     }
 

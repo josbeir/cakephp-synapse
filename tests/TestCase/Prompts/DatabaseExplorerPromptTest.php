@@ -5,10 +5,10 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
-use Mcp\Exception\PromptGetException;
-use Mcp\Schema\Content\PromptMessage;
-use Mcp\Schema\Content\TextContent;
-use Mcp\Schema\Enum\Role;
+use Crustum\Mcp\Enums\Role;
+use Crustum\Mcp\Exception\ValidationException;
+use Crustum\Mcp\Response;
+use Crustum\Mcp\Server\Content\Text as TextContent;
 use Synapse\Prompts\DatabaseExplorerPrompt;
 
 /**
@@ -37,46 +37,46 @@ class DatabaseExplorerPromptTest extends TestCase
 
     public function testAll(): void
     {
-        $result = $this->prompt->handle('users', 'all');
+        $result = $this->prompt->render('users', 'all');
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertSame(Role::User, $result[0]->role);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('fetchTable', $content->text);
-        $this->assertStringContainsString('users', $content->text);
-        $this->assertStringContainsString('getSchema', $content->text);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertSame(Role::User, $result[0]->role());
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('fetchTable', (string)$content);
+        $this->assertStringContainsString('users', (string)$content);
+        $this->assertStringContainsString('getSchema', (string)$content);
     }
 
     public function testSchema(): void
     {
-        $result = $this->prompt->handle('posts', 'schema');
+        $result = $this->prompt->render('posts', 'schema');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('schema', $content->text);
-        $this->assertStringContainsString('posts', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('schema', (string)$content);
+        $this->assertStringContainsString('posts', (string)$content);
     }
 
     public function testData(): void
     {
-        $result = $this->prompt->handle('articles', 'data');
+        $result = $this->prompt->render('articles', 'data');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('data', $content->text);
-        $this->assertStringContainsString('find()->limit(5)', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('data', (string)$content);
+        $this->assertStringContainsString('find()->limit(5)', (string)$content);
     }
 
     public function testRelationships(): void
     {
-        $result = $this->prompt->handle('comments', 'relationships');
+        $result = $this->prompt->render('comments', 'relationships');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('relationships', $content->text);
-        $this->assertStringContainsString('associations', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('relationships', (string)$content);
+        $this->assertStringContainsString('associations', (string)$content);
     }
 
     public function testUsesConfiguredCakephpVersion(): void
@@ -84,62 +84,62 @@ class DatabaseExplorerPromptTest extends TestCase
         Configure::write('Synapse.prompts.cakephp_version', '4.5');
         $prompt = new DatabaseExplorerPrompt();
 
-        $result = $prompt->handle('products');
+        $result = $prompt->render('products');
 
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertStringContainsString('4.5', $content->text);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertStringContainsString('4.5', (string)$content);
     }
 
     public function testReturnsValidStructure(): void
     {
-        $result = $this->prompt->handle('orders', 'schema');
+        $result = $this->prompt->render('orders', 'schema');
 
         $this->assertCount(1, $result);
-        $this->assertInstanceOf(PromptMessage::class, $result[0]);
-        $this->assertSame(Role::User, $result[0]->role);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
-        $content = $result[0]->content;
-        $this->assertNotEmpty($content->text);
+        $this->assertInstanceOf(Response::class, $result[0]);
+        $this->assertSame(Role::User, $result[0]->role());
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
+        $content = $result[0]->content();
+        $this->assertNotEmpty((string)$content);
     }
 
     public function testEmptyTableThrowsException(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage("Parameter 'table' cannot be empty");
 
-        $this->prompt->handle('');
+        $this->prompt->render('');
     }
 
     public function testInvalidShowThrowsException(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage("Invalid value for parameter 'show': 'invalid'");
 
-        $this->prompt->handle('users', 'invalid');
+        $this->prompt->render('users', 'invalid');
     }
 
     public function testInvalidShowContainsExpectedValues(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Expected one of: schema, data, relationships, all');
 
-        $this->prompt->handle('posts', 'query');
+        $this->prompt->render('posts', 'query');
     }
 
     public function testInvalidShowContainsPromptName(): void
     {
-        $this->expectException(PromptGetException::class);
+        $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Prompt: database-explorer');
 
-        $this->prompt->handle('articles', 'bad');
+        $this->prompt->render('articles', 'bad');
     }
 
     public function testDefaultShowIsValid(): void
     {
-        $result = $this->prompt->handle('products');
+        $result = $this->prompt->render('products');
 
         $this->assertNotEmpty($result);
-        $this->assertInstanceOf(TextContent::class, $result[0]->content);
+        $this->assertInstanceOf(TextContent::class, $result[0]->content());
     }
 }
