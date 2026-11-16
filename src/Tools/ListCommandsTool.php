@@ -29,10 +29,10 @@ class ListCommandsTool extends AbstractTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'plugin' => $schema->string()
+            'plugin' => $schema->anyOf([$schema->string()])
                 ->description('Filter by plugin name')
                 ->nullable(),
-            'namespace' => $schema->string()
+            'namespace' => $schema->anyOf([$schema->string()])
                 ->description('Filter by command namespace')
                 ->nullable(),
             'sort' => $schema->boolean()

@@ -91,6 +91,10 @@ MCP error results; invalid prompt arguments use Crustum's validation error
 mapping. Error wording and framework-added response metadata may differ.
 Unexpected implementation failures are logged and return generic messages.
 
+Nullable tool filters advertise `anyOf` branches for `string` and `null` to
+improve schema portability. Omitting a filter and passing explicit `null` retain
+their existing behavior.
+
 ## Custom capabilities
 
 Convert each old SDK attribute method into a Crustum `Tool`, `Prompt`, or

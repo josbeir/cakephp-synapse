@@ -388,4 +388,61 @@ class ToolAdaptersTest extends McpTestCase
         SynapseServer::tool(DatabaseSchemaTool::class, ['connection' => null])
             ->assertHasErrors(['Argument "connection" must be string.']);
     }
+
+    /**
+     * @return array<string, array{
+     *     class-string<\Crustum\Mcp\Server\Tool>, class-string, non-empty-string, array<string, mixed>, string
+     * }>
+     */
+    public static function nullableFilterProvider(): array
+    {
+        $cases = [];
+        $filtersByTool = [
+            'database_schema' => ['table'],
+            'list_commands' => ['plugin', 'namespace'],
+            'list_routes' => ['method', 'plugin', 'prefix', 'controller'],
+            'log_read' => ['level'],
+        ];
+        foreach ($filtersByTool as $name => $filters) {
+            [$tool, $service, $method, $arguments] = self::toolProvider()[$name];
+            foreach ($filters as $filter) {
+                $cases[$name . '.' . $filter] = [$tool, $service, $method, $arguments, $filter];
+            }
+        }
+
+        return $cases;
+    }
+
+    /**
+     * @param class-string<\Crustum\Mcp\Server\Tool> $tool Tool class
+     * @param class-string $service Service class
+     * @param non-empty-string $method Expected service operation
+     * @param array<string, mixed> $arguments Valid argument values
+     * @param string $filter Nullable filter name
+     */
+    #[DataProvider('nullableFilterProvider')]
+    public function testNullableFilterValidation(
+        string $tool,
+        string $service,
+        string $method,
+        array $arguments,
+        string $filter,
+    ): void {
+        foreach ([null, ''] as $value) {
+            $input = array_replace($arguments, [$filter => $value]);
+            $mock = $this->createMock($service);
+            $mock->expects($this->once())->method($method)->with(...array_values($input))->willReturn([]);
+            $this->container->add($service, $mock, true);
+
+            SynapseServer::tool($tool, $input)->assertOk()->assertSee('[]');
+        }
+
+        $mock = $this->createMock($service);
+        $mock->expects($this->never())->method($method);
+        $this->container->add($service, $mock, true);
+        foreach ([42, false, []] as $invalid) {
+            SynapseServer::tool($tool, array_replace($arguments, [$filter => $invalid]))
+                ->assertHasErrors(['Argument "' . $filter . '" must be string or null.']);
+        }
+    }
 }

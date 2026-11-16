@@ -32,16 +32,16 @@ class ListRoutesTool extends AbstractTool
             'sort' => $schema->boolean()
                 ->description('Sort routes alphabetically by name')
                 ->default(false),
-            'method' => $schema->string()
+            'method' => $schema->anyOf([$schema->string()])
                 ->description('Filter by HTTP method (GET, POST, PUT, DELETE, etc.)')
                 ->nullable(),
-            'plugin' => $schema->string()
+            'plugin' => $schema->anyOf([$schema->string()])
                 ->description('Filter by plugin name')
                 ->nullable(),
-            'prefix' => $schema->string()
+            'prefix' => $schema->anyOf([$schema->string()])
                 ->description('Filter by route prefix')
                 ->nullable(),
-            'controller' => $schema->string()
+            'controller' => $schema->anyOf([$schema->string()])
                 ->description('Filter by controller name')
                 ->nullable(),
             'withMiddlewares' => $schema->boolean()

@@ -41,7 +41,9 @@ abstract class AbstractTool extends Tool
             }
 
             $value = $input[$name];
-            $types = (array)$property['type'];
+            $types = isset($property['anyOf'])
+                ? array_column($property['anyOf'], 'type')
+                : (array)$property['type'];
             $valid = match (get_debug_type($value)) {
                 'string' => in_array('string', $types, true),
                 'int' => in_array('integer', $types, true),

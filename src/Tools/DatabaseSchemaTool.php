@@ -32,7 +32,7 @@ class DatabaseSchemaTool extends AbstractTool
             'connection' => $schema->string()
                 ->description("Connection name (defaults to 'default')")
                 ->default('default'),
-            'table' => $schema->string()
+            'table' => $schema->anyOf([$schema->string()])
                 ->description('Specific table name (optional, if omitted returns all tables)')
                 ->nullable(),
         ];

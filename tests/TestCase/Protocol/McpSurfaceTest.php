@@ -199,6 +199,35 @@ class McpSurfaceTest extends McpTestCase
         }
     }
 
+    public function testNullableFiltersAdvertisePortableSchemas(): void
+    {
+        $tools = array_column($this->catalog('tools/list', 'tools'), null, 'name');
+        $filtersByTool = [
+            'database_schema' => ['table'],
+            'list_commands' => ['plugin', 'namespace'],
+            'list_routes' => ['method', 'plugin', 'prefix', 'controller'],
+            'log_read' => ['level'],
+        ];
+        foreach ($filtersByTool as $name => $filters) {
+            $schema = $tools[$name]['inputSchema'];
+            foreach ($filters as $filter) {
+                $property = $schema['properties'][$filter];
+                $this->assertArrayNotHasKey('type', $property);
+                $this->assertSame([['type' => 'string'], ['type' => 'null']], $property['anyOf']);
+                $this->assertNotEmpty($property['description']);
+                $this->assertNotContains($filter, $schema['required'] ?? []);
+            }
+        }
+
+        foreach ($tools as $tool) {
+            foreach ($tool['inputSchema']['properties'] as $property) {
+                foreach ($property['anyOf'] ?? [$property] as $branch) {
+                    $this->assertIsString($branch['type']);
+                }
+            }
+        }
+    }
+
     public function testToolInvocationErrorsAndRedaction(): void
     {
         $result = $this->request('tools/call', ['name' => 'system_info']);

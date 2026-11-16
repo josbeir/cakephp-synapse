@@ -39,7 +39,7 @@ class LogReadTool extends AbstractTool
             'lines' => $schema->integer()
                 ->description('Maximum number of lines to return from the end of the file (tail)')
                 ->default(100),
-            'level' => $schema->string()
+            'level' => $schema->anyOf([$schema->string()])
                 ->description('Filter lines containing this string (case-insensitive). Pass null to return all.')
                 ->nullable(),
         ];
