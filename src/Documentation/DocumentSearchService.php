@@ -33,7 +33,7 @@ class DocumentSearchService
         ?DocumentProcessor $documentProcessor = null,
     ) {
         $cacheDir = Configure::read('Synapse.documentation.cache_dir', TMP . 'synapse' . DS . 'docs');
-        $databasePath = $databasePath ?? Configure::read(
+        $databasePath ??= Configure::read(
             'Synapse.documentation.search_db',
             $cacheDir . DS . 'search.db',
         );

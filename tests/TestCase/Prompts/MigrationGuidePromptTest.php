@@ -5,7 +5,7 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
-use Crustum\Mcp\Enums\Role;
+use Crustum\Mcp\Enum\Role;
 use Crustum\Mcp\Exception\ValidationException;
 use Crustum\Mcp\Response;
 use Crustum\Mcp\Server\Content\Text as TextContent;
@@ -25,7 +25,7 @@ class MigrationGuidePromptTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->originalPhpVersion = Configure::read('Synapse.prompts.php_version', '8.2');
+        $this->originalPhpVersion = Configure::read('Synapse.prompts.php_version', '8.5');
         $this->prompt = new MigrationGuidePrompt();
     }
 
@@ -69,7 +69,7 @@ class MigrationGuidePromptTest extends TestCase
         $this->assertInstanceOf(TextContent::class, $result[0]->content());
         $content = $result[0]->content();
         $this->assertStringContainsString('PHP', (string)$content);
-        $this->assertStringContainsString('8.2+', (string)$content);
+        $this->assertStringContainsString('8.5+', (string)$content);
     }
 
     public function testUsesConfiguredPhpVersion(): void

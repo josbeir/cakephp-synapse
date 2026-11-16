@@ -30,7 +30,7 @@ class GetDocTool extends AbstractTool
     {
         return [
             'docId' => $schema->string()
-                ->description("Document ID in format 'source::path' (e.g., 'cakephp-5x::docs/en/controllers.md')")
+                ->description("Document ID in format 'source::path' (e.g., 'cakephp-6x::docs/en/controllers.md')")
                 ->required(),
         ];
     }

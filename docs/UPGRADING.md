@@ -8,6 +8,8 @@ documentation index, and subprocess behavior.
 ## Requirements and installation
 
 PHP 8.2 remains supported. CakePHP 5.4 is now the minimum.
+
+The experimental `cake6` branch instead requires PHP 8.5+, CakePHP `6.x-dev`, Crustum MCP `2.x-dev`, and Bake `4.x-dev`. Enable `"minimum-stability": "dev"` with `"prefer-stable": true` in the host application and install `josbeir/cakephp-synapse:dev-cake6` with `--with-all-dependencies`. It uses the same Crustum capabilities and stdio entry point described below. Update custom container imports to `Cake\Container` and custom commands to CakePHP 6's parameterless `execute()` API using `$this->args` and `$this->io`.
 Install Synapse as a development dependency and
 let Composer validate the required extensions. Crustum's OAuth dependency needs
 `ext-sodium` on PHP 8.5, even when only stdio is used.

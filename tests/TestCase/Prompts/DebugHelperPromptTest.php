@@ -5,7 +5,7 @@ namespace Synapse\Test\TestCase\Prompts;
 
 use Cake\Core\Configure;
 use Cake\TestSuite\TestCase;
-use Crustum\Mcp\Enums\Role;
+use Crustum\Mcp\Enum\Role;
 use Crustum\Mcp\Exception\ValidationException;
 use Crustum\Mcp\Response;
 use Crustum\Mcp\Server\Content\Text as TextContent;
@@ -25,7 +25,7 @@ class DebugHelperPromptTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->originalCakephpVersion = Configure::read('Synapse.prompts.cakephp_version', '5.x');
+        $this->originalCakephpVersion = Configure::read('Synapse.prompts.cakephp_version', '6.x');
         $this->prompt = new DebugHelperPrompt();
     }
 
@@ -67,7 +67,7 @@ class DebugHelperPromptTest extends TestCase
 
         $this->assertInstanceOf(TextContent::class, $result[0]->content());
         $content = $result[0]->content();
-        $this->assertStringContainsString('5.x', (string)$content);
+        $this->assertStringContainsString('6.x', (string)$content);
     }
 
     public function testUsesConfiguredCakephpVersion(): void

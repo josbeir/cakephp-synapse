@@ -1,14 +1,17 @@
 [![PHPStan Level 8](https://img.shields.io/badge/PHPStan-level%208-brightgreen)](https://github.com/josbeir/cakephp-synapse)
-[![Build Status](https://github.com/josbeir/cakephp-synapse/actions/workflows/ci.yml/badge.svg)](https://github.com/josbeir/cakephp-synapse/actions)
+[![Build Status](https://github.com/josbeir/cakephp-synapse/actions/workflows/ci.yml/badge.svg?branch=cake6)](https://github.com/josbeir/cakephp-synapse/actions?query=branch%3Acake6)
 [![codecov](https://codecov.io/github/josbeir/cakephp-synapse/graph/badge.svg?token=4VGWJQTWH5)](https://codecov.io/github/josbeir/cakephp-synapse)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PHP Version](https://img.shields.io/badge/php-8.2%2B-blue.svg)](https://www.php.net/releases/8.2/en.php)
-[![CakePHP Version](https://img.shields.io/badge/CakePHP-5.4%2B-red.svg)](https://cakephp.org/)
+[![PHP Version](https://img.shields.io/badge/php-8.5%2B-blue.svg)](https://www.php.net/releases/8.5/en.php)
+[![CakePHP Version](https://img.shields.io/badge/CakePHP-6.x-red.svg)](https://cakephp.org/)
 [![Packagist Downloads](https://img.shields.io/packagist/dt/josbeir/cakephp-synapse)](https://packagist.org/packages/josbeir/cakephp-synapse)
 
 # Synapse: a CakePHP MCP-Server plugin
 
 Expose your CakePHP application functionality via the Model Context Protocol (MCP).
+
+> [!NOTE]
+> The `cake6` branch targets the upcoming CakePHP 6 release and requires PHP 8.5 or higher, matching the current [CakePHP 6 requirements](https://github.com/cakephp/cakephp/blob/6.x/composer.json). For CakePHP 5 applications, use the stable plugin releases on `main`.
 
 ![CakePHP Synapse Hero](/docs/hero.jpg)
 
@@ -56,19 +59,30 @@ The Model Context Protocol is an open protocol that enables seamless integration
 
 ### Requirements
 
-- PHP 8.2 or higher
-- CakePHP 5.4 or higher (5.x)
+- PHP 8.5 or higher
+- CakePHP 6.x (currently a development release)
 - SQLite3 with FTS5, intl, and the extensions required by Composer's dependency resolution
 - `ext-sodium` for the current OAuth dependency on PHP 8.5
 
 Crustum currently registers Bake console commands unconditionally, so CakePHP Bake is included as a runtime dependency. Synapse does not load Bake or Tessera as application plugins and does not require OAuth tables.
 
+This branch uses CakePHP `6.x-dev`, Crustum MCP `2.x-dev`, and Bake `4.x-dev`. Their development dependencies include Chronos 4, Tessera 2, Authentication 5, and TwigView 3; PHPUnit 13 and the CakePHP 6 coding standard are used for validation.
+
 ### Installing the Plugin
 
-Install via Composer as a development dependency:
+While CakePHP 6 and its dependencies are in development, set the following in your application's `composer.json` to allow development dependencies while preferring stable releases:
+
+```json
+{
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
+```
+
+Install the CakePHP 6 branch via Composer as a development dependency:
 
 ```bash
-composer require --dev josbeir/cakephp-synapse
+composer require --dev josbeir/cakephp-synapse:dev-cake6 --with-all-dependencies
 ```
 
 > [!NOTE]
@@ -218,10 +232,10 @@ Prompts can reference a specific CakePHP version and use various quality tools. 
 return [
     'Synapse' => [
         'prompts' => [
-            // Target CakePHP version for prompt responses (e.g. '5.x', '5.2', '4.5', '4.x')
-            'cakephp_version' => env('MCP_CAKEPHP_VERSION', '5.x'),
+            // Target CakePHP version for prompt responses (e.g. '6.x', '6.0')
+            'cakephp_version' => env('MCP_CAKEPHP_VERSION', '6.x'),
 
-            // Target PHP version for prompt responses (e.g. '8.2', '8.3', '8.x')
+            // Target PHP version for prompt responses (e.g. '8.5', '8.x')
             'php_version' => env('MCP_PHP_VERSION', PHP_VERSION),
 
             // Quality tools configuration
@@ -266,7 +280,7 @@ Use the CLI to manage and search the index:
 bin/cake synapse index
 
 # Index specific source
-bin/cake synapse index --source cakephp-5x
+bin/cake synapse index --source cakephp-6x
 
 # Force re-index and optimize
 bin/cake synapse index --force --optimize
@@ -312,6 +326,8 @@ Synapse officially supports local stdio. Remote HTTP servers, OAuth configuratio
 ## Upgrading from 0.x
 
 Version 1.0 replaces the SDK implementation with Crustum MCP and requires CakePHP 5.4+. Update client launch arguments and migrate SDK attribute capabilities to explicit Crustum classes. The old server command, discovery cache flags, and scanning configuration have been removed.
+
+On `cake6`, the framework requirement is CakePHP 6 with PHP 8.5+. The Crustum capability API and `bin/cake mcp start synapse` entry point remain the same. Custom commands must use CakePHP 6's parameterless `execute()` method and its `$this->args` and `$this->io` properties; container imports now use `Cake\Container`.
 
 See [UPGRADING.md](docs/UPGRADING.md) for the migration checklist, configuration mapping, and custom-tool example.
 

@@ -39,7 +39,7 @@ class DocumentationService
      * @param string $query The search query
      * @param int $limit Maximum number of results to return (default: 10, max: 50)
      * @param bool $fuzzy Enable fuzzy/prefix matching for typo tolerance (default: false)
-     * @param string $sources Comma-separated list of sources to filter (e.g., 'cakephp-5x,cakephp-4x')
+     * @param string $sources Comma-separated list of sources to filter (e.g., 'cakephp-6x,cakephp-5x')
      * @return array{results: array<int, array<string, mixed>>, total: int, query: string, options: array<string, mixed>} Search results with metadata
      */
     public function searchDocs(
@@ -119,7 +119,7 @@ class DocumentationService
      * Returns original markdown with full formatting (code blocks, links, lists, etc.)
      * not the cleaned content used for search indexing.
      *
-     * @param string $docId Document ID in format 'source::path' (e.g., 'cakephp-5x::docs/en/controllers.md')
+     * @param string $docId Document ID in format 'source::path' (e.g., 'cakephp-6x::docs/en/controllers.md')
      * @return array{content: string, title: string, source: string, path: string, id: string, metadata: array<string, mixed>} Document content and metadata
      */
     public function getDocument(string $docId): array

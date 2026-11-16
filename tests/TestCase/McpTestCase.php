@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace Synapse\Test\TestCase;
 
+use Cake\Container\Container;
 use Cake\Core\Configure;
-use Cake\Core\Container;
 use Cake\TestSuite\TestCase;
 use Crustum\Mcp\McpPlugin;
 use Crustum\Mcp\Support\ContainerRegistry;

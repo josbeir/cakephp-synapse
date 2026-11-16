@@ -75,7 +75,6 @@ class SynapseServerTest extends McpTestCase
             'missing class' => [['App\\MissingTool'], 'must contain subclasses'],
             'non class' => [[42], 'must contain subclasses'],
             'duplicate builtin' => [[SystemInfoTool::class], 'Duplicate tools capability name'],
-            'missing dependency' => [[CustomTool::class], 'Register its dependencies'],
         ];
     }
 
@@ -99,6 +98,23 @@ class SynapseServerTest extends McpTestCase
         Configure::write('Synapse.capabilities.tools', [CustomTool::class]);
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The container must resolve');
+
+        (new SynapseServer(new StdioTransport()))->start();
+    }
+
+    public function testCustomCapabilitiesUseCakephp6AutoWiring(): void
+    {
+        Configure::write('Synapse.capabilities.tools', [CustomTool::class]);
+
+        SynapseServer::tool(CustomTool::class)->assertOk()->assertSee('Hello from the application container');
+    }
+
+    public function testMissingDependencyFailsWhenAutoWiringIsDisabled(): void
+    {
+        $this->container->disableAutoWiring();
+        Configure::write('Synapse.capabilities.tools', [CustomTool::class]);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Register its dependencies');
 
         (new SynapseServer(new StdioTransport()))->start();
     }

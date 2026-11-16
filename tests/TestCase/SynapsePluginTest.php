@@ -4,14 +4,15 @@ declare(strict_types=1);
 namespace Synapse\Test\TestCase;
 
 use Cake\Console\CommandCollection;
+use Cake\Container\Container;
 use Cake\Core\Configure;
-use Cake\Core\Container;
 use Cake\Core\PluginApplicationInterface;
 use Cake\Event\Event;
 use Cake\Event\EventManager;
 use Cake\Http\MiddlewareQueue;
 use Cake\Routing\Router;
 use Cake\TestSuite\TestCase;
+use Synapse\Prompts\FeatureBuilderPrompt;
 use Synapse\Server\SynapseServer;
 use Synapse\Service\CommandService;
 use Synapse\SynapsePlugin;
@@ -60,7 +61,13 @@ class SynapsePluginTest extends TestCase
 
         $this->assertSame('Host name', Configure::read('Synapse.serverInfo.name'));
         $this->assertSame(['App\\CustomTool'], Configure::read('Synapse.capabilities.tools'));
-        $this->assertSame('5.x', Configure::read('Synapse.prompts.cakephp_version'));
+        $this->assertSame('6.x', Configure::read('Synapse.prompts.cakephp_version'));
+        $this->assertSame('8.5+', Configure::read('Synapse.prompts.php_version'));
+        $source = Configure::read('Synapse.documentation.sources.cakephp-6x');
+        $this->assertTrue($source['enabled']);
+        $this->assertSame('https://github.com/cakephp/docs.git', $source['repository']);
+        $this->assertSame('6.x', $source['branch']);
+        $this->assertSame('docs/en', $source['root']);
         $this->assertSame(SynapseServer::class, Configure::read('Mcp.local.synapse'));
         $this->assertSame('App\\OtherServer', Configure::read('Mcp.local.other'));
     }
@@ -70,6 +77,27 @@ class SynapsePluginTest extends TestCase
         Configure::write('Mcp.local.synapse', 'App\\CustomServer');
         (new SynapsePlugin())->bootstrap($this->createStub(PluginApplicationInterface::class));
         $this->assertSame('App\\CustomServer', Configure::read('Mcp.local.synapse'));
+    }
+
+    public function testBootstrapPreservesVersionAndDocumentationOverrides(): void
+    {
+        Configure::write('Synapse.prompts.cakephp_version', '6.1');
+        Configure::write('Synapse.prompts.php_version', '8.6');
+        Configure::write('Synapse.documentation.sources.cakephp-6x.branch', 'custom-docs');
+        (new SynapsePlugin())->bootstrap($this->createStub(PluginApplicationInterface::class));
+
+        $this->assertSame('6.1', Configure::read('Synapse.prompts.cakephp_version'));
+        $this->assertSame('8.6', Configure::read('Synapse.prompts.php_version'));
+        $this->assertSame('custom-docs', Configure::read('Synapse.documentation.sources.cakephp-6x.branch'));
+    }
+
+    public function testPromptsReferenceCakephp6AndPhp85(): void
+    {
+        (new SynapsePlugin())->bootstrap($this->createStub(PluginApplicationInterface::class));
+        $messages = (new FeatureBuilderPrompt())->render('a CakePHP command', 'command');
+
+        $this->assertStringContainsString('CakePHP 6.x', (string)$messages[0]->content());
+        $this->assertStringContainsString('PHP 8.5+', (string)$messages[0]->content());
     }
 
     public function testCommandsAreUpdatedAfterServiceResolutionAndIsolatedBetweenApplications(): void

@@ -508,9 +508,9 @@ class IndexDocsCommandTest extends TestCase
         $this->assertExitSuccess();
 
         // Reset to allow new execution with input
-        $this->_in = null;
-        $this->_out = null;
-        $this->_err = null;
+        $this->in = null;
+        $this->out = null;
+        $this->err = null;
 
         // Destroy it with confirmation
         $this->exec('synapse index --destroy', ['yes']);
@@ -617,9 +617,9 @@ class IndexDocsCommandTest extends TestCase
         $this->assertExitSuccess();
 
         // Reset to allow new execution with input
-        $this->_in = null;
-        $this->_out = null;
-        $this->_err = null;
+        $this->in = null;
+        $this->out = null;
+        $this->err = null;
 
         // Destroy with "yes" response
         $this->exec('synapse index --destroy', ['yes']);

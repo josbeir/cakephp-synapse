@@ -39,7 +39,7 @@ class DocumentationResourceAdaptersTest extends McpTestCase
         $service = $this->createMock(DocumentationResourceService::class);
         $service->expects($this->once())->method($method)->with('example')
             ->willThrowException(new CapabilityException('Documentation is not indexed.'));
-        $this->container->add(DocumentationResourceService::class, $service, true);
+        $this->container->add(DocumentationResourceService::class, $service);
 
         SynapseServer::resource($resource, [$argument => 'example'])
             ->assertHasErrors(['Documentation is not indexed.']);
@@ -56,7 +56,7 @@ class DocumentationResourceAdaptersTest extends McpTestCase
         $service = $this->createMock(DocumentationResourceService::class);
         $service->expects($this->once())->method($method)->with('example')
             ->willThrowException(new RuntimeException('sensitive implementation detail'));
-        $this->container->add(DocumentationResourceService::class, $service, true);
+        $this->container->add(DocumentationResourceService::class, $service);
 
         SynapseServer::resource($resource, [$argument => 'example'])
             ->assertHasErrors(['The documentation could not be read. Check the application logs for details.']);

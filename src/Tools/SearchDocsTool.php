@@ -43,7 +43,7 @@ class SearchDocsTool extends AbstractTool
                 ->description('Enable fuzzy/prefix matching for typo tolerance (default: false)')
                 ->default(false),
             'sources' => $schema->string()
-                ->description("Comma-separated list of sources to filter (e.g., 'cakephp-5x,cakephp-4x')")
+                ->description("Comma-separated list of sources to filter (e.g., 'cakephp-6x,cakephp-5x')")
                 ->default(''),
         ];
     }

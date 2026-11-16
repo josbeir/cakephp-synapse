@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Synapse\Test\TestCase\Protocol;
 
 use Cake\Core\Configure;
-use Crustum\Mcp\Enums\MetaKey;
+use Crustum\Mcp\Enum\MetaKey;
 use Crustum\Mcp\Server\Transport\StdioTransport;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\Process\Process;
@@ -166,7 +166,7 @@ class McpSurfaceTest extends McpTestCase
             'debug-helper' => ['debug-helper', ['error' => 'example']],
             'documentation-expert' => ['documentation-expert', ['topic' => 'example']],
             'feature-builder' => ['feature-builder', ['feature' => 'example']],
-            'migration-guide' => ['migration-guide', ['fromVersion' => '4.5', 'toVersion' => '5.4']],
+            'migration-guide' => ['migration-guide', ['fromVersion' => '5.4', 'toVersion' => '6.0']],
             'orm-query-helper' => ['orm-query-helper', ['queryGoal' => 'example']],
             'performance-analyzer' => ['performance-analyzer', ['concern' => 'example']],
             'testing-assistant' => ['testing-assistant', ['subject' => 'example']],
@@ -233,6 +233,8 @@ class McpSurfaceTest extends McpTestCase
         $result = $this->request('tools/call', ['name' => 'system_info']);
         $payload = json_decode($result['result']['content'][0]['text'], true, flags: JSON_THROW_ON_ERROR);
         $this->assertArrayHasKey('cakephp_version', $payload);
+        $this->assertStringStartsWith('6.', $payload['cakephp_version']);
+        $this->assertSame(PHP_VERSION, $payload['php_version']);
 
         $invalid = $this->request('tools/call', ['name' => 'search_docs', 'arguments' => ['query' => []]]);
         $this->assertTrue($invalid['result']['isError']);
@@ -275,7 +277,7 @@ class McpSurfaceTest extends McpTestCase
         $service->expects($this->once())->method('search')
             ->with($value, ['limit' => 10, 'highlight' => true])->willReturn([]);
         $service->method('getSearchEngine')->willReturn($engine);
-        $this->container->add(DocumentSearchService::class, $service, true);
+        $this->container->add(DocumentSearchService::class, $service);
 
         foreach (['search' => $value, 'content' => $id] as $kind => $argument) {
             $uri = 'docs://' . $kind . '/' . rawurlencode($argument);
@@ -293,7 +295,7 @@ class McpSurfaceTest extends McpTestCase
         $engine = $this->createStub(SearchEngine::class);
         $engine->method('getDocumentById')->willReturn(null);
         $service->method('getSearchEngine')->willReturn($engine);
-        $this->container->add(DocumentSearchService::class, $service, true);
+        $this->container->add(DocumentSearchService::class, $service);
 
         $missing = $this->request('resources/read', ['uri' => 'docs://content/source%3A%3Amissing']);
         $this->assertArrayHasKey('error', $missing);

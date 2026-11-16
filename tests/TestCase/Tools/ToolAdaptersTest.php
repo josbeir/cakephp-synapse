@@ -290,7 +290,7 @@ class ToolAdaptersTest extends McpTestCase
         $mock->expects($this->once())->method($method)
             ->with(...array_values($arguments))
             ->willReturn(['result' => 'example']);
-        $this->container->add($service, $mock, true);
+        $this->container->add($service, $mock);
 
         $response = SynapseServer::tool($tool, $arguments);
         $response->assertOk()->assertSee('{"result":"example"}');
@@ -323,7 +323,7 @@ class ToolAdaptersTest extends McpTestCase
 
         $mock = $this->createMock($service);
         $mock->expects($this->once())->method($method)->with(...$expected)->willReturn([]);
-        $this->container->add($service, $mock, true);
+        $this->container->add($service, $mock);
         SynapseServer::tool($tool, $input)->assertOk()->assertSee('[]');
 
         foreach ($definition['properties'] as $name => $property) {
@@ -344,7 +344,7 @@ class ToolAdaptersTest extends McpTestCase
         $service->method('cacheRead')->willThrowException(
             new CapabilityException('Cache config "missing" is not configured.'),
         );
-        $this->container->add(CacheService::class, $service, true);
+        $this->container->add(CacheService::class, $service);
 
         SynapseServer::tool(CacheReadTool::class, ['config' => 'missing', 'key' => 'example'])
             ->assertHasErrors(['Cache config "missing" is not configured.']);
@@ -354,7 +354,7 @@ class ToolAdaptersTest extends McpTestCase
     {
         $service = $this->createStub(SystemService::class);
         $service->method('readConfig')->willThrowException(new RuntimeException('sensitive implementation detail'));
-        $this->container->add(SystemService::class, $service, true);
+        $this->container->add(SystemService::class, $service);
 
         SynapseServer::tool(ConfigReadTool::class, ['key' => 'App.name'])
             ->assertHasErrors(['The operation failed. Check the application logs for details.']);
@@ -365,7 +365,7 @@ class ToolAdaptersTest extends McpTestCase
         foreach ([null, false, 'example', 42] as $value) {
             $service = $this->createStub(SystemService::class);
             $service->method('readConfig')->willReturn($value);
-            $this->container->add(SystemService::class, $service, true);
+            $this->container->add(SystemService::class, $service);
 
             SynapseServer::tool(ConfigReadTool::class, ['key' => 'App.name'])
                 ->assertOk()->assertSee(json_encode($value, JSON_THROW_ON_ERROR));
@@ -382,7 +382,7 @@ class ToolAdaptersTest extends McpTestCase
     {
         $service = $this->createMock(DatabaseService::class);
         $service->expects($this->once())->method('describeSchema')->with('default', null)->willReturn([]);
-        $this->container->add(DatabaseService::class, $service, true);
+        $this->container->add(DatabaseService::class, $service);
 
         SynapseServer::tool(DatabaseSchemaTool::class, ['table' => null])->assertOk();
         SynapseServer::tool(DatabaseSchemaTool::class, ['connection' => null])
@@ -432,14 +432,14 @@ class ToolAdaptersTest extends McpTestCase
             $input = array_replace($arguments, [$filter => $value]);
             $mock = $this->createMock($service);
             $mock->expects($this->once())->method($method)->with(...array_values($input))->willReturn([]);
-            $this->container->add($service, $mock, true);
+            $this->container->add($service, $mock);
 
             SynapseServer::tool($tool, $input)->assertOk()->assertSee('[]');
         }
 
         $mock = $this->createMock($service);
         $mock->expects($this->never())->method($method);
-        $this->container->add($service, $mock, true);
+        $this->container->add($service, $mock);
         foreach ([42, false, []] as $invalid) {
             SynapseServer::tool($tool, array_replace($arguments, [$filter => $invalid]))
                 ->assertHasErrors(['Argument "' . $filter . '" must be string or null.']);
